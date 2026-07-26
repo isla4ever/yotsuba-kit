@@ -14,20 +14,34 @@ const zhSidebar = {
   ],
   '/components/': [
     {
-      text: '组件',
+      text: 'Schedule 课表',
+      collapsed: false,
       items: [
-        { text: 'Schedule 课表', link: '/components/schedule' },
-        { text: 'Today 今日指挥台', link: '/components/today' },
-        { text: 'Guide 引导', link: '/components/guide' },
+        { text: '概览与用法', link: '/components/schedule' },
+        { text: 'Props 配置项', link: '/components/schedule#props' },
+        { text: 'Events 事件', link: '/components/schedule#events' },
+        { text: 'Methods 方法', link: '/components/schedule#methods-ref-暴露' },
+        { text: 'Slots 插槽', link: '/components/schedule#slots' },
       ],
     },
     {
-      text: 'API 参考',
+      text: 'Today 今日指挥台',
+      collapsed: false,
       items: [
-        { text: 'Props', link: '/components/schedule#props' },
-        { text: 'Events', link: '/components/schedule#events' },
-        { text: 'Methods', link: '/components/schedule#methods' },
-        { text: 'Slots', link: '/components/schedule#slots' },
+        { text: '概览与用法', link: '/components/today' },
+        { text: '内置 widget', link: '/components/today#内置-widget' },
+        { text: '自定义 widget', link: '/components/today#自定义-widget' },
+        { text: 'Props / Events', link: '/components/today#props-events' },
+      ],
+    },
+    {
+      text: 'Guide 引导',
+      collapsed: false,
+      items: [
+        { text: '三模式概览', link: '/components/guide' },
+        { text: '用法', link: '/components/guide#用法' },
+        { text: '自定义剧本', link: '/components/guide#自定义剧本' },
+        { text: 'Events / Methods', link: '/components/guide#events-methods' },
       ],
     },
   ],

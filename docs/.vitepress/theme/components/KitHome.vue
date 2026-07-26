@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// 官网首页：aceternity 风格聚光灯卡片 + 极光 hero + 实机演示,全部 Vue/CSS 实现,零 React 依赖
+// 演示按真实 390px 手机密度渲染,再整体缩放进壳体——与微信版观感一致
 import type { BuiltinTransitionName, Course } from '@iyotsuba/schedule-vue'
-import { YsSchedule } from '@iyotsuba/schedule-vue'
+import { defaultScheduleGuideSteps, YsSchedule } from '@iyotsuba/schedule-vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const props = withDefaults(defineProps<{ lang?: 'zh' | 'en' }>(), { lang: 'zh' })
@@ -16,7 +16,7 @@ const t = computed(() => props.lang === 'zh'
       github: 'GitHub',
       install: 'pnpm add @iyotsuba/schedule-vue',
       copied: '已复制',
-      demoTip: '真实组件 · 每 2.6s 自动换周,点击胶囊切换动画',
+      demoTip: '真实组件可交互:滑动换周 · 点课程看内置详情 · 点周数跳任意周',
       features: [
         { icon: '🌊', title: '波浪覆盖换周', desc: '骨架常驻、稳定格静止、旧周垫底新卡逐列扫入——任何一帧不出现空网格,e2e 探针持续回归。' },
         { icon: '📅', title: '学期语义引擎', desc: '单双周、调休补班、假日、重叠课连通分组、非本周置灰。零依赖 TypeScript,任何框架可用。' },
@@ -41,7 +41,7 @@ const t = computed(() => props.lang === 'zh'
       github: 'GitHub',
       install: 'pnpm add @iyotsuba/schedule-vue',
       copied: 'Copied',
-      demoTip: 'Real component · auto-switches weeks every 2.6s, tap chips to change the transition',
+      demoTip: 'Fully interactive: swipe to change weeks · tap a course for the built-in detail · tap the week for the picker',
       features: [
         { icon: '🌊', title: 'Wave-cover transitions', desc: 'Persistent chrome, still stable cells, old week beneath while new cards sweep in — no empty frame, ever. Guarded by e2e probes.' },
         { icon: '📅', title: 'Term-semantics engine', desc: 'Odd/even weeks, makeup days, holidays, overlap grouping, inactive dimming. Zero-dep TypeScript.' },
@@ -60,9 +60,14 @@ const t = computed(() => props.lang === 'zh'
 
 const base = computed(() => props.lang === 'zh' ? '' : '/en')
 
-/* 实机演示 */
+/* 实机演示：可玩的完整配置面板,按真实 390px 手机密度渲染再整体缩放 */
 const week = ref(1)
 const transition = ref<BuiltinTransitionName>('wave')
+const demoTheme = ref<'light' | 'dark'>('light')
+const demoTopBar = ref<'compact' | 'standard' | 'expanded'>('standard')
+const demoDays = ref<5 | 7>(7)
+const scheduleRef = ref<InstanceType<typeof YsSchedule> | null>(null)
+const autoPlay = ref(true)
 const transitions: Array<{ name: BuiltinTransitionName, label: string }> = [
   { name: 'wave', label: 'wave' },
   { name: 'slide', label: 'slide' },
@@ -70,7 +75,7 @@ const transitions: Array<{ name: BuiltinTransitionName, label: string }> = [
 ]
 const termStart = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - ((new Date().getDay() || 7) - 1))
 
-// 演示裁剪为 6 节次,保证手机壳里卡片保持真实密度
+// 8 节次,贴近真实课表密度
 const demoTimes = [
   { start: '08:00', end: '08:45' },
   { start: '08:55', end: '09:40' },
@@ -78,23 +83,30 @@ const demoTimes = [
   { start: '10:55', end: '11:40' },
   { start: '14:30', end: '15:15' },
   { start: '15:25', end: '16:10' },
+  { start: '16:20', end: '17:05' },
+  { start: '17:15', end: '18:00' },
 ]
 
 const courses: Course[] = [
-  { id: 'a', name: '高等数学', location: '教1-201', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20 },
+  { id: 'a', name: '高等数学', teacher: '陈老师', location: '教1-201', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20 },
   { id: 'b', name: '数据结构', location: '教2-105', weekday: 1, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
   { id: 'c', name: '大学英语', location: '外语楼302', weekday: 2, startSection: 3, endSection: 4, startWeek: 1, endWeek: 20 },
+  { id: 'g', name: '专业导论', location: '报告厅', weekday: 2, startSection: 7, endSection: 8, startWeek: 2, endWeek: 6 },
+  { id: 'p', name: '程序设计', location: '机房A', weekday: 3, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
+  { id: 'z', name: '自习（自定义）', location: '图书馆', weekday: 3, startSection: 7, endSection: 8, startWeek: 1, endWeek: 20, custom: true },
   { id: 'd', name: '体育（单周）', location: '东操场', weekday: 4, startSection: 1, endSection: 2, startWeek: 1, endWeek: 16, parity: 'odd' },
   { id: 'e', name: '线性代数（双周）', location: '教1-305', weekday: 4, startSection: 1, endSection: 2, startWeek: 2, endWeek: 16, parity: 'even' },
   { id: 'f', name: '大学物理', location: '理科楼210', weekday: 5, startSection: 3, endSection: 4, startWeek: 1, endWeek: 16 },
-  { id: 'g', name: '专业导论', location: '报告厅', weekday: 3, startSection: 5, endSection: 6, startWeek: 2, endWeek: 6 },
+  { id: 'i', name: '化学实验', location: '实验楼404', weekday: 5, startSection: 7, endSection: 8, startWeek: 1, endWeek: 8 },
   { id: 'h', name: '形势与政策', location: '教3-101', weekday: 6, startSection: 3, endSection: 4, startWeek: 1, endWeek: 4 },
 ]
 
 let timer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   timer = setInterval(() => {
-    week.value = week.value === 1 ? 2 : 1
+    if (autoPlay.value) {
+      week.value = week.value === 1 ? 2 : 1
+    }
   }, 2600)
 })
 onBeforeUnmount(() => {
@@ -102,6 +114,11 @@ onBeforeUnmount(() => {
     clearInterval(timer)
   }
 })
+
+function playGuide() {
+  autoPlay.value = false
+  scheduleRef.value?.startGuide()
+}
 
 /* 复制安装命令 */
 const copied = ref(false)
@@ -153,36 +170,72 @@ function spotlight(event: MouseEvent) {
           </button>
         </div>
 
-        <!-- 手机壳实机演示 -->
+        <!-- 手机壳实机演示：390px 真实密度 × 0.72 缩放,贴合壳体 -->
         <div class="hero__demo">
-          <div class="phone">
+          <div class="phone" :class="{ 'is-dark': demoTheme === 'dark' }">
             <div class="phone__screen">
-              <YsSchedule
-                v-model:week="week"
-                :courses="courses"
-                :term-start="termStart"
-                :transition="transition"
-                :visible-days="7"
-                :row-height="60"
-                :course-times="demoTimes"
-                top-bar="compact"
-                :swipeable="true"
-                week-picker="none"
-                course-detail="none"
-              />
+              <div class="phone__viewport">
+                <YsSchedule
+                  ref="scheduleRef"
+                  v-model:week="week"
+                  :courses="courses"
+                  :term-start="termStart"
+                  :transition="transition"
+                  :visible-days="demoDays"
+                  :row-height="54"
+                  :course-times="demoTimes"
+                  :top-bar="demoTopBar"
+                  :theme="demoTheme"
+                  :swipeable="true"
+                  week-picker="builtin"
+                  course-detail="builtin"
+                  :guide="{ mode: 'walkthrough', steps: defaultScheduleGuideSteps }"
+                  @course-tap="autoPlay = false"
+                  @week-picker-open="autoPlay = false"
+                />
+              </div>
             </div>
           </div>
-          <div class="hero__chips">
-            <button
-              v-for="item in transitions"
-              :key="item.name"
-              type="button"
-              class="hero__chip"
-              :class="{ 'is-active': transition === item.name }"
-              @click="transition = item.name"
-            >
-              {{ item.label }}
-            </button>
+
+          <div class="hero__panel">
+            <div class="hero__panel-row">
+              <span class="hero__panel-label">动画</span>
+              <button
+                v-for="item in transitions"
+                :key="item.name"
+                type="button"
+                class="hero__chip"
+                :class="{ 'is-active': transition === item.name }"
+                @click="transition = item.name"
+              >
+                {{ item.label }}
+              </button>
+            </div>
+            <div class="hero__panel-row">
+              <span class="hero__panel-label">顶栏</span>
+              <button
+                v-for="preset in (['compact', 'standard', 'expanded'] as const)"
+                :key="preset"
+                type="button"
+                class="hero__chip"
+                :class="{ 'is-active': demoTopBar === preset }"
+                @click="demoTopBar = preset"
+              >
+                {{ preset }}
+              </button>
+            </div>
+            <div class="hero__panel-row">
+              <span class="hero__panel-label">更多</span>
+              <button type="button" class="hero__chip" :class="{ 'is-active': demoTheme === 'dark' }" @click="demoTheme = demoTheme === 'dark' ? 'light' : 'dark'">
+                深色
+              </button>
+              <button type="button" class="hero__chip" :class="{ 'is-active': demoDays === 5 }" @click="demoDays = demoDays === 5 ? 7 : 5">
+                隐藏周末
+              </button>
+              <button type="button" class="hero__chip hero__chip--guide" @click="playGuide">
+                手把手引导 ✨
+              </button>
+            </div>
           </div>
           <p class="hero__demo-tip">{{ t.demoTip }}</p>
         </div>
@@ -359,30 +412,65 @@ function spotlight(event: MouseEvent) {
 .hero__install-copy { font-size: 12px; color: var(--kh-text-2); }
 .hero__install.is-copied .hero__install-copy { color: var(--kh-accent-3); }
 
-/* 手机壳 */
+/* 手机壳：390px 真实密度 × 0.77 缩放,严丝合缝 */
 .hero__demo { display: flex; flex-direction: column; align-items: center; }
 
 .phone {
   position: relative;
-  width: 300px;
+  width: 320px;
   padding: 10px;
   background: linear-gradient(160deg, #2a3140, #161b25);
-  border-radius: 36px;
+  border-radius: 40px;
   box-shadow:
     0 24px 70px rgb(0 0 0 / 55%),
     inset 0 1px 0 rgb(255 255 255 / 14%);
 }
 
 .phone__screen {
-  height: 520px;
+  position: relative;
+  width: 300px;
+  height: 480px;
   overflow: hidden;
-  border-radius: 27px;
+  background: #f6f7f9;
+  border-radius: 30px;
 }
 
-.hero__chips { display: flex; gap: 8px; margin-top: 16px; }
+.phone.is-dark .phone__screen { background: #14171c; }
+
+.phone__viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 390px;
+  height: 623px;
+  transform: scale(0.7692);
+  transform-origin: top left;
+}
+
+.phone__viewport > * { height: 100%; }
+
+/* 配置面板 */
+.hero__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  background: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 14px;
+}
+
+.hero__panel-row { display: flex; gap: 6px; align-items: center; }
+
+.hero__panel-label {
+  width: 34px;
+  font-size: 11px;
+  color: var(--kh-text-2);
+}
 
 .hero__chip {
-  padding: 5px 15px;
+  padding: 4px 12px;
   font-size: 12px;
   font-weight: 700;
   color: var(--kh-text-2);
@@ -397,6 +485,11 @@ function spotlight(event: MouseEvent) {
   color: #fff;
   background: linear-gradient(120deg, var(--kh-accent), var(--kh-accent-2));
   border-color: transparent;
+}
+
+.hero__chip--guide {
+  color: #ffd98a;
+  border-color: rgb(255 217 138 / 34%);
 }
 
 .hero__demo-tip { margin-top: 9px; font-size: 11px; color: var(--kh-text-2); }

@@ -19,3 +19,10 @@
 .vp-doc:has(> div > .kit-home) div[class*="language-"] {
   margin: 0;
 }
+
+/* 官网演示里的内置底部面板:桌面端约束为手机宽度,居中呈现 */
+.ys-sheet {
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: 14px 14px 0 0;
+}
