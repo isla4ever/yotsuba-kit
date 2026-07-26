@@ -6,27 +6,25 @@
 
 ## React
 
-通过 Web Component 接入:
+使用官方类型化绑定 `@iyotsuba/schedule-react`(内部桥接自定义元素,props/事件全量 TS 类型):
 
 ```tsx
-import { useEffect, useRef } from 'react'
-import '@iyotsuba/schedule-elements'
+import { YsSchedule, YsToday } from '@iyotsuba/schedule-react'
+import { useState } from 'react'
 
-export function Schedule({ courses, week, onWeekChange }) {
-  const ref = useRef(null)
-  useEffect(() => {
-    const el = ref.current
-    el.courses = courses
-    el.week = week
-    const handler = e => onWeekChange(e.detail[0])
-    el.addEventListener('week-change', handler)
-    return () => el.removeEventListener('week-change', handler)
-  }, [courses, week])
-  return <ys-schedule ref={ref} style={{ height: 640 }} />
+export function Schedule({ courses }) {
+  const [week, setWeek] = useState(1)
+  return (
+    <YsSchedule
+      courses={courses}
+      week={week}
+      onUpdateWeek={setWeek}
+      onCourseTap={(course, stack) => console.log(course, stack)}
+      style={{ height: 640 }}
+    />
+  )
 }
 ```
-
-> React 专属适配包 `@iyotsuba/schedule-react` 在 P3 路线中。
 
 ## uni-app(H5)/ Ionic / 原生 HTML
 

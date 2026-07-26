@@ -1,6 +1,6 @@
 {
   "name": "@iyotsuba/schedule-elements",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-agnostic <ys-schedule> custom element. Works in React, plain HTML, uni-app H5, Ionic — anywhere the DOM is.",
   "type": "module",
   "license": "MIT",
@@ -8,12 +8,14 @@
   "module": "./dist/schedule-elements.js",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "import": "./dist/schedule-elements.js",
       "default": "./dist/schedule-elements.iife.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "scripts": {
     "build": "vite build",
@@ -35,5 +37,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "./types/index.d.ts"
 }

@@ -8,7 +8,8 @@
 | --- | --- |
 | [`@iyotsuba/schedule-core`](packages/core) | 零依赖 TS:学期引擎、过渡协议、主题令牌、天气/引导协议 |
 | [`@iyotsuba/schedule-vue`](packages/vue) | Vue 3 组件 `<YsSchedule>` |
-| [`@iyotsuba/schedule-elements`](packages/elements) | `<ys-schedule>` 自定义元素(React / uni-app H5 / 原生 HTML) |
+| [`@iyotsuba/schedule-elements`](packages/elements) | `<ys-schedule>` / `<ys-today>` 自定义元素(uni-app H5 / 原生 HTML) |
+| [`@iyotsuba/schedule-react`](packages/react) | React 类型化绑定 `<YsSchedule>` `<YsToday>` |
 
 文档:https://isla4ever.github.io/yotsuba-kit/(建设中)
 

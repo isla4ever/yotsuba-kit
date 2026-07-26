@@ -1,7 +1,7 @@
 {
-  "name": "@iyotsuba/schedule-core",
+  "name": "@iyotsuba/schedule-react",
   "version": "0.3.0",
-  "description": "Framework-free schedule engine: Chinese academic-term semantics (odd/even weeks, makeup days, overlaps), transition timelines, theme tokens, weather & guide protocols.",
+  "description": "Typed React bindings for the yotsuba schedule kit (<YsSchedule> / <YsToday> over custom elements).",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -13,11 +13,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./weather/open-meteo": {
-      "types": "./dist/weather/open-meteo.d.ts",
-      "import": "./dist/weather/open-meteo.js",
-      "require": "./dist/weather/open-meteo.cjs"
     }
   },
   "files": [
@@ -28,18 +23,23 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "dependencies": {
+    "@iyotsuba/schedule-core": "workspace:*",
+    "@iyotsuba/schedule-elements": "workspace:*"
+  },
   "devDependencies": {
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.0",
+    "jsdom": "^25.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3",
     "vitest": "^2.1.8"
   },
-  "keywords": [
-    "schedule",
-    "timetable",
-    "course",
-    "class-schedule",
-    "headless"
-  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/isla4ever/yotsuba-kit"
