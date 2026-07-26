@@ -9,8 +9,9 @@ export default defineConfig({
     hasTouch: true,
   },
   webServer: {
-    command: 'pnpm --filter example-vue3 dev -- --port 5199 --strictPort',
+    command: 'pnpm --filter example-vue3 exec vite --port 5199 --strictPort',
     port: 5199,
+    timeout: 120_000,
     reuseExistingServer: !process.env.CI,
   },
 })

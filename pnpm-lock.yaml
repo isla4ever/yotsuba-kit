@@ -55,7 +55,7 @@ importers:
   packages/elements:
     dependencies:
       '@iyotsuba/schedule-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       '@vitejs/plugin-vue':
@@ -74,10 +74,10 @@ importers:
   packages/react:
     dependencies:
       '@iyotsuba/schedule-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@iyotsuba/schedule-elements':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../elements
     devDependencies:
       '@testing-library/react':
@@ -108,7 +108,7 @@ importers:
   packages/vue:
     dependencies:
       '@iyotsuba/schedule-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       '@vitejs/plugin-vue':

@@ -32,7 +32,8 @@ import YsTopBar from './YsTopBar.vue'
 import YsWeekPicker from './YsWeekPicker.vue'
 
 const props = withDefaults(defineProps<{
-  courses: Course[]
+  /** 自定义元素场景下属性可能晚于首帧到达，故容忍缺省 */
+  courses?: Course[]
   week?: number
   totalWeeks?: number
   termStart?: Date
@@ -65,6 +66,7 @@ const props = withDefaults(defineProps<{
     weekPickerTitle?: string
   }
 }>(), {
+  courses: () => [],
   week: 1,
   totalWeeks: 20,
   overrides: () => [],

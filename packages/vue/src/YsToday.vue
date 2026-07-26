@@ -30,8 +30,9 @@ export interface TodayWidgetConfig {
 }
 
 const props = withDefaults(defineProps<{
-  courses: Course[]
-  termStart: Date
+  /** 自定义元素场景下属性可能晚于首帧到达，故容忍缺省 */
+  courses?: Course[]
+  termStart?: Date
   totalWeeks?: number
   overrides?: DayOverride[]
   courseTimes?: CourseTime[] | 'standard'
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<{
   now?: Date
   title?: string
 }>(), {
+  courses: () => [],
   totalWeeks: 20,
   overrides: () => [],
   courseTimes: 'standard',
@@ -75,7 +77,9 @@ const cssVars = computed(() => tokensToCssVars(tokens.value))
 const colorFor = computed(() => createCourseColorResolver(tokens.value))
 
 const now = computed(() => props.now ?? new Date())
-const week = computed(() => weekOf(now.value, props.termStart, props.totalWeeks))
+const week = computed(() =>
+  props.termStart ? weekOf(now.value, props.termStart, props.totalWeeks) : 1,
+)
 const weekday = computed(() => {
   const day = now.value.getDay()
   return day === 0 ? 7 : day

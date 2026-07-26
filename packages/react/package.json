@@ -1,6 +1,6 @@
 {
   "name": "@iyotsuba/schedule-react",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Typed React bindings for the yotsuba schedule kit (<YsSchedule> / <YsToday> over custom elements).",
   "type": "module",
   "license": "MIT",
@@ -27,8 +27,8 @@
     "react": ">=18"
   },
   "dependencies": {
-    "@iyotsuba/schedule-core": "workspace:*",
-    "@iyotsuba/schedule-elements": "workspace:*"
+    "@iyotsuba/schedule-core": "workspace:^",
+    "@iyotsuba/schedule-elements": "workspace:^"
   },
   "devDependencies": {
     "@testing-library/react": "^16.1.0",

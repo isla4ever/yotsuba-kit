@@ -1,6 +1,6 @@
 {
   "name": "@iyotsuba/schedule-elements",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Framework-agnostic <ys-schedule> custom element. Works in React, plain HTML, uni-app H5, Ionic — anywhere the DOM is.",
   "type": "module",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@iyotsuba/schedule-core": "workspace:*"
+    "@iyotsuba/schedule-core": "workspace:^"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",

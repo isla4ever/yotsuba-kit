@@ -1,6 +1,6 @@
 {
   "name": "@iyotsuba/schedule-vue",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Vue 3 schedule components with pluggable week transitions (wave / slide / fade), header presets and theme tokens.",
   "type": "module",
   "license": "MIT",
@@ -25,7 +25,7 @@
     "vue": "^3.4.0"
   },
   "dependencies": {
-    "@iyotsuba/schedule-core": "workspace:*"
+    "@iyotsuba/schedule-core": "workspace:^"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
