@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import type {
   BuiltinTransitionName,
+  CardEffect,
   Course,
   CourseTime,
   DayOverride,
   DayPlanMap,
+  DetailField,
+  DetailHero,
   DisplayCourse,
   GuideConfig,
   GuideStep,
+  KeyframeSpec,
+  PaletteName,
+  ScheduleDensity,
+  SheetPlacement,
   ThemeTokens,
   TransitionSpec,
   WeatherSnapshot,
@@ -22,11 +29,12 @@ import {
   formatDateKey,
   lightTheme,
   pendingPlanCount,
+  resolvePalette,
   resolveTransition,
   STANDARD_COURSE_TIMES,
   tokensToCssVars,
 } from '@iyotsuba/schedule-core'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import YsBackgroundSheet from './YsBackgroundSheet.vue'
 import YsCourseCard from './YsCourseCard.vue'
 import YsCourseDetail from './YsCourseDetail.vue'
@@ -34,6 +42,7 @@ import YsCourseForm from './YsCourseForm.vue'
 import YsDayPlanner from './YsDayPlanner.vue'
 import YsGuide from './YsGuide.vue'
 import YsTopBar from './YsTopBar.vue'
+import YsWeatherScene from './YsWeatherScene.vue'
 import YsWeekPicker from './YsWeekPicker.vue'
 
 const props = withDefaults(defineProps<{
@@ -74,6 +83,18 @@ const props = withDefaults(defineProps<{
   /** 自定义背景（可配合内置上传裁剪面板 openBackgroundPicker()） */
   background?: { image?: string, opacity?: number, blur?: number } | null
   backgroundPicker?: 'builtin' | 'none'
+  /** 界面密度：minimal 精简近日历块 / normal / rich 信息全面 */
+  density?: ScheduleDensity
+  /** 课程卡配色库：六套精选库名或自定义 string[]（白字对比度自行保证） */
+  palette?: PaletteName | string[]
+  /** 课程卡装饰特效（只作用于本周卡，换周动画期间自动暂停，reduced-motion 关闭） */
+  cardEffect?: CardEffect
+  /** 小米天气式实时背景场景（依赖 weather.current.kind） */
+  weatherScene?: boolean
+  /** 内置弹窗体系：位置（底部抽屉/居中对话框/侧滑抽屉）与毛玻璃 */
+  sheets?: { placement?: SheetPlacement, glass?: boolean }
+  /** 课程详情编排：hero 风格 + 字段显隐与顺序 */
+  detail?: { hero?: DetailHero, fields?: DetailField[] }
   locale?: {
     weekdays?: string[]
     inactiveBadge?: string
@@ -107,6 +128,12 @@ const props = withDefaults(defineProps<{
   dayPlanner: 'builtin',
   background: null,
   backgroundPicker: 'builtin',
+  density: 'normal',
+  palette: undefined,
+  cardEffect: 'none',
+  weatherScene: false,
+  sheets: undefined,
+  detail: undefined,
 })
 
 const emit = defineEmits<{
@@ -134,14 +161,15 @@ const emit = defineEmits<{
 /* ------------------------------ 主题与派生 ------------------------------ */
 
 const tokens = computed<ThemeTokens>(() => {
-  if (props.theme === 'light') {
-    return lightTheme
-  }
-  if (props.theme === 'dark') {
-    return darkTheme
-  }
-  return { ...lightTheme, ...props.theme }
+  const base = props.theme === 'light'
+    ? lightTheme
+    : props.theme === 'dark'
+      ? darkTheme
+      : { ...lightTheme, ...props.theme }
+  return props.palette ? { ...base, coursePalette: resolvePalette(props.palette) } : base
 })
+
+provide('ysSheetConfig', computed(() => props.sheets ?? {}))
 
 const cssVars = computed(() => tokensToCssVars(tokens.value))
 const colorFor = computed(() => createCourseColorResolver(tokens.value))
@@ -312,6 +340,50 @@ watch(() => props.week, (week, previous) => {
   }, spec.value.totalMs)
 })
 
+/** 通用变换合成：按 directional 声明随翻页方向镜像;page/cube 模式 translateX 单位 % */
+function composeTransform(frame: KeyframeSpec, direction: 1 | -1, percentX: boolean): string {
+  const directional = new Set(frame.directional ?? ['translateX'])
+  const parts: string[] = []
+  if (frame.translateX != null) {
+    const value = directional.has('translateX') ? frame.translateX * direction : frame.translateX
+    parts.push(`translateX(${value}${percentX ? '%' : 'px'})`)
+  }
+  if (frame.translateY != null) {
+    const value = directional.has('translateY') ? frame.translateY * direction : frame.translateY
+    parts.push(`translateY(${value}px)`)
+  }
+  if (frame.rotateY != null) {
+    const value = directional.has('rotateY') ? frame.rotateY * direction : frame.rotateY
+    parts.push(`rotateY(${value}deg)`)
+  }
+  if (frame.rotateZ != null) {
+    const value = directional.has('rotateZ') ? frame.rotateZ * direction : frame.rotateZ
+    parts.push(`rotateZ(${value}deg)`)
+  }
+  if (frame.scale != null) {
+    // directional-scale：绕 1 为轴镜像（0.92 ↔ 1.08）
+    const value = directional.has('scale') ? 1 + (frame.scale - 1) * direction : frame.scale
+    parts.push(`scale(${value})`)
+  }
+  return parts.length ? parts.join(' ') : 'none'
+}
+
+/** transform-origin 方向镜像（cube 铰链随翻页方向换边） */
+function composeOrigin(frame: KeyframeSpec, direction: 1 | -1): string | undefined {
+  if (!frame.transformOrigin) {
+    return undefined
+  }
+  if ((frame.directional ?? []).includes('transformOrigin') && direction === -1) {
+    if (frame.transformOrigin.includes('left')) {
+      return frame.transformOrigin.replace('left', 'right')
+    }
+    if (frame.transformOrigin.includes('right')) {
+      return frame.transformOrigin.replace('right', 'left')
+    }
+  }
+  return frame.transformOrigin
+}
+
 function delayMs(course: Pick<DisplayCourse, 'weekday' | 'startSection'>): number {
   return spec.value.delayFor(
     { weekday: course.weekday, startSection: course.startSection },
@@ -352,9 +424,9 @@ function enterStyle(course: DisplayCourse, model: WeekModel) {
   }
   return {
     ...position,
-    '--ys-from-opacity': String(spec.value.enter.opacity),
-    '--ys-from-y': `${spec.value.enter.translateY ?? 0}px`,
-    'animation': `ys-enter ${spec.value.enterMs}ms ${spec.value.enter.easing} both`,
+    '--ys-c-from-o': String(spec.value.enter.opacity),
+    '--ys-c-from-tf': composeTransform(spec.value.enter, waveDirection.value, false),
+    'animation': `ys-cell-in ${spec.value.enterMs}ms ${spec.value.enter.easing} both`,
     'animationDelay': `${delayMs(course)}ms`,
   }
 }
@@ -372,8 +444,10 @@ function leaveStyle(course: DisplayCourse, model: WeekModel) {
   }
   return {
     ...position,
-    animation: `ys-fade-out ${spec.value.leaveMs}ms ${spec.value.leave.easing} both`,
-    animationDelay: `${delayMs(course) + spec.value.leaveLagMs}ms`,
+    '--ys-c-to-o': String(spec.value.leave.opacity),
+    '--ys-c-to-tf': composeTransform(spec.value.leave, waveDirection.value, false),
+    'animation': `ys-cell-out ${spec.value.leaveMs}ms ${spec.value.leave.easing} both`,
+    'animationDelay': `${delayMs(course) + spec.value.leaveLagMs}ms`,
   }
 }
 
@@ -393,54 +467,51 @@ function badgeStyle(group: WeekModel['overlapGroups'][number], layer: 'enter' | 
   if (layer === 'enter') {
     return {
       ...position,
-      '--ys-from-opacity': String(spec.value.enter.opacity),
-      '--ys-from-y': `${spec.value.enter.translateY ?? 0}px`,
-      'animation': `ys-enter ${spec.value.enterMs}ms ${spec.value.enter.easing} both`,
+      '--ys-c-from-o': String(spec.value.enter.opacity),
+      '--ys-c-from-tf': composeTransform(spec.value.enter, waveDirection.value, false),
+      'animation': `ys-cell-in ${spec.value.enterMs}ms ${spec.value.enter.easing} both`,
       'animationDelay': `${delay}ms`,
     }
   }
   return {
     ...position,
-    animation: `ys-fade-out ${spec.value.leaveMs}ms ${spec.value.leave.easing} both`,
-    animationDelay: `${delay + spec.value.leaveLagMs}ms`,
+    '--ys-c-to-o': String(spec.value.leave.opacity),
+    '--ys-c-to-tf': composeTransform(spec.value.leave, waveDirection.value, false),
+    'animation': `ys-cell-out ${spec.value.leaveMs}ms ${spec.value.leave.easing} both`,
+    'animationDelay': `${delay + spec.value.leaveLagMs}ms`,
   }
 }
 
 function layerStyle(layer: 'enter' | 'leave') {
-  if (!waveActive.value) {
+  if (!waveActive.value || spec.value.mode === 'per-cell') {
     return undefined
   }
-  const keyframe = layer === 'enter' ? spec.value.enter : spec.value.leave
-  const sign = waveDirection.value
-  if (spec.value.mode === 'page') {
-    // 真实整页滑动：translateX 单位为 %
-    if (layer === 'enter') {
-      return {
-        '--ys-from-x': `${(keyframe.translateX ?? 100) * sign}%`,
-        'animation': `ys-page-enter ${spec.value.enterMs}ms ${keyframe.easing} both`,
-      }
-    }
-    return {
-      '--ys-to-x': `${(keyframe.translateX ?? -100) * sign}%`,
-      'animation': `ys-page-leave ${spec.value.leaveMs}ms ${keyframe.easing} both`,
-    }
-  }
-  if (spec.value.mode !== 'layer') {
-    return undefined
-  }
-  const translateX = (keyframe.translateX ?? 0) * sign
+  const percentX = spec.value.mode === 'page'
   if (layer === 'enter') {
+    const frame = spec.value.enter
     return {
-      '--ys-from-opacity': String(keyframe.opacity),
-      '--ys-from-x': `${translateX}px`,
-      'animation': `ys-layer-enter ${spec.value.enterMs}ms ${keyframe.easing} both`,
+      '--ys-l-from-o': String(frame.opacity),
+      '--ys-l-from-tf': composeTransform(frame, waveDirection.value, percentX),
+      'transformOrigin': composeOrigin(frame, waveDirection.value),
+      'animation': `ys-layer-in ${spec.value.enterMs}ms ${frame.easing} both`,
     }
   }
+  const frame = spec.value.leave
   return {
-    '--ys-to-x': `${translateX}px`,
-    'animation': `ys-layer-leave ${spec.value.leaveMs}ms ${keyframe.easing} both`,
+    '--ys-l-to-o': String(frame.opacity),
+    '--ys-l-to-tf': composeTransform(frame, waveDirection.value, percentX),
+    'transformOrigin': composeOrigin(frame, waveDirection.value),
+    'animation': `ys-layer-out ${spec.value.leaveMs}ms ${frame.easing} both`,
+    'animationDelay': `${spec.value.leaveLagMs}ms`,
   }
 }
+
+/** cube 等 3D 预设：透视静态挂在两层共同父容器（board）上 */
+const boardPerspective = computed(() =>
+  waveActive.value && spec.value.perspectivePx
+    ? { perspective: `${spec.value.perspectivePx}px` }
+    : undefined,
+)
 
 function gridPosition(course: Pick<DisplayCourse, 'weekday' | 'startSection' | 'endSection'>) {
   return {
@@ -725,8 +796,24 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="rootEl" class="ys-schedule" :class="{ 'ys-dark': theme === 'dark', 'is-editing': editable, 'has-bg': Boolean(backgroundStyle) }" :style="cssVars">
+  <div
+    ref="rootEl"
+    class="ys-schedule"
+    :class="[
+      `ys-density-${density}`,
+      { 'ys-dark': theme === 'dark', 'is-editing': editable, 'has-bg': Boolean(backgroundStyle) },
+    ]"
+    :data-ys-effect="!waveActive && cardEffect !== 'none' ? cardEffect : undefined"
+    :style="cssVars"
+  >
     <div v-if="backgroundStyle" class="ys-schedule__bg" :style="backgroundStyle" aria-hidden="true" />
+    <YsWeatherScene
+      v-if="weatherScene && weather?.current"
+      class="ys-schedule__scene"
+      :kind="weather.current.kind"
+      :dark="theme === 'dark'"
+      :intensity="0.5"
+    />
     <slot
       name="top-bar"
       :week="week"
@@ -804,7 +891,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="ys-schedule__board" :style="{ gridTemplateRows: rowTemplate }">
+      <div class="ys-schedule__board" :style="[{ gridTemplateRows: rowTemplate }, boardPerspective]">
         <!-- 编辑模式：空白格拖选层（位于课程层之下） -->
         <template v-if="editable">
           <template v-for="row in rows" :key="`cells-${row.key}`">
@@ -849,6 +936,7 @@ onBeforeUnmount(() => {
               <YsCourseCard
                 :course="course"
                 :color="colorFor(course.name, course.color)"
+                :density="density"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
               />
@@ -880,6 +968,7 @@ onBeforeUnmount(() => {
               <YsCourseCard
                 :course="course"
                 :color="colorFor(course.name, course.color)"
+                :density="density"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
                 @select="handleCourseTap"
@@ -925,6 +1014,9 @@ onBeforeUnmount(() => {
       :color-for="colorFor"
       :editable="editable"
       :weather-text="detailWeatherText"
+      :hero="detail?.hero ?? 'color'"
+      :fields="detail?.fields"
+      :weather-kind="weather?.current?.kind"
       :vars="cssVars"
       @close="detailOpen = false"
       @edit="handleDetailEdit"
@@ -986,10 +1078,14 @@ onBeforeUnmount(() => {
   isolation: isolate;
 }
 
+.ys-schedule__scene {
+  z-index: -1;
+}
+
 .ys-schedule__bg {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: -2;
   pointer-events: none;
   background-position: center;
   background-size: cover;
@@ -1150,6 +1246,8 @@ onBeforeUnmount(() => {
   z-index: 18;
   display: grid;
   place-items: center;
+  line-height: 1;
+  padding-bottom: 0.5px;
   place-self: start end;
   width: 16px;
   height: 16px;
@@ -1170,15 +1268,22 @@ onBeforeUnmount(() => {
   border-color: rgb(255 255 255 / 36%);
 }
 
-@keyframes ys-enter {
+@keyframes ys-cell-in {
   from {
-    opacity: var(--ys-from-opacity, 0);
-    transform: translate3d(0, var(--ys-from-y, 0), 0);
+    opacity: var(--ys-c-from-o, 0);
+    transform: var(--ys-c-from-tf, none);
   }
 
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: none;
+  }
+}
+
+@keyframes ys-cell-out {
+  to {
+    opacity: var(--ys-c-to-o, 0);
+    transform: var(--ys-c-to-tf, none);
   }
 }
 
@@ -1196,32 +1301,22 @@ onBeforeUnmount(() => {
   to { opacity: 1; }
 }
 
-@keyframes ys-page-enter {
-  from { transform: translate3d(var(--ys-from-x, 100%), 0, 0); }
-  to { transform: translate3d(0, 0, 0); }
-}
-
-@keyframes ys-page-leave {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(var(--ys-to-x, -100%), 0, 0); }
-}
-
-@keyframes ys-layer-enter {
+@keyframes ys-layer-in {
   from {
-    opacity: var(--ys-from-opacity, 0);
-    transform: translate3d(var(--ys-from-x, 0), 0, 0);
+    opacity: var(--ys-l-from-o, 0);
+    transform: var(--ys-l-from-tf, none);
   }
 
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: none;
   }
 }
 
-@keyframes ys-layer-leave {
+@keyframes ys-layer-out {
   to {
-    opacity: 0;
-    transform: translate3d(var(--ys-to-x, 0), 0, 0);
+    opacity: var(--ys-l-to-o, 0);
+    transform: var(--ys-l-to-tf, none);
   }
 }
 

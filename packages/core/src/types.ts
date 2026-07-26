@@ -91,18 +91,28 @@ export interface TransitionContext {
 export interface KeyframeSpec {
   /** 起始不透明度（终点恒为进场 1 / 离场 0） */
   opacity: number
-  /** 起始 Y 位移，px（仅进场使用） */
+  /** 起始 Y 位移，px */
   translateY?: number
-  /** 起始 X 位移，px（layer 模式使用） */
+  /** 起始 X 位移：page/cube 模式单位 %，其余 px */
   translateX?: number
+  /** 起始缩放（directional 含 'scale' 时按 1 为轴随方向镜像：1+(scale-1)×dir） */
+  scale?: number
+  /** 起始 Y 轴旋转，deg（3D，需 TransitionSpec.perspectivePx） */
+  rotateY?: number
+  /** 起始 Z 轴旋转，deg */
+  rotateZ?: number
+  /** transform-origin；directional 含 'transformOrigin' 时 left/right 随方向互换 */
+  transformOrigin?: string
+  /** 哪些通道随翻页方向(direction=±1)镜像取反；缺省 ['translateX'] */
+  directional?: Array<'translateX' | 'translateY' | 'rotateY' | 'rotateZ' | 'scale' | 'transformOrigin'>
   /** CSS 缓动函数字符串 */
   easing: string
 }
 
 /**
  * 换周过渡协议。
- * mode `per-cell`：逐格波浪（每格用 delayFor 计算延迟）；
- * mode `page`：真实整页滑动（translateX 单位为 %），可叠加 cellStagger 轻量波浪淡入；
+ * mode `per-cell`：逐格动画（每格用 delayFor 计算延迟）；
+ * mode `page`：真实整页位移/翻转（translateX 单位为 %），可叠加 cellStagger 轻量波浪淡入；
  * mode `layer`：整层交叉过渡（delayFor 恒为 0）。
  */
 export interface TransitionSpec {
@@ -126,7 +136,29 @@ export interface TransitionSpec {
     durationMs: number
     easing: string
   }
+  /** 3D 预设（如 cube）：静态挂在两层共同父容器上的透视距离 */
+  perspectivePx?: number
 }
+
+/* ------------------------------ 视觉配置 ------------------------------ */
+
+/** 课程卡配色库名（自定义时直接传 string[]） */
+export type PaletteName = 'classic' | 'macaron' | 'morandi' | 'cyber' | 'forest' | 'sunset'
+
+/** 界面密度：精简（近日历块）/ 正常 / 全面（信息饱满） */
+export type ScheduleDensity = 'minimal' | 'normal' | 'rich'
+
+/** 详情面板可编排字段 */
+export type DetailField = 'time' | 'weeks' | 'location' | 'teacher' | 'weather' | 'note' | 'materials'
+
+/** 详情 hero 风格：课程色 / 当日天气渐变 / 极简 */
+export type DetailHero = 'color' | 'weather' | 'plain'
+
+/** 弹窗位置：底部抽屉 / 居中对话框 / 侧滑抽屉（平板友好） */
+export type SheetPlacement = 'bottom' | 'center' | 'right'
+
+/** 课程卡装饰特效（只作用于本周卡，reduced-motion 自动关闭） */
+export type CardEffect = 'none' | 'shimmer' | 'glow' | 'aurora' | 'breathe'
 
 /* ------------------------------ 天气协议 ------------------------------ */
 

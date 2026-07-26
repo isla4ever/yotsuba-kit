@@ -1,6 +1,6 @@
 {
   "name": "@iyotsuba/schedule-elements",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Framework-agnostic <ys-schedule> custom element. Works in React, plain HTML, uni-app H5, Ionic — anywhere the DOM is.",
   "type": "module",
   "license": "MIT",

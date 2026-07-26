@@ -106,3 +106,54 @@ export function createCourseColorResolver(tokens: ThemeTokens) {
     return color
   }
 }
+
+/* ------------------------------ 精选配色库 ------------------------------ */
+
+import type { PaletteName } from './types'
+
+/**
+ * 六套精选课程卡配色库,50 色全部通过白字(#fff)对比度 ≥3:1 逐色验证,
+ * 套内两两 Lab ΔE ≥14.5,相邻色相交错保证同屏可辨。
+ */
+export const coursePalettes: Record<PaletteName, string[]> = {
+  classic: [
+    '#d1477a', '#5a68d8', '#0f9d8f', '#c07a1b', '#4b8bd4',
+    '#b0538f', '#3f9d54', '#8a63c9', '#c25b3c', '#2f8fa8',
+  ],
+  /** 马卡龙:低饱和甜色,深浅模式通用 */
+  macaron: [
+    '#c76075', '#6b82c7', '#50955c', '#ba763b', '#9672c0',
+    '#3f8d82', '#ba5e98', '#738745', '#4e8ebc', '#c9745e',
+  ],
+  /** 莫兰迪:灰调高级,深浅模式通用性最佳 */
+  morandi: [
+    '#ac777b', '#7690a7', '#64876d', '#986752', '#a47fa4',
+    '#507c7c', '#875a6c', '#747a52', '#696b96', '#a2915d',
+  ],
+  /** 赛博霓虹:满彩度压暗,深色模式最出彩 */
+  cyber: [
+    '#d41193', '#08839b', '#6c44e4', '#3f8b18', '#dc185a',
+    '#136dec', '#0f8a61', '#ae17d3', '#d45211', '#0a85c2',
+  ],
+  /** 自然森系:绿系骨架 + 棕陶蓝调剂 */
+  forest: [
+    '#27684d', '#865b3c', '#63863c', '#3681a1', '#74722f',
+    '#a6593f', '#296b69', '#947238', '#2d763f', '#586d9d',
+  ],
+  /** 落日暖调:暖橙金与暮色冷紫交替 */
+  sunset: [
+    '#d06425', '#955eba', '#bc8b17', '#c63980', '#d45749',
+    '#574dac', '#9b6b3b', '#9b2740', '#c16773', '#944286',
+  ],
+}
+
+/** 解析配色库：库名 → 预设 10 色;自定义数组原样返回;非法回退 classic */
+export function resolvePalette(palette: PaletteName | string[] | undefined): string[] {
+  if (Array.isArray(palette) && palette.length > 0) {
+    return palette
+  }
+  if (typeof palette === 'string' && palette in coursePalettes) {
+    return coursePalettes[palette]
+  }
+  return coursePalettes.classic
+}

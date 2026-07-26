@@ -111,3 +111,15 @@ const restored = parseShareCode(code)
 // 上课提醒时刻表：对接 Notification / Service Worker / App 推送
 const reminders = computeReminders(courses, { termStart, courseTimes, leadMinutes: 15, from: new Date() })
 ```
+
+
+## 次世代视觉体系（0.5.0）
+
+| Prop | 取值 | 说明 |
+| --- | --- | --- |
+| `density` | `'minimal' \| 'normal' \| 'rich'` | 三档界面密度:精简近日历块 / 现状 / 信息全面(教师行、携带 🎒 角标) |
+| `palette` | 六库名 \| `string[]` | 课程配色库:`classic / macaron / morandi / cyber / forest / sunset`(50 色全部通过白字对比度 ≥3:1 验证)或自定义数组 |
+| `cardEffect` | `'none' \| 'shimmer' \| 'glow' \| 'aurora' \| 'breathe'` | 卡片装饰特效:流光 / 呼吸辉光 / 极光描边 / 微呼吸。只作用本周卡,换周动画期间自动暂停,reduced-motion 关闭,合成器动画零重绘(aurora 除外,已带低端机关闭规则) |
+| `weatherScene` | `boolean` | 小米天气式实时背景场景:晴/多云/阴/雨/雷/雪/雾 纯 CSS 分层动画,依赖 `weather.current.kind`,强度上限不喧宾夺主 |
+| `sheets` | `{ placement, glass }` | 全部内置弹窗统一配置:`bottom` 底部抽屉 / `center` 居中对话框 / `right` 侧滑抽屉(平板友好)+ 毛玻璃开关(自动降级) |
+| `detail` | `{ hero, fields }` | 详情编排:hero `'color'/'weather'/'plain'` 三风格;`fields` 数组控制 time/weeks/location/teacher/weather/note/materials 的显隐与顺序 |

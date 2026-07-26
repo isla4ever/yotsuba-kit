@@ -57,9 +57,106 @@ export const noneTransition: TransitionSpec = {
   leave: { opacity: 0, easing: 'linear' },
 }
 
+/**
+ * 3D 立方体翻页（旗舰预设）：整页作为立方体的一个面翻走,新周作为相邻面翻入。
+ * 几何要求：两面同时长同缓动、leaveLagMs=0,perspective 静态挂在共同父容器,
+ * 铰链(各自 transform-origin)在数学上严格重合。
+ */
+export const cubeTransition: TransitionSpec = {
+  name: 'cube',
+  mode: 'page',
+  totalMs: 520,
+  enterMs: 520,
+  leaveMs: 520,
+  leaveLagMs: 0,
+  stableSkip: false,
+  perspectivePx: 1200,
+  delayFor: () => 0,
+  enter: {
+    opacity: 0.7,
+    translateX: 100,
+    rotateY: 90,
+    transformOrigin: 'left center',
+    directional: ['translateX', 'rotateY', 'transformOrigin'],
+    easing: 'cubic-bezier(0.35, 0, 0.22, 1)',
+  },
+  leave: {
+    opacity: 0.7,
+    translateX: -100,
+    rotateY: -90,
+    transformOrigin: 'right center',
+    directional: ['translateX', 'rotateY', 'transformOrigin'],
+    easing: 'cubic-bezier(0.35, 0, 0.22, 1)',
+  },
+}
+
+/**
+ * 深度缩放交叠（Shared-Axis Z）：下一周从"更深处"浮上来,旧周冲向镜头淡出;
+ * 上一周反之。Z 轴纵深语言,四预设中最轻(两层 scale+opacity)。
+ */
+export const zoomTransition: TransitionSpec = {
+  name: 'zoom',
+  mode: 'layer',
+  totalMs: 420,
+  enterMs: 420,
+  leaveMs: 300,
+  leaveLagMs: 0,
+  stableSkip: false,
+  delayFor: () => 0,
+  enter: {
+    opacity: 0,
+    scale: 0.92,
+    transformOrigin: '50% 40%',
+    directional: ['scale'],
+    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+  },
+  leave: {
+    opacity: 0,
+    scale: 1.06,
+    transformOrigin: '50% 40%',
+    directional: ['scale'],
+    easing: 'cubic-bezier(0.3, 0, 0.8, 0.15)',
+  },
+}
+
+/**
+ * 逐格重力坠落 + 回弹：新周课程像雨点坠入各自格位(easeOutBack 微回弹),
+ * 确定性哈希抖动打破机械感;stableSkip 让动画只发生在"变化的课"上,兼作换周 diff 高亮。
+ */
+export const dropTransition: TransitionSpec = {
+  name: 'drop',
+  mode: 'per-cell',
+  totalMs: 640,
+  enterMs: 360,
+  leaveMs: 160,
+  leaveLagMs: 80,
+  stableSkip: true,
+  delayFor(cell: TransitionCell, ctx: TransitionContext): number {
+    const column = ctx.direction === 1 ? cell.weekday - 1 : ctx.columns - cell.weekday
+    const row = cell.startSection - 1
+    const jitter = ((cell.weekday * 7 + cell.startSection * 13) % 4) * 8
+    return Math.min(row * 16 + Math.max(0, column) * 12 + jitter, 280)
+  },
+  enter: {
+    opacity: 0,
+    translateY: -24,
+    directional: ['translateY'],
+    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+  },
+  leave: {
+    opacity: 0,
+    translateY: 10,
+    directional: ['translateY'],
+    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+  },
+}
+
 export const builtinTransitions = {
   wave: waveTransition,
   slide: slideTransition,
+  cube: cubeTransition,
+  zoom: zoomTransition,
+  drop: dropTransition,
   none: noneTransition,
 } as const
 

@@ -52,14 +52,89 @@ describe('ysSchedule', () => {
     await nextTick()
     const entering = wrapper.find('.ys-schedule__layer--current')
     const leaving = wrapper.find('.ys-schedule__layer--leaving')
-    expect(entering.attributes('style')).toContain('ys-page-enter')
-    expect(entering.attributes('style')).toContain('--ys-from-x: 100%')
-    expect(leaving.attributes('style')).toContain('ys-page-leave')
+    expect(entering.attributes('style')).toContain('ys-layer-in')
+    expect(entering.attributes('style')).toContain('translateX(100%)')
+    expect(leaving.attributes('style')).toContain('ys-layer-out')
     // 轻量波浪淡入叠加在换页上
     expect(
       entering.find('.ys-schedule__card-slot').attributes('style'),
     ).toContain('ys-cell-stagger')
     vi.advanceTimersByTime(600)
+    vi.useRealTimers()
+  })
+
+  it('cube transition rotates layers with a board perspective', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsSchedule, {
+      props: { courses, week: 2, reduceMotion: false, transition: 'cube' },
+    })
+    await wrapper.setProps({ week: 1 }) // 上一周:方向镜像
+    await nextTick()
+    expect(wrapper.find('.ys-schedule__board').attributes('style')).toContain('perspective: 1200px')
+    const entering = wrapper.find('.ys-schedule__layer--current')
+    expect(entering.attributes('style')).toContain('rotateY(-90deg)')
+    expect(entering.attributes('style')).toContain('translateX(-100%)')
+    expect(entering.attributes('style')).toContain('transform-origin: right center')
+    vi.advanceTimersByTime(700)
+    vi.useRealTimers()
+  })
+
+  it('zoom transition mirrors scale around 1 by direction', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsSchedule, {
+      props: { courses, week: 1, reduceMotion: false, transition: 'zoom' },
+    })
+    await wrapper.setProps({ week: 2 })
+    await nextTick()
+    const entering = wrapper.find('.ys-schedule__layer--current')
+    expect(entering.attributes('style')).toContain('scale(0.92)')
+    vi.advanceTimersByTime(600)
+    await wrapper.setProps({ week: 1 }) // 反向 → 1.08
+    await nextTick()
+    expect(wrapper.find('.ys-schedule__layer--current').attributes('style')).toContain('scale(1.08')
+    vi.advanceTimersByTime(600)
+    vi.useRealTimers()
+  })
+
+  it('drop transition falls per-cell and keeps stable cells still', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsSchedule, {
+      props: { courses, week: 1, reduceMotion: false, transition: 'drop' },
+    })
+    await wrapper.setProps({ week: 2 })
+    await nextTick()
+    const slots = wrapper.findAll('.ys-schedule__layer--current .ys-schedule__card-slot')
+    const styles = slots.map(slot => slot.attributes('style') ?? '')
+    // 稳定卡(高等数学 两周不变)无动画;变化卡(体育→非本周)带坠落进场
+    expect(styles.some(style => !style.includes('animation'))).toBe(true)
+    expect(styles.some(style => style.includes('ys-cell-in') && style.includes('translateY(-24px)'))).toBe(true)
+    vi.advanceTimersByTime(800)
+    vi.useRealTimers()
+  })
+
+  it('applies palette presets and density classes', () => {
+    const wrapper = mount(YsSchedule, {
+      props: { courses, week: 1, reduceMotion: true, palette: 'cyber', density: 'minimal' },
+    })
+    expect(wrapper.classes()).toContain('ys-density-minimal')
+    // cyber 首色应用到首个课程卡
+    expect(wrapper.find('.ys-course-card').attributes('style')).toContain('#d41193')
+    // minimal 下不渲染周数标签
+    expect(wrapper.find('.ys-course-card__weeks').exists()).toBe(false)
+  })
+
+  it('pauses card effects while transitioning', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsSchedule, {
+      props: { courses, week: 1, reduceMotion: false, cardEffect: 'shimmer' },
+    })
+    expect(wrapper.attributes('data-ys-effect')).toBe('shimmer')
+    await wrapper.setProps({ week: 2 })
+    await nextTick()
+    expect(wrapper.attributes('data-ys-effect')).toBeUndefined()
+    vi.advanceTimersByTime(700)
+    await nextTick()
+    expect(wrapper.attributes('data-ys-effect')).toBe('shimmer')
     vi.useRealTimers()
   })
 

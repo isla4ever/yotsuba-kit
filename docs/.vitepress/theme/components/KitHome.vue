@@ -66,13 +66,43 @@ const transition = ref<BuiltinTransitionName>('wave')
 const demoTheme = ref<'light' | 'dark'>('light')
 const demoTopBar = ref<'compact' | 'standard' | 'expanded'>('standard')
 const demoDays = ref<5 | 7>(7)
+const demoDensity = ref<ScheduleDensity>('normal')
+const demoPalette = ref<PaletteName>('classic')
+const demoEffect = ref<CardEffect>('none')
+const demoWeather = ref<WeatherKind | 'off'>('off')
 const scheduleRef = ref<InstanceType<typeof YsSchedule> | null>(null)
 const autoPlay = ref(true)
-const transitions: Array<{ name: BuiltinTransitionName, label: string }> = [
-  { name: 'wave', label: 'wave' },
-  { name: 'slide', label: 'slide' },
-  { name: 'none', label: 'none' },
+const transitions: BuiltinTransitionName[] = ['wave', 'slide', 'cube', 'zoom', 'drop']
+const palettes: Array<{ name: PaletteName, swatch: string }> = [
+  { name: 'classic', swatch: '#3d76dd' },
+  { name: 'macaron', swatch: '#c76075' },
+  { name: 'morandi', swatch: '#7690a7' },
+  { name: 'cyber', swatch: '#d41193' },
+  { name: 'forest', swatch: '#27684d' },
+  { name: 'sunset', swatch: '#d06425' },
 ]
+const effects: CardEffect[] = ['none', 'shimmer', 'glow', 'aurora', 'breathe']
+const weatherKinds: Array<{ kind: WeatherKind | 'off', label: string }> = [
+  { kind: 'off', label: '关' },
+  { kind: 'clear', label: '晴' },
+  { kind: 'rain', label: '雨' },
+  { kind: 'snow', label: '雪' },
+  { kind: 'storm', label: '雷' },
+  { kind: 'fog', label: '雾' },
+]
+
+const demoWeatherSnapshot = computed<WeatherSnapshot | null>(() => {
+  if (demoWeather.value === 'off') {
+    return null
+  }
+  const today = new Date()
+  const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  return {
+    current: { kind: demoWeather.value, temperatureC: 24, label: '演示' },
+    daily: [{ date: key, kind: demoWeather.value, highC: 28, lowC: 19 }],
+    updatedAt: 0,
+  }
+})
 const termStart = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - ((new Date().getDay() || 7) - 1))
 
 // 8 节次,贴近真实课表密度
@@ -170,7 +200,7 @@ function spotlight(event: MouseEvent) {
           </button>
         </div>
 
-        <!-- 手机壳实机演示：390px 真实密度 × 0.72 缩放,贴合壳体 -->
+        <!-- 手机壳实机演示：390px 真实密度 × 0.77 缩放,右侧配置边栏 -->
         <div class="hero__demo">
           <div class="phone" :class="{ 'is-dark': demoTheme === 'dark' }">
             <div class="phone__screen">
@@ -186,9 +216,15 @@ function spotlight(event: MouseEvent) {
                   :course-times="demoTimes"
                   :top-bar="demoTopBar"
                   :theme="demoTheme"
+                  :density="demoDensity"
+                  :palette="demoPalette"
+                  :card-effect="demoEffect"
+                  :weather-scene="demoWeather !== 'off'"
+                  :weather="demoWeatherSnapshot"
                   :swipeable="true"
                   week-picker="builtin"
                   course-detail="builtin"
+                  :detail="{ hero: demoWeather !== 'off' ? 'weather' : 'color' }"
                   :guide="{ mode: 'walkthrough', steps: defaultScheduleGuideSteps }"
                   @course-tap="autoPlay = false"
                   @week-picker-open="autoPlay = false"
@@ -197,47 +233,68 @@ function spotlight(event: MouseEvent) {
             </div>
           </div>
 
-          <div class="hero__panel">
-            <div class="hero__panel-row">
-              <span class="hero__panel-label">动画</span>
-              <button
-                v-for="item in transitions"
-                :key="item.name"
-                type="button"
-                class="hero__chip"
-                :class="{ 'is-active': transition === item.name }"
-                @click="transition = item.name"
-              >
-                {{ item.label }}
-              </button>
+          <aside class="hero__panel">
+            <div class="hero__panel-group">
+              <span class="hero__panel-label">换周动画</span>
+              <div class="hero__panel-chips">
+                <button v-for="name in transitions" :key="name" type="button" class="hero__chip" :class="{ 'is-active': transition === name }" @click="transition = name">
+                  {{ name }}
+                </button>
+              </div>
             </div>
-            <div class="hero__panel-row">
-              <span class="hero__panel-label">顶栏</span>
-              <button
-                v-for="preset in (['compact', 'standard', 'expanded'] as const)"
-                :key="preset"
-                type="button"
-                class="hero__chip"
-                :class="{ 'is-active': demoTopBar === preset }"
-                @click="demoTopBar = preset"
-              >
-                {{ preset }}
-              </button>
+            <div class="hero__panel-group">
+              <span class="hero__panel-label">配色库</span>
+              <div class="hero__panel-chips">
+                <button
+                  v-for="item in palettes"
+                  :key="item.name"
+                  type="button"
+                  class="hero__swatch"
+                  :class="{ 'is-active': demoPalette === item.name }"
+                  :style="{ background: item.swatch }"
+                  :aria-label="item.name"
+                  :title="item.name"
+                  @click="demoPalette = item.name"
+                />
+              </div>
             </div>
-            <div class="hero__panel-row">
+            <div class="hero__panel-group">
+              <span class="hero__panel-label">卡片特效</span>
+              <div class="hero__panel-chips">
+                <button v-for="name in effects" :key="name" type="button" class="hero__chip" :class="{ 'is-active': demoEffect === name }" @click="demoEffect = name">
+                  {{ name }}
+                </button>
+              </div>
+            </div>
+            <div class="hero__panel-group">
+              <span class="hero__panel-label">天气场景</span>
+              <div class="hero__panel-chips">
+                <button v-for="item in weatherKinds" :key="item.kind" type="button" class="hero__chip" :class="{ 'is-active': demoWeather === item.kind }" @click="demoWeather = item.kind">
+                  {{ item.label }}
+                </button>
+              </div>
+            </div>
+            <div class="hero__panel-group">
+              <span class="hero__panel-label">密度 / 顶栏</span>
+              <div class="hero__panel-chips">
+                <button v-for="d in (['minimal', 'normal', 'rich'] as const)" :key="d" type="button" class="hero__chip" :class="{ 'is-active': demoDensity === d }" @click="demoDensity = d">
+                  {{ d }}
+                </button>
+                <button v-for="preset in (['compact', 'standard', 'expanded'] as const)" :key="preset" type="button" class="hero__chip" :class="{ 'is-active': demoTopBar === preset }" @click="demoTopBar = preset">
+                  {{ preset[0] }}
+                </button>
+              </div>
+            </div>
+            <div class="hero__panel-group">
               <span class="hero__panel-label">更多</span>
-              <button type="button" class="hero__chip" :class="{ 'is-active': demoTheme === 'dark' }" @click="demoTheme = demoTheme === 'dark' ? 'light' : 'dark'">
-                深色
-              </button>
-              <button type="button" class="hero__chip" :class="{ 'is-active': demoDays === 5 }" @click="demoDays = demoDays === 5 ? 7 : 5">
-                隐藏周末
-              </button>
-              <button type="button" class="hero__chip hero__chip--guide" @click="playGuide">
-                手把手引导 ✨
-              </button>
+              <div class="hero__panel-chips">
+                <button type="button" class="hero__chip" :class="{ 'is-active': demoTheme === 'dark' }" @click="demoTheme = demoTheme === 'dark' ? 'light' : 'dark'">深色</button>
+                <button type="button" class="hero__chip" :class="{ 'is-active': demoDays === 5 }" @click="demoDays = demoDays === 5 ? 7 : 5">藏周末</button>
+                <button type="button" class="hero__chip hero__chip--guide" @click="playGuide">引导 ✨</button>
+              </div>
             </div>
-          </div>
-          <p class="hero__demo-tip">{{ t.demoTip }}</p>
+            <p class="hero__demo-tip">{{ t.demoTip }}</p>
+          </aside>
         </div>
       </div>
 
@@ -412,8 +469,17 @@ function spotlight(event: MouseEvent) {
 .hero__install-copy { font-size: 12px; color: var(--kh-text-2); }
 .hero__install.is-copied .hero__install-copy { color: var(--kh-accent-3); }
 
-/* 手机壳：390px 真实密度 × 0.77 缩放,严丝合缝 */
-.hero__demo { display: flex; flex-direction: column; align-items: center; }
+/* 手机壳：390px 真实密度 × 0.77 缩放,严丝合缝;右侧配置边栏 */
+.hero__demo {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+@media (width <= 1080px) {
+  .hero__demo { flex-direction: column; align-items: center; }
+}
 
 .phone {
   position: relative;
@@ -433,6 +499,9 @@ function spotlight(event: MouseEvent) {
   overflow: hidden;
   background: #f6f7f9;
   border-radius: 30px;
+  /* transform 子层会逃逸祖先圆角裁剪,clip-path 保证四角封死 */
+  clip-path: inset(0 round 30px);
+  isolation: isolate;
 }
 
 .phone.is-dark .phone__screen { background: #14171c; }
@@ -449,28 +518,43 @@ function spotlight(event: MouseEvent) {
 
 .phone__viewport > * { height: 100%; }
 
-/* 配置面板 */
+/* 右侧配置边栏 */
 .hero__panel {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 12px 14px;
-  margin-top: 16px;
+  gap: 11px;
+  width: 216px;
+  padding: 14px;
   background: rgb(255 255 255 / 5%);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 14px;
 }
 
-.hero__panel-row { display: flex; gap: 6px; align-items: center; }
+.hero__panel-group { display: flex; flex-direction: column; gap: 6px; }
+
+.hero__panel-chips { display: flex; flex-wrap: wrap; gap: 5px; }
 
 .hero__panel-label {
-  width: 34px;
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--kh-text-2);
+  letter-spacing: 0.4px;
 }
 
+.hero__swatch {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.hero__swatch:hover { transform: scale(1.12); }
+.hero__swatch.is-active { border-color: #fff; }
+
 .hero__chip {
-  padding: 4px 12px;
+  padding: 3px 10px;
   font-size: 12px;
   font-weight: 700;
   color: var(--kh-text-2);

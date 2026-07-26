@@ -9,6 +9,7 @@ import YsSchedule from './YsSchedule.vue'
 import YsSheet from './YsSheet.vue'
 import YsToday from './YsToday.vue'
 import YsTopBar from './YsTopBar.vue'
+import YsWeatherScene from './YsWeatherScene.vue'
 import YsWeekPicker from './YsWeekPicker.vue'
 
 export {
@@ -22,6 +23,7 @@ export {
   YsSheet,
   YsToday,
   YsTopBar,
+  YsWeatherScene,
   YsWeekPicker,
 }
 export { defaultScheduleGuideSteps } from './guidePresets'
@@ -36,6 +38,12 @@ export default { install }
 
 export type {
   BuiltinTransitionName,
+  CardEffect,
+  DetailField,
+  DetailHero,
+  PaletteName,
+  ScheduleDensity,
+  SheetPlacement,
   Course,
   CourseTime,
   DayOverride,
