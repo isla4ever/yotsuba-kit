@@ -23,6 +23,10 @@ import {
   tokensToCssVars,
 } from '@yotsuba/schedule-core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import YsCourseCard from './YsCourseCard.vue'
+import YsCourseDetail from './YsCourseDetail.vue'
+import YsTopBar from './YsTopBar.vue'
+import YsWeekPicker from './YsWeekPicker.vue'
 
 const props = withDefaults(defineProps<{
   courses: Course[]
@@ -34,13 +38,27 @@ const props = withDefaults(defineProps<{
   visibleDays?: 5 | 6 | 7
   rowHeight?: number
   breakAfterSection?: number
-  header?: 'compact' | 'standard' | 'expanded' | 'none'
+  /** 顶部周信息栏（compact 单行极简 / standard 微信版复刻 / expanded 双行信息面板） */
+  topBar?: 'compact' | 'standard' | 'expanded' | 'none'
+  topBarTitle?: string
+  /** 星期/日期表头行 */
+  weekdayBar?: boolean
   transition?: BuiltinTransitionName | TransitionSpec
   theme?: 'light' | 'dark' | Partial<ThemeTokens>
   weather?: WeatherSnapshot | null
   reduceMotion?: boolean | 'auto'
   swipeable?: boolean
-  locale?: { weekdays?: string[], inactiveBadge?: string, breakLabel?: string }
+  /** 内置周选择器；'none' 时点击周数仅发出 week-picker-open 事件由宿主接管 */
+  weekPicker?: 'builtin' | 'none'
+  /** 内置课程详情；'none' 时点课仅发出 course-tap 事件由宿主接管 */
+  courseDetail?: 'builtin' | 'none'
+  locale?: {
+    weekdays?: string[]
+    inactiveBadge?: string
+    makeupBadge?: string
+    breakLabel?: string
+    weekPickerTitle?: string
+  }
 }>(), {
   week: 1,
   totalWeeks: 20,
@@ -49,12 +67,16 @@ const props = withDefaults(defineProps<{
   visibleDays: 7,
   rowHeight: 56,
   breakAfterSection: 4,
-  header: 'standard',
+  topBar: 'standard',
+  topBarTitle: '本学期课表',
+  weekdayBar: true,
   transition: 'wave',
   theme: 'light',
   weather: null,
   reduceMotion: 'auto',
   swipeable: true,
+  weekPicker: 'builtin',
+  courseDetail: 'builtin',
 })
 
 const emit = defineEmits<{
@@ -63,11 +85,12 @@ const emit = defineEmits<{
   'courseTap': [course: DisplayCourse, stack: DisplayCourse[]]
   'dayTap': [weekday: number, date: Date | null]
   'swipe': [direction: 1 | -1]
+  'weekPickerOpen': []
   'transitionStart': [spec: TransitionSpec]
   'transitionEnd': [spec: TransitionSpec]
 }>()
 
-/* ------------------------------ 基础派生 ------------------------------ */
+/* ------------------------------ 主题与派生 ------------------------------ */
 
 const tokens = computed<ThemeTokens>(() => {
   if (props.theme === 'light') {
@@ -120,18 +143,23 @@ function dayDate(weekday: number): Date | null {
   return props.termStart ? dateFor(props.termStart, props.week, weekday) : null
 }
 
-function dayWeather(weekday: number) {
-  const date = dayDate(weekday)
-  if (!date || !props.weather) {
-    return null
-  }
-  const key = formatDateKey(date)
-  return props.weather.daily.find(item => item.date === key) ?? null
-}
-
 function isToday(weekday: number): boolean {
   const date = dayDate(weekday)
   return Boolean(date && formatDateKey(date) === formatDateKey(new Date()))
+}
+
+const weatherText = computed(() => {
+  const current = props.weather?.current
+  if (!current) {
+    return undefined
+  }
+  return current.temperatureC != null ? `${Math.round(current.temperatureC)}°` : current.label
+})
+
+function stackFor(model: WeekModel, course: DisplayCourse): DisplayCourse[] {
+  return model.overlapGroups.find(group =>
+    group.courses.some(item => item.displayId === course.displayId),
+  )?.courses ?? [course]
 }
 
 /* ------------------------------ 换周与过渡 ------------------------------ */
@@ -157,7 +185,6 @@ function cellSignature(course: DisplayCourse): string {
 }
 
 function topSignatures(model: WeekModel): Set<string> {
-  // 每个重叠组只有最后渲染的成员是视觉顶卡；单卡即自身
   const order = new Map(model.courses.map((course, index) => [course.displayId, index]))
   const covered = new Set<string>()
   const signatures = new Set<string>()
@@ -253,7 +280,23 @@ function delayMs(course: Pick<DisplayCourse, 'weekday' | 'startSection'>): numbe
 
 function enterStyle(course: DisplayCourse, model: WeekModel) {
   const position = gridPosition(course)
-  if (!waveActive.value || spec.value.mode !== 'per-cell') {
+  if (!waveActive.value) {
+    return position
+  }
+  if (spec.value.mode === 'page') {
+    const stagger = spec.value.cellStagger
+    if (!stagger) {
+      return position
+    }
+    // 真实换页 + 轻量波浪淡入（复刻 Flutter 旧版：周一列先亮，节次微差）
+    return {
+      ...position,
+      '--ys-stagger-from': String(stagger.fromOpacity),
+      'animation': `ys-cell-stagger ${stagger.durationMs}ms ${stagger.easing} both`,
+      'animationDelay': `${(course.weekday - 1) * stagger.stepMs + Math.max(0, course.startSection - 1) * 4}ms`,
+    }
+  }
+  if (spec.value.mode !== 'per-cell') {
     return position
   }
   if (coveredIds.value.has(`${model.week}:${course.displayId}`)) {
@@ -323,11 +366,27 @@ function badgeStyle(group: WeekModel['overlapGroups'][number], layer: 'enter' | 
 }
 
 function layerStyle(layer: 'enter' | 'leave') {
-  if (!waveActive.value || spec.value.mode !== 'layer') {
+  if (!waveActive.value) {
     return undefined
   }
   const keyframe = layer === 'enter' ? spec.value.enter : spec.value.leave
   const sign = waveDirection.value
+  if (spec.value.mode === 'page') {
+    // 真实整页滑动：translateX 单位为 %
+    if (layer === 'enter') {
+      return {
+        '--ys-from-x': `${(keyframe.translateX ?? 100) * sign}%`,
+        'animation': `ys-page-enter ${spec.value.enterMs}ms ${keyframe.easing} both`,
+      }
+    }
+    return {
+      '--ys-to-x': `${(keyframe.translateX ?? -100) * sign}%`,
+      'animation': `ys-page-leave ${spec.value.leaveMs}ms ${keyframe.easing} both`,
+    }
+  }
+  if (spec.value.mode !== 'layer') {
+    return undefined
+  }
   const translateX = (keyframe.translateX ?? 0) * sign
   if (layer === 'enter') {
     return {
@@ -399,6 +458,33 @@ function onPointerEnd(event: PointerEvent) {
   }
 }
 
+/* ------------------------------ 内置面板 ------------------------------ */
+
+const weekPickerOpen = ref(false)
+const detailOpen = ref(false)
+const detailStack = ref<DisplayCourse[]>([])
+
+function requestWeekPicker() {
+  emit('weekPickerOpen')
+  if (props.weekPicker === 'builtin') {
+    weekPickerOpen.value = true
+  }
+}
+
+function pickWeek(week: number) {
+  weekPickerOpen.value = false
+  setWeek(week)
+}
+
+function handleCourseTap(course: DisplayCourse) {
+  const stack = stackFor(currentModel.value, course)
+  emit('courseTap', course, stack)
+  if (props.courseDetail === 'builtin') {
+    detailStack.value = stack
+    detailOpen.value = true
+  }
+}
+
 /* ------------------------------ 对外方法 ------------------------------ */
 
 function setWeek(week: number) {
@@ -408,11 +494,29 @@ function setWeek(week: number) {
   }
 }
 
+function openCourse(courseId: string) {
+  const course = currentModel.value.courses.find(
+    item => item.id === courseId || item.displayId === courseId,
+  )
+  if (course) {
+    detailStack.value = stackFor(currentModel.value, course)
+    detailOpen.value = true
+  }
+}
+
+function closeSheets() {
+  weekPickerOpen.value = false
+  detailOpen.value = false
+}
+
 defineExpose({
   setWeek,
   getWeek: () => props.week,
   next: () => setWeek(props.week + 1),
   previous: () => setWeek(props.week - 1),
+  openCourse,
+  openWeekPicker: requestWeekPicker,
+  closeSheets,
 })
 
 onBeforeUnmount(() => {
@@ -423,8 +527,30 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="ys-schedule" :class="[`ys-header--${header}`]" :style="cssVars">
-    <div v-if="header !== 'none'" class="ys-schedule__header">
+  <div class="ys-schedule" :class="{ 'ys-dark': theme === 'dark' }" :style="cssVars">
+    <slot
+      name="top-bar"
+      :week="week"
+      :total-weeks="totalWeeks"
+      :open-week-picker="requestWeekPicker"
+    >
+      <YsTopBar
+        v-if="topBar !== 'none'"
+        :preset="topBar"
+        :week="week"
+        :total-weeks="totalWeeks"
+        :term-start="termStart"
+        :title="topBarTitle"
+        :weather-text="weatherText"
+        @pick-week="requestWeekPicker"
+      >
+        <template #tools>
+          <slot name="top-bar-tools" />
+        </template>
+      </YsTopBar>
+    </slot>
+
+    <div v-if="weekdayBar" class="ys-schedule__weekday-bar">
       <div class="ys-schedule__rail-head" aria-hidden="true">
         <span>星期</span>
         <small v-if="termStart">日期</small>
@@ -442,18 +568,12 @@ onBeforeUnmount(() => {
           :weekday="weekday"
           :label="weekdayLabels[weekday - 1]"
           :date="dayDate(weekday)"
-          :weather="dayWeather(weekday)"
         >
           <span class="ys-schedule__day-label">{{ weekdayLabels[weekday - 1] }}</span>
-          <span v-if="header !== 'compact' && termStart" class="ys-schedule__day-date">
+          <span v-if="termStart" class="ys-schedule__day-date">
             {{ (dayDate(weekday)?.getMonth() ?? 0) + 1 }}/{{ dayDate(weekday)?.getDate() }}
           </span>
-          <span v-if="header === 'expanded' && dayWeather(weekday)" class="ys-schedule__day-weather">
-            <i class="ys-weather-dot" :data-kind="dayWeather(weekday)?.kind" />
-            <template v-if="dayWeather(weekday)?.highC != null">
-              {{ Math.round(dayWeather(weekday)!.lowC ?? 0) }}~{{ Math.round(dayWeather(weekday)!.highC ?? 0) }}°
-            </template>
-          </span>
+          <i v-if="isToday(weekday)" class="ys-schedule__day-dot" aria-hidden="true" />
         </slot>
       </button>
     </div>
@@ -490,27 +610,27 @@ onBeforeUnmount(() => {
           aria-hidden="true"
         >
           <div
-            v-for="group in leavingModel.overlapGroups"
-            :key="group.id"
-            class="ys-schedule__badge"
-            :style="badgeStyle(group, 'leave')"
-          >
-            {{ group.courses.length }}
-          </div>
-          <div
             v-for="course in leavingModel.courses"
             :key="course.displayId"
             class="ys-schedule__card-slot"
             :style="leaveStyle(course, leavingModel)"
           >
             <slot name="course" :course="course" :active="course.active" :color="colorFor(course.name, course.color)">
-              <div class="ys-course" :class="{ 'is-inactive': !course.active }" :style="{ '--ys-course-color': colorFor(course.name, course.color) }">
-                <span v-if="!course.active" class="ys-course__badge">{{ locale?.inactiveBadge ?? '非本周' }}</span>
-                <strong class="ys-course__name">{{ course.name }}</strong>
-                <span v-if="course.location" class="ys-course__location">@{{ course.location }}</span>
-                <span class="ys-course__weeks">({{ course.startWeek }}-{{ course.endWeek }}周)</span>
-              </div>
+              <YsCourseCard
+                :course="course"
+                :color="colorFor(course.name, course.color)"
+                :inactive-badge="locale?.inactiveBadge ?? '非本周'"
+                :makeup-badge="locale?.makeupBadge ?? '补班'"
+              />
             </slot>
+          </div>
+          <div
+            v-for="group in leavingModel.overlapGroups"
+            :key="group.id"
+            class="ys-schedule__badge"
+            :style="badgeStyle(group, 'leave')"
+          >
+            {{ group.courses.length }}
           </div>
         </div>
 
@@ -520,6 +640,22 @@ onBeforeUnmount(() => {
           :style="[{ gridTemplateRows: rowTemplate }, layerStyle('enter')]"
         >
           <div
+            v-for="course in currentModel.courses"
+            :key="course.displayId"
+            class="ys-schedule__card-slot"
+            :style="enterStyle(course, currentModel)"
+          >
+            <slot name="course" :course="course" :active="course.active" :color="colorFor(course.name, course.color)">
+              <YsCourseCard
+                :course="course"
+                :color="colorFor(course.name, course.color)"
+                :inactive-badge="locale?.inactiveBadge ?? '非本周'"
+                :makeup-badge="locale?.makeupBadge ?? '补班'"
+                @select="handleCourseTap"
+              />
+            </slot>
+          </div>
+          <div
             v-for="group in currentModel.overlapGroups"
             :key="group.id"
             class="ys-schedule__badge"
@@ -528,25 +664,34 @@ onBeforeUnmount(() => {
           >
             {{ group.courses.length }}
           </div>
-          <div
-            v-for="course in currentModel.courses"
-            :key="course.displayId"
-            class="ys-schedule__card-slot"
-            :style="enterStyle(course, currentModel)"
-            @click="emit('courseTap', course, currentModel.overlapGroups.find(g => g.courses.some(c => c.displayId === course.displayId))?.courses ?? [course])"
-          >
-            <slot name="course" :course="course" :active="course.active" :color="colorFor(course.name, course.color)">
-              <div class="ys-course" :class="{ 'is-inactive': !course.active }" :style="{ '--ys-course-color': colorFor(course.name, course.color) }">
-                <span v-if="!course.active" class="ys-course__badge">{{ locale?.inactiveBadge ?? '非本周' }}</span>
-                <strong class="ys-course__name">{{ course.name }}</strong>
-                <span v-if="course.location" class="ys-course__location">@{{ course.location }}</span>
-                <span class="ys-course__weeks">({{ course.startWeek }}-{{ course.endWeek }}周)</span>
-              </div>
-            </slot>
-          </div>
         </div>
       </div>
     </div>
+
+    <YsWeekPicker
+      :open="weekPickerOpen"
+      :week="week"
+      :total-weeks="totalWeeks"
+      :title="locale?.weekPickerTitle ?? '选择教学周'"
+      :vars="cssVars"
+      @close="weekPickerOpen = false"
+      @select="pickWeek"
+    />
+
+    <YsCourseDetail
+      :open="detailOpen"
+      :stack="detailStack"
+      :color-for="colorFor"
+      :vars="cssVars"
+      @close="detailOpen = false"
+    >
+      <template #detail-extra="slotProps">
+        <slot name="detail-extra" v-bind="slotProps" />
+      </template>
+      <template #detail-actions="slotProps">
+        <slot name="detail-actions" v-bind="slotProps" />
+      </template>
+    </YsCourseDetail>
   </div>
 </template>
 
@@ -562,16 +707,13 @@ onBeforeUnmount(() => {
   background: var(--ys-canvas);
 }
 
-.ys-schedule__header {
+.ys-schedule__weekday-bar {
   display: grid;
   grid-template-columns: 48px repeat(v-bind(visibleDays), minmax(0, 1fr));
   flex-shrink: 0;
+  height: 54px;
   border-bottom: 1px solid var(--ys-border);
 }
-
-.ys-header--compact .ys-schedule__header { height: 44px; }
-.ys-header--standard .ys-schedule__header { height: 66px; }
-.ys-header--expanded .ys-schedule__header { height: 92px; }
 
 .ys-schedule__rail-head {
   display: flex;
@@ -583,6 +725,7 @@ onBeforeUnmount(() => {
 }
 
 .ys-schedule__day {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -592,6 +735,7 @@ onBeforeUnmount(() => {
   padding: 0;
   font: inherit;
   color: var(--ys-text-2);
+  cursor: pointer;
   background: transparent;
   border: 0;
 }
@@ -601,22 +745,17 @@ onBeforeUnmount(() => {
   background: var(--ys-accent-soft);
 }
 
-.ys-schedule__day-label { font-size: 13px; font-weight: 700; }
+.ys-schedule__day-label { font-size: 13px; font-weight: 750; }
 .ys-schedule__day-date { font-size: 9px; color: var(--ys-text-3); }
-.ys-schedule__day-weather { display: inline-flex; gap: 3px; align-items: center; font-size: 9px; color: var(--ys-text-3); }
 
-.ys-weather-dot {
-  width: 8px;
-  height: 8px;
+.ys-schedule__day-dot {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  background: var(--ys-accent);
   border-radius: 50%;
-  background: var(--ys-text-3);
 }
-
-.ys-weather-dot[data-kind="clear"] { background: #f2b13c; }
-.ys-weather-dot[data-kind="cloudy"], .ys-weather-dot[data-kind="overcast"] { background: #9aa7b8; }
-.ys-weather-dot[data-kind="rain"], .ys-weather-dot[data-kind="drizzle"] { background: #4a90d9; }
-.ys-weather-dot[data-kind="storm"] { background: #6f5bd0; }
-.ys-weather-dot[data-kind="snow"] { background: #8fc7e8; }
 
 .ys-schedule__body {
   display: grid;
@@ -624,6 +763,14 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   touch-action: pan-y;
+}
+
+/* 顶部 6px 呼吸位：保证首行卡片的重叠角标（-3px 出血）不被裁剪 */
+.ys-schedule__rail,
+.ys-schedule__board,
+.ys-schedule__layer {
+  box-sizing: border-box;
+  padding-top: 6px;
 }
 
 .ys-schedule__rail { display: grid; }
@@ -667,11 +814,10 @@ onBeforeUnmount(() => {
   z-index: 0;
   min-width: 0;
   min-height: 0;
-  cursor: pointer;
 }
 
 .ys-schedule__badge {
-  z-index: 3;
+  z-index: 18;
   display: grid;
   place-items: center;
   place-self: start end;
@@ -679,62 +825,20 @@ onBeforeUnmount(() => {
   height: 16px;
   margin: -3px -3px 0 0;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 750;
   color: #fff;
   pointer-events: none;
   background: #1c232d;
   border: 1px solid rgb(255 255 255 / 82%);
   border-radius: 50%;
+  box-shadow: 0 2px 7px rgb(0 0 0 / 28%);
 }
 
-.ys-course {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: center;
-  justify-content: center;
-  height: calc(100% - 6px);
-  padding: 4px 3px;
-  margin: 3px 2px;
-  overflow: hidden;
-  color: #fff;
-  text-align: center;
-  background: var(--ys-course-color);
-  border-radius: 8px;
+.ys-schedule.ys-dark .ys-schedule__badge {
+  color: #17191d;
+  background: #f3f5f7;
+  border-color: rgb(255 255 255 / 36%);
 }
-
-.ys-course.is-inactive {
-  color: var(--ys-text-2);
-  background: var(--ys-surface-2);
-  border: 1px solid var(--ys-border);
-}
-
-.ys-course__badge {
-  padding: 0 4px;
-  font-size: 7px;
-  font-weight: 700;
-  background: var(--ys-surface-1);
-  border-radius: 3px;
-}
-
-.ys-course__name {
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: 11px;
-  line-height: 1.2;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.ys-course__location {
-  overflow: hidden;
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.86;
-}
-
-.ys-course__weeks { font-size: 8px; opacity: 0.85; }
 
 @keyframes ys-enter {
   from {
@@ -755,6 +859,21 @@ onBeforeUnmount(() => {
 
 @keyframes ys-fade-out {
   to { opacity: 0; }
+}
+
+@keyframes ys-cell-stagger {
+  from { opacity: var(--ys-stagger-from, 0.3); }
+  to { opacity: 1; }
+}
+
+@keyframes ys-page-enter {
+  from { transform: translate3d(var(--ys-from-x, 100%), 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes ys-page-leave {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(var(--ys-to-x, -100%), 0, 0); }
 }
 
 @keyframes ys-layer-enter {

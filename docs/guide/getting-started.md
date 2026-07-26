@@ -53,7 +53,6 @@ const courses: Course[] = [
     :courses="courses"
     :term-start="new Date(2026, 8, 7)"
     transition="wave"
-    header="standard"
     style="height: 640px"
   />
 </template>

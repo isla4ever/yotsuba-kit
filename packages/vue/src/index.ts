@@ -1,7 +1,12 @@
 import type { App } from 'vue'
+import YsCourseCard from './YsCourseCard.vue'
+import YsCourseDetail from './YsCourseDetail.vue'
 import YsSchedule from './YsSchedule.vue'
+import YsSheet from './YsSheet.vue'
+import YsTopBar from './YsTopBar.vue'
+import YsWeekPicker from './YsWeekPicker.vue'
 
-export { YsSchedule }
+export { YsCourseCard, YsCourseDetail, YsSchedule, YsSheet, YsTopBar, YsWeekPicker }
 
 export function install(app: App): void {
   app.component('YsSchedule', YsSchedule)

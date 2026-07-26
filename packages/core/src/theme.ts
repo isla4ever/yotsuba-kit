@@ -3,13 +3,16 @@ export interface ThemeTokens {
   canvas: string
   surface1: string
   surface2: string
+  surface3: string
   text1: string
   text2: string
   text3: string
   border: string
+  borderStrong: string
   gridLine: string
   accent: string
   accentSoft: string
+  focusRing: string
   success: string
   warning: string
   danger: string
@@ -21,13 +24,16 @@ export const lightTheme: ThemeTokens = {
   canvas: '#f6f7f9',
   surface1: '#ffffff',
   surface2: '#eef1f5',
+  surface3: '#e3e8ee',
   text1: '#1c232d',
   text2: '#45505e',
   text3: '#8a94a3',
   border: '#dde2e9',
+  borderStrong: '#c5cdd8',
   gridLine: '#e8ebf0',
   accent: '#3d76dd',
   accentSoft: '#e4edfc',
+  focusRing: '#9dbdf2',
   success: '#0fa47f',
   warning: '#d97a12',
   danger: '#d1403f',
@@ -42,13 +48,16 @@ export const darkTheme: ThemeTokens = {
   canvas: '#14171c',
   surface1: '#1d2128',
   surface2: '#242a33',
+  surface3: '#2c333e',
   text1: '#eef1f5',
   text2: '#b8c0cc',
   text3: '#7c8697',
   border: '#333a45',
+  borderStrong: '#465060',
   gridLine: '#2a313b',
   accent: '#6c9aec',
   accentSoft: '#22314d',
+  focusRing: '#3d5a90',
   success: '#35b795',
   warning: '#e09a4a',
   danger: '#e06a67',
@@ -64,13 +73,16 @@ export function tokensToCssVars(tokens: ThemeTokens): Record<string, string> {
     '--ys-canvas': tokens.canvas,
     '--ys-surface-1': tokens.surface1,
     '--ys-surface-2': tokens.surface2,
+    '--ys-surface-3': tokens.surface3,
     '--ys-text-1': tokens.text1,
     '--ys-text-2': tokens.text2,
     '--ys-text-3': tokens.text3,
     '--ys-border': tokens.border,
+    '--ys-border-strong': tokens.borderStrong,
     '--ys-grid-line': tokens.gridLine,
     '--ys-accent': tokens.accent,
     '--ys-accent-soft': tokens.accentSoft,
+    '--ys-focus-ring': tokens.focusRing,
     '--ys-success': tokens.success,
     '--ys-warning': tokens.warning,
     '--ys-danger': tokens.danger,

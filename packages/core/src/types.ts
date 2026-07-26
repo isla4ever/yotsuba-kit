@@ -98,11 +98,12 @@ export interface KeyframeSpec {
 /**
  * 换周过渡协议。
  * mode `per-cell`：逐格波浪（每格用 delayFor 计算延迟）；
+ * mode `page`：真实整页滑动（translateX 单位为 %），可叠加 cellStagger 轻量波浪淡入；
  * mode `layer`：整层交叉过渡（delayFor 恒为 0）。
  */
 export interface TransitionSpec {
   name: string
-  mode: 'per-cell' | 'layer'
+  mode: 'per-cell' | 'page' | 'layer'
   totalMs: number
   enterMs: number
   leaveMs: number
@@ -111,8 +112,16 @@ export interface TransitionSpec {
   delayFor: (cell: TransitionCell, ctx: TransitionContext) => number
   enter: KeyframeSpec
   leave: KeyframeSpec
-  /** 换周前后视觉不变的格子是否完全静止（推荐 true） */
+  /** 换周前后视觉不变的格子是否完全静止（per-cell 推荐 true） */
   stableSkip: boolean
+  /** page 模式：进场卡片的轻量逐列淡入 */
+  cellStagger?: {
+    fromOpacity: number
+    /** 每列递增延迟 */
+    stepMs: number
+    durationMs: number
+    easing: string
+  }
 }
 
 /* ------------------------------ 天气协议 ------------------------------ */

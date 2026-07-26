@@ -25,32 +25,22 @@ export const waveTransition: TransitionSpec = {
   leave: { opacity: 0, easing: 'cubic-bezier(0.4, 0, 0.6, 1)' },
 }
 
-/** 方向性滑动交叉：整层轻位移 + 淡入淡出，经典手感 */
+/**
+ * 真实整页滑动（复刻 Flutter PageView 手感）：
+ * 整页按方向滑出/滑入（translateX 100%），进场卡片叠加轻量逐列淡入。
+ */
 export const slideTransition: TransitionSpec = {
   name: 'slide',
-  mode: 'layer',
-  totalMs: 320,
-  enterMs: 300,
-  leaveMs: 220,
+  mode: 'page',
+  totalMs: 380,
+  enterMs: 340,
+  leaveMs: 340,
   leaveLagMs: 0,
   stableSkip: false,
   delayFor: () => 0,
-  enter: { opacity: 0, translateX: 24, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' },
-  leave: { opacity: 0, translateX: -16, easing: 'cubic-bezier(0.4, 0, 0.6, 1)' },
-}
-
-/** 全局交叉淡入淡出：无位移，最克制 */
-export const fadeTransition: TransitionSpec = {
-  name: 'fade',
-  mode: 'layer',
-  totalMs: 220,
-  enterMs: 200,
-  leaveMs: 160,
-  leaveLagMs: 0,
-  stableSkip: false,
-  delayFor: () => 0,
-  enter: { opacity: 0, easing: 'linear' },
-  leave: { opacity: 0, easing: 'linear' },
+  enter: { opacity: 1, translateX: 100, easing: 'cubic-bezier(0.25, 0.72, 0.2, 1)' },
+  leave: { opacity: 1, translateX: -100, easing: 'cubic-bezier(0.25, 0.72, 0.2, 1)' },
+  cellStagger: { fromOpacity: 0.3, stepMs: 16, durationMs: 260, easing: 'ease-out' },
 }
 
 /** 直切（无障碍 / 截图场景） */
@@ -70,7 +60,6 @@ export const noneTransition: TransitionSpec = {
 export const builtinTransitions = {
   wave: waveTransition,
   slide: slideTransition,
-  fade: fadeTransition,
   none: noneTransition,
 } as const
 
@@ -102,6 +91,12 @@ export function validateTransition(spec: TransitionSpec, ctx: TransitionContext 
   }
   if (spec.mode === 'per-cell' && !spec.stableSkip) {
     warnings.push('per-cell 模式建议 stableSkip: true，否则未变化的格子会重复脉冲')
+  }
+  if (spec.cellStagger) {
+    const staggerEnd = spec.cellStagger.stepMs * (ctx.columns - 1) + spec.cellStagger.durationMs
+    if (staggerEnd > spec.totalMs) {
+      warnings.push('cellStagger 最后一列的淡入超出 totalMs，会被硬切')
+    }
   }
   return warnings
 }
