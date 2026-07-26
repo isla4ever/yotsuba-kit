@@ -1,6 +1,6 @@
 {
   "name": "@iyotsuba/schedule-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-free schedule engine: Chinese academic-term semantics (odd/even weeks, makeup days, overlaps), transition timelines, theme tokens, weather & guide protocols.",
   "type": "module",
   "license": "MIT",

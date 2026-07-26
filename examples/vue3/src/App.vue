@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { BuiltinTransitionName, Course } from '@iyotsuba/schedule-vue'
-import { YsSchedule } from '@iyotsuba/schedule-vue'
+import { defaultScheduleGuideSteps, YsSchedule, YsToday } from '@iyotsuba/schedule-vue'
 import { computed, ref } from 'vue'
 
 const week = ref(1)
+const view = ref<'schedule' | 'today'>('schedule')
+const scheduleRef = ref<InstanceType<typeof YsSchedule> | null>(null)
 const transitions: BuiltinTransitionName[] = ['wave', 'slide', 'none']
 const transitionIndex = ref(0)
 const transition = computed(() => transitions[transitionIndex.value]!)
@@ -33,6 +35,8 @@ const courses: Course[] = [
 <template>
   <div class="demo" :class="{ dark }">
     <YsSchedule
+      v-if="view === 'schedule'"
+      ref="scheduleRef"
       v-model:week="week"
       class="demo__schedule"
       :courses="courses"
@@ -40,11 +44,25 @@ const courses: Course[] = [
       :transition="transition"
       :top-bar="topBar"
       :theme="dark ? 'dark' : 'light'"
+      :guide="{ mode: 'walkthrough', steps: defaultScheduleGuideSteps }"
     />
+    <div v-else class="demo__schedule demo__today">
+      <YsToday
+        :courses="courses"
+        :term-start="termStart"
+        :theme="dark ? 'dark' : 'light'"
+      />
+    </div>
 
     <!-- 演示控件：底部 dock，不占顶部空间 -->
     <div class="dock" :class="{ 'is-open': dockOpen }">
       <template v-if="dockOpen">
+        <button class="dock__item" @click="view = view === 'schedule' ? 'today' : 'schedule'">
+          {{ view === 'schedule' ? '今日指挥台' : '返回课表' }}
+        </button>
+        <button v-if="view === 'schedule'" class="dock__item" @click="dockOpen = false; scheduleRef?.startGuide()">
+          手把手引导
+        </button>
         <button class="dock__item" @click="transitionIndex = (transitionIndex + 1) % transitions.length">
           动画<b>{{ transition }}</b>
         </button>
@@ -73,6 +91,7 @@ const courses: Course[] = [
 }
 
 .demo__schedule { flex: 1; min-height: 0; }
+.demo__today { overflow-y: auto; background: #f6f7f9; }
 
 .dock {
   position: absolute;

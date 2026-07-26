@@ -28,7 +28,8 @@ export default defineConfig({
           text: '组件',
           items: [
             { text: 'Schedule 课表', link: '/components/schedule' },
-            { text: 'Today 今日指挥台（P2）', link: '/components/today' },
+            { text: 'Today 今日指挥台', link: '/components/today' },
+            { text: 'Guide 引导', link: '/components/guide' },
           ],
         },
         {

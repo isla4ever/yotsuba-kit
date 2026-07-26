@@ -5,6 +5,8 @@ import type {
   CourseTime,
   DayOverride,
   DisplayCourse,
+  GuideConfig,
+  GuideStep,
   ThemeTokens,
   TransitionSpec,
   WeatherSnapshot,
@@ -25,6 +27,7 @@ import {
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import YsCourseCard from './YsCourseCard.vue'
 import YsCourseDetail from './YsCourseDetail.vue'
+import YsGuide from './YsGuide.vue'
 import YsTopBar from './YsTopBar.vue'
 import YsWeekPicker from './YsWeekPicker.vue'
 
@@ -52,6 +55,8 @@ const props = withDefaults(defineProps<{
   weekPicker?: 'builtin' | 'none'
   /** 内置课程详情；'none' 时点课仅发出 course-tap 事件由宿主接管 */
   courseDetail?: 'builtin' | 'none'
+  /** 引导配置（tips / spotlight / walkthrough 三模式），配合 startGuide() 触发 */
+  guide?: GuideConfig | false
   locale?: {
     weekdays?: string[]
     inactiveBadge?: string
@@ -77,6 +82,7 @@ const props = withDefaults(defineProps<{
   swipeable: true,
   weekPicker: 'builtin',
   courseDetail: 'builtin',
+  guide: false,
 })
 
 const emit = defineEmits<{
@@ -88,6 +94,8 @@ const emit = defineEmits<{
   'weekPickerOpen': []
   'transitionStart': [spec: TransitionSpec]
   'transitionEnd': [spec: TransitionSpec]
+  'guideStep': [step: GuideStep, index: number]
+  'guideFinish': []
 }>()
 
 /* ------------------------------ 主题与派生 ------------------------------ */
@@ -454,6 +462,7 @@ function onPointerEnd(event: PointerEvent) {
   if (Math.abs(deltaX) >= width * 0.2 || velocity >= 0.52) {
     const direction: 1 | -1 = deltaX < 0 ? 1 : -1
     emit('swipe', direction)
+    guideRef.value?.notify(direction === 1 ? 'swipe-left' : 'swipe-right')
     setWeek(props.week + direction)
   }
 }
@@ -509,6 +518,13 @@ function closeSheets() {
   detailOpen.value = false
 }
 
+const rootEl = ref<HTMLElement | null>(null)
+const guideRef = ref<InstanceType<typeof YsGuide> | null>(null)
+
+function startGuide() {
+  guideRef.value?.start()
+}
+
 defineExpose({
   setWeek,
   getWeek: () => props.week,
@@ -517,6 +533,7 @@ defineExpose({
   openCourse,
   openWeekPicker: requestWeekPicker,
   closeSheets,
+  startGuide,
 })
 
 onBeforeUnmount(() => {
@@ -527,7 +544,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="ys-schedule" :class="{ 'ys-dark': theme === 'dark' }" :style="cssVars">
+  <div ref="rootEl" class="ys-schedule" :class="{ 'ys-dark': theme === 'dark' }" :style="cssVars">
     <slot
       name="top-bar"
       :week="week"
@@ -550,7 +567,7 @@ onBeforeUnmount(() => {
       </YsTopBar>
     </slot>
 
-    <div v-if="weekdayBar" class="ys-schedule__weekday-bar">
+    <div v-if="weekdayBar" class="ys-schedule__weekday-bar" data-ys="weekday-bar">
       <div class="ys-schedule__rail-head" aria-hidden="true">
         <span>星期</span>
         <small v-if="termStart">日期</small>
@@ -581,6 +598,7 @@ onBeforeUnmount(() => {
     <div
       ref="scroller"
       class="ys-schedule__body"
+      data-ys="grid"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerEnd"
@@ -640,9 +658,10 @@ onBeforeUnmount(() => {
           :style="[{ gridTemplateRows: rowTemplate }, layerStyle('enter')]"
         >
           <div
-            v-for="course in currentModel.courses"
+            v-for="(course, courseIndex) in currentModel.courses"
             :key="course.displayId"
             class="ys-schedule__card-slot"
+            :data-ys="courseIndex === currentModel.courses.length - 1 ? 'course-card' : undefined"
             :style="enterStyle(course, currentModel)"
           >
             <slot name="course" :course="course" :active="course.active" :color="colorFor(course.name, course.color)">
@@ -676,6 +695,16 @@ onBeforeUnmount(() => {
       :vars="cssVars"
       @close="weekPickerOpen = false"
       @select="pickWeek"
+    />
+
+    <YsGuide
+      v-if="guide"
+      ref="guideRef"
+      :config="guide"
+      :root="rootEl"
+      :vars="cssVars"
+      @step="(step, index) => emit('guideStep', step, index)"
+      @finish="emit('guideFinish')"
     />
 
     <YsCourseDetail

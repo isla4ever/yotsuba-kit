@@ -30,7 +30,7 @@ const dateRange = computed(() => {
   <header class="ys-topbar" :class="`ys-topbar--${preset}`">
     <!-- compact：单行极简，周数即按钮，右侧仅日期范围 -->
     <template v-if="preset === 'compact'">
-      <button type="button" class="ys-topbar__week ys-topbar__week--sm" aria-label="选择教学周" @click="emit('pickWeek')">
+      <button type="button" class="ys-topbar__week ys-topbar__week--sm" aria-label="选择教学周" data-ys="top-bar-week" @click="emit('pickWeek')">
         第 {{ week }} 周 <i class="ys-topbar__caret" aria-hidden="true" />
       </button>
       <span v-if="dateRange" class="ys-topbar__range">{{ dateRange }}</span>
@@ -42,7 +42,7 @@ const dateRange = computed(() => {
     <template v-else-if="preset === 'standard'">
       <div class="ys-topbar__brand">
         <span class="ys-topbar__eyebrow">{{ title }}</span>
-        <button type="button" class="ys-topbar__week" aria-label="选择教学周" @click="emit('pickWeek')">
+        <button type="button" class="ys-topbar__week" aria-label="选择教学周" data-ys="top-bar-week" @click="emit('pickWeek')">
           第 {{ week }} 周 <i class="ys-topbar__caret" aria-hidden="true" />
         </button>
       </div>
@@ -55,7 +55,7 @@ const dateRange = computed(() => {
       <div class="ys-topbar__panel">
         <div class="ys-topbar__panel-main">
           <span class="ys-topbar__eyebrow">{{ title }}</span>
-          <button type="button" class="ys-topbar__week" aria-label="选择教学周" @click="emit('pickWeek')">
+          <button type="button" class="ys-topbar__week" aria-label="选择教学周" data-ys="top-bar-week" @click="emit('pickWeek')">
             第 {{ week }} 周 <i class="ys-topbar__caret" aria-hidden="true" />
           </button>
           <span class="ys-topbar__spacer" />

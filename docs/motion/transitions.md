@@ -8,7 +8,13 @@
 | `slide` | page | **真实整页滑动**(经典 PageView 手感):整页按方向滑出/滑入,进场课程叠加轻量逐列淡入 | 喜欢明确翻页感 |
 | `none` | layer | 直切 | 无障碍 / 截图 |
 
-> 每个预设的循环演示视频与可交互 live demo 将在 P2 文档完善阶段补充。
+## 实况演示
+
+下面是三个真实组件实例,每 2.4 秒自动换周(非视频,可直接对比手感):
+
+<ClientOnly>
+  <TransitionShowcase />
+</ClientOnly>
 
 ## 设计原则(wave)
 
