@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BuiltinTransitionName, Course } from '@iyotsuba/schedule-vue'
+import type { BuiltinTransitionName, Course, DayPlanMap } from '@iyotsuba/schedule-vue'
 import { defaultScheduleGuideSteps, YsSchedule, YsToday } from '@iyotsuba/schedule-vue'
 import { computed, ref } from 'vue'
 
@@ -13,23 +13,56 @@ const topBars = ['compact', 'standard', 'expanded'] as const
 const topBarIndex = ref(1)
 const topBar = computed(() => topBars[topBarIndex.value]!)
 const dark = ref(false)
+const editable = ref(false)
 const dockOpen = ref(false)
+const background = ref<{ image?: string, opacity?: number } | null>(null)
 
 const termStart = new Date(2026, 6, 20) // 演示：本周为第 1 周
 
-const courses: Course[] = [
-  { id: 'math', name: '高等数学', teacher: '陈老师', location: '教1-201', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20 },
+const courses = ref<Course[]>([
+  { id: 'math', name: '高等数学', teacher: '陈老师', location: '教1-201', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20, materials: ['教材', '计算器'] },
   { id: 'ds', name: '数据结构', location: '教2-105', weekday: 1, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
   { id: 'en', name: '大学英语', location: '外语楼302', weekday: 2, startSection: 3, endSection: 4, startWeek: 1, endWeek: 20 },
   { id: 'intro', name: '专业导论', location: '报告厅', weekday: 2, startSection: 9, endSection: 10, startWeek: 2, endWeek: 5 },
   { id: 'prog', name: '程序设计', location: '机房A', weekday: 3, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
   { id: 'custom', name: '自习（自定义）', location: '图书馆', weekday: 3, startSection: 9, endSection: 10, startWeek: 1, endWeek: 20, custom: true },
-  { id: 'pe', name: '体育（单周）', location: '东操场', weekday: 4, startSection: 1, endSection: 2, startWeek: 1, endWeek: 16, parity: 'odd' },
+  { id: 'pe', name: '体育（单周）', location: '东操场', weekday: 4, startSection: 1, endSection: 2, startWeek: 1, endWeek: 16, parity: 'odd', materials: ['运动鞋'] },
   { id: 'la', name: '线性代数（双周）', location: '教1-305', weekday: 4, startSection: 1, endSection: 2, startWeek: 2, endWeek: 16, parity: 'even' },
   { id: 'phy', name: '大学物理', location: '理科楼210', weekday: 5, startSection: 3, endSection: 4, startWeek: 1, endWeek: 16 },
-  { id: 'chem', name: '化学实验', location: '实验楼404', weekday: 5, startSection: 7, endSection: 9, startWeek: 1, endWeek: 8 },
+  { id: 'chem', name: '化学实验', location: '实验楼404', weekday: 5, startSection: 7, endSection: 9, startWeek: 1, endWeek: 8, materials: ['实验服', '护目镜'] },
   { id: 'pol', name: '形势与政策', location: '教3-101', weekday: 6, startSection: 3, endSection: 4, startWeek: 1, endWeek: 4 },
-]
+])
+
+const dayPlans = ref<DayPlanMap>({
+  '2026-07-20': [
+    { id: 'p1', text: '交高数作业', done: false },
+    { id: 'p2', text: '预约实验室', done: true },
+  ],
+})
+
+/* 受控数据回传：宿主持有数据,组件只发事件 */
+function onCourseAdd(course: Course) {
+  courses.value = [...courses.value, course]
+}
+function onCourseUpdate(course: Course, previousId: string) {
+  courses.value = courses.value.map(item => item.id === previousId ? course : item)
+}
+function onCourseRemove(course: { id: string }) {
+  courses.value = courses.value.filter(item => item.id !== course.id)
+}
+function onPlanAdd(dateKey: string, text: string) {
+  const list = dayPlans.value[dateKey] ?? []
+  dayPlans.value = { ...dayPlans.value, [dateKey]: [...list, { id: `p${Date.now()}`, text, done: false }] }
+}
+function onPlanToggle(dateKey: string, id: string) {
+  dayPlans.value = {
+    ...dayPlans.value,
+    [dateKey]: (dayPlans.value[dateKey] ?? []).map(plan => plan.id === id ? { ...plan, done: !plan.done } : plan),
+  }
+}
+function onPlanRemove(dateKey: string, id: string) {
+  dayPlans.value = { ...dayPlans.value, [dateKey]: (dayPlans.value[dateKey] ?? []).filter(plan => plan.id !== id) }
+}
 </script>
 
 <template>
@@ -44,13 +77,24 @@ const courses: Course[] = [
       :transition="transition"
       :top-bar="topBar"
       :theme="dark ? 'dark' : 'light'"
+      :editable="editable"
+      :day-plans="dayPlans"
+      :background="background"
       :guide="{ mode: 'walkthrough', steps: defaultScheduleGuideSteps }"
+      @course-add="onCourseAdd"
+      @course-update="onCourseUpdate"
+      @course-remove="onCourseRemove"
+      @plan-add="onPlanAdd"
+      @plan-toggle="onPlanToggle"
+      @plan-remove="onPlanRemove"
+      @background-change="(url) => background = url ? { image: url, opacity: 0.35 } : null"
     />
     <div v-else class="demo__schedule demo__today">
       <YsToday
         :courses="courses"
         :term-start="termStart"
         :theme="dark ? 'dark' : 'light'"
+        :day-plans="dayPlans"
       />
     </div>
 
@@ -60,15 +104,23 @@ const courses: Course[] = [
         <button class="dock__item" @click="view = view === 'schedule' ? 'today' : 'schedule'">
           {{ view === 'schedule' ? '今日指挥台' : '返回课表' }}
         </button>
-        <button v-if="view === 'schedule'" class="dock__item" @click="dockOpen = false; scheduleRef?.startGuide()">
-          手把手引导
-        </button>
-        <button class="dock__item" @click="transitionIndex = (transitionIndex + 1) % transitions.length">
-          动画<b>{{ transition }}</b>
-        </button>
-        <button class="dock__item" @click="topBarIndex = (topBarIndex + 1) % topBars.length">
-          顶栏<b>{{ topBar }}</b>
-        </button>
+        <template v-if="view === 'schedule'">
+          <button class="dock__item" :class="{ 'is-on': editable }" @click="editable = !editable">
+            {{ editable ? '退出编辑' : '编辑模式' }}
+          </button>
+          <button class="dock__item" @click="dockOpen = false; scheduleRef?.openBackgroundPicker()">
+            自定义背景
+          </button>
+          <button class="dock__item" @click="dockOpen = false; scheduleRef?.startGuide()">
+            手把手引导
+          </button>
+          <button class="dock__item" @click="transitionIndex = (transitionIndex + 1) % transitions.length">
+            动画<b>{{ transition }}</b>
+          </button>
+          <button class="dock__item" @click="topBarIndex = (topBarIndex + 1) % topBars.length">
+            顶栏<b>{{ topBar }}</b>
+          </button>
+        </template>
         <button class="dock__item" @click="dark = !dark">
           {{ dark ? '浅色' : '深色' }}
         </button>
@@ -118,6 +170,7 @@ const courses: Course[] = [
   box-shadow: 0 4px 14px rgb(0 0 0 / 22%);
 }
 
+.dock__item.is-on { background: #3d76dd; }
 .dock__item b { font-weight: 750; }
 
 .dock__toggle {

@@ -7,6 +7,7 @@ import type {
   Course,
   CourseTime,
   DayOverride,
+  DayPlanMap,
   DisplayCourse,
   ThemeTokens,
   WeatherKind,
@@ -43,6 +44,8 @@ const props = withDefaults(defineProps<{
   /** 当前时刻（默认实时，测试/演示可注入） */
   now?: Date
   title?: string
+  /** 日计划（与 YsSchedule 共用同一份即联动） */
+  dayPlans?: DayPlanMap
 }>(), {
   courses: () => [],
   totalWeeks: 20,
@@ -51,12 +54,15 @@ const props = withDefaults(defineProps<{
   widgets: () => [
     { id: 'next-course' },
     { id: 'today-timeline' },
+    { id: 'readiness' },
+    { id: 'plans' },
     { id: 'week-glance' },
     { id: 'weather' },
   ],
   theme: 'light',
   weather: null,
   title: '今日',
+  dayPlans: () => ({}),
 })
 
 const emit = defineEmits<{
@@ -155,6 +161,15 @@ const todayWeather = computed(() =>
   props.weather?.daily.find(item => item.date === formatDateKey(now.value)) ?? null,
 )
 
+/** 今日携带物品汇总（按课程） */
+const readiness = computed(() =>
+  todayCourses.value
+    .filter(item => item.state !== 'done' && item.course.materials?.length)
+    .map(item => ({ course: item.course, materials: item.course.materials! })),
+)
+
+const todayPlans = computed(() => props.dayPlans[formatDateKey(now.value)] ?? [])
+
 const visibleWidgets = computed(() => props.widgets.filter(item => item.enabled !== false))
 
 const dateLabel = computed(() => {
@@ -227,6 +242,30 @@ const dateLabel = computed(() => {
             <p v-else class="ys-today__empty">今天全天无课</p>
           </template>
 
+          <!-- 内置：记得带 -->
+          <template v-else-if="widget.id === 'readiness'">
+            <h3 class="ys-today__widget-title">记得带 🎒</h3>
+            <ul v-if="readiness.length" class="ys-today__readiness">
+              <li v-for="item in readiness" :key="item.course.displayId">
+                <i class="ys-today__dot" :style="{ background: colorFor(item.course.name, item.course.color) }" />
+                <span class="ys-today__name">{{ item.course.name }}</span>
+                <span class="ys-today__materials">{{ item.materials.join('、') }}</span>
+              </li>
+            </ul>
+            <p v-else class="ys-today__empty">今天没有需要携带的物品</p>
+          </template>
+
+          <!-- 内置：今日计划 -->
+          <template v-else-if="widget.id === 'plans'">
+            <h3 class="ys-today__widget-title">今日计划 · 剩 {{ todayPlans.filter(p => !p.done).length }} 项</h3>
+            <ul v-if="todayPlans.length" class="ys-today__plans">
+              <li v-for="plan in todayPlans" :key="plan.id" :class="{ 'is-done': plan.done }">
+                <i>{{ plan.done ? '✓' : '○' }}</i>{{ plan.text }}
+              </li>
+            </ul>
+            <p v-else class="ys-today__empty">今天还没有计划</p>
+          </template>
+
           <!-- 内置：本周概览 -->
           <template v-else-if="widget.id === 'week-glance'">
             <h3 class="ys-today__widget-title">概览</h3>
@@ -290,9 +329,44 @@ const dateLabel = computed(() => {
 }
 
 .ys-today__widget[data-widget="next-course"],
-.ys-today__widget[data-widget="today-timeline"] {
+.ys-today__widget[data-widget="today-timeline"],
+.ys-today__widget[data-widget="readiness"],
+.ys-today__widget[data-widget="plans"] {
   grid-column: span 2;
 }
+
+.ys-today__readiness,
+.ys-today__plans {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.ys-today__readiness li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.ys-today__materials {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ys-text-2);
+}
+
+.ys-today__plans li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.ys-today__plans li.is-done { color: var(--ys-text-3); text-decoration: line-through; }
+.ys-today__plans li i { font-style: normal; color: var(--ys-success); }
 
 .ys-today__widget-title {
   margin: 0 0 8px;

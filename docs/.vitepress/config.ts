@@ -22,6 +22,10 @@ const zhSidebar = {
         { text: 'Events 事件', link: '/components/schedule#events' },
         { text: 'Methods 方法', link: '/components/schedule#methods-ref-暴露' },
         { text: 'Slots 插槽', link: '/components/schedule#slots' },
+        { text: '编辑模式', link: '/components/schedule#编辑模式' },
+        { text: '日计划', link: '/components/schedule#日计划' },
+        { text: '自定义背景', link: '/components/schedule#自定义背景' },
+        { text: '导出 / 分享 / 提醒', link: '/components/schedule#导出-分享与提醒-core-纯函数' },
       ],
     },
     {

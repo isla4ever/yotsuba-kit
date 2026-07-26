@@ -62,3 +62,52 @@
 | `course` | `{ course, active, color }` | 整体替换课程卡 |
 | `detail-extra` | `{ course }` | 内置详情追加内容(作业、计划等) |
 | `detail-actions` | `{ course, close }` | 内置详情底部操作区 |
+
+## 编辑模式
+
+`editable: true` 开启微信版同款编辑体验:空白格**点击或拖选节次范围** → 打开内置课程表单(名称/地点/教师/星期/节次/周次/单双周/调色板/携带物品/备注,冲突实时提示);详情面板出现 **编辑** 与 **两段确认删除**。
+
+数据完全受控——组件只发事件,由宿主写回 `courses`:
+
+```vue
+<YsSchedule
+  :courses="courses"
+  editable
+  @course-add="c => courses.push(c)"
+  @course-update="(c, prevId) => replaceById(prevId, c)"
+  @course-remove="c => removeById(c.id)"
+/>
+```
+
+不想用内置表单:`course-form: 'none'`,监听 `cell-select(weekday, start, end)` / `course-form-request(prefill)` 自行接管;或随时用方法 `openCourseForm(prefill?)` 主动唤起。
+
+## 日计划
+
+传入受控的 `dayPlans`(`dateKey → DayPlan[]`),表头日期自动出现**未完成角标**;点日期打开内置日计划面板(增/勾/删都只发事件:`plan-add/plan-toggle/plan-remove`)。`day-planner: 'none'` 可关,`openDayPlanner(dateKey)` 可开。与 `<YsToday>` 传同一份 `dayPlans` 即联动出"今日计划"widget。
+
+## 自定义背景
+
+```vue
+<YsSchedule
+  :background="{ image: url, opacity: 0.35, blur: 0 }"
+  @background-change="url => save(url)"
+/>
+```
+
+`openBackgroundPicker()` 打开内置**上传 + 拖动/缩放裁剪**面板(按课表容器比例出图,产出 dataURL 由宿主持久化);设置背景后顶栏与表头自动切换毛玻璃。`background-picker: 'none'` 可完全自行实现。
+
+## 导出、分享与提醒（core 纯函数）
+
+```ts
+import { computeReminders, createShareCode, exportICS, parseShareCode } from '@iyotsuba/schedule-core'
+
+// ICS：写 .ics 文件 / 日历订阅源,导入系统日历、Google Calendar、Outlook
+const ics = exportICS(courses, { termStart, courseTimes, totalWeeks: 20 })
+
+// 课表分享码：口令/二维码皆可
+const code = createShareCode(courses)
+const restored = parseShareCode(code)
+
+// 上课提醒时刻表：对接 Notification / Service Worker / App 推送
+const reminders = computeReminders(courses, { termStart, courseTimes, leadMinutes: 15, from: new Date() })
+```

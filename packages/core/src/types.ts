@@ -18,6 +18,10 @@ export interface Course {
   /** 任意合法 CSS 颜色；缺省时由主题的调色板自动分配 */
   color?: string
   custom?: boolean
+  /** 携带物品/上课准备（教材、实验服、球拍…），详情与今日板块展示"记得带" */
+  materials?: string[]
+  /** 备注 */
+  note?: string
   /** 宿主自定义附加数据，组件库原样透传 */
   meta?: Record<string, unknown>
 }

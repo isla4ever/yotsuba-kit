@@ -1,5 +1,6 @@
 export * from './adapters'
 export * from './engine'
+export * from './exchange'
 export * from './guide'
 export * from './motion'
 export * from './theme'

@@ -4,6 +4,7 @@ import type {
   Course,
   CourseTime,
   DayOverride,
+  DayPlanMap,
   DisplayCourse,
   GuideConfig,
   GuideStep,
@@ -20,13 +21,17 @@ import {
   dateFor,
   formatDateKey,
   lightTheme,
+  pendingPlanCount,
   resolveTransition,
   STANDARD_COURSE_TIMES,
   tokensToCssVars,
 } from '@iyotsuba/schedule-core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import YsBackgroundSheet from './YsBackgroundSheet.vue'
 import YsCourseCard from './YsCourseCard.vue'
 import YsCourseDetail from './YsCourseDetail.vue'
+import YsCourseForm from './YsCourseForm.vue'
+import YsDayPlanner from './YsDayPlanner.vue'
 import YsGuide from './YsGuide.vue'
 import YsTopBar from './YsTopBar.vue'
 import YsWeekPicker from './YsWeekPicker.vue'
@@ -58,6 +63,17 @@ const props = withDefaults(defineProps<{
   courseDetail?: 'builtin' | 'none'
   /** 引导配置（tips / spotlight / walkthrough 三模式），配合 startGuide() 触发 */
   guide?: GuideConfig | false
+  /** 编辑模式：空白格拖选新增、详情内编辑/删除（数据受控，通过 course-* 事件回传） */
+  editable?: boolean
+  /** 内置课程表单；'none' 时拖选仅发出 cell-select / course-form-request */
+  courseForm?: 'builtin' | 'none'
+  /** 日计划数据（受控）：dateKey → 计划列表，表头显示未完成角标 */
+  dayPlans?: DayPlanMap
+  /** 内置日计划面板；'none' 时点日期仅发出 day-tap */
+  dayPlanner?: 'builtin' | 'none'
+  /** 自定义背景（可配合内置上传裁剪面板 openBackgroundPicker()） */
+  background?: { image?: string, opacity?: number, blur?: number } | null
+  backgroundPicker?: 'builtin' | 'none'
   locale?: {
     weekdays?: string[]
     inactiveBadge?: string
@@ -85,6 +101,12 @@ const props = withDefaults(defineProps<{
   weekPicker: 'builtin',
   courseDetail: 'builtin',
   guide: false,
+  editable: false,
+  courseForm: 'builtin',
+  dayPlans: () => ({}),
+  dayPlanner: 'builtin',
+  background: null,
+  backgroundPicker: 'builtin',
 })
 
 const emit = defineEmits<{
@@ -98,6 +120,15 @@ const emit = defineEmits<{
   'transitionEnd': [spec: TransitionSpec]
   'guideStep': [step: GuideStep, index: number]
   'guideFinish': []
+  'courseAdd': [course: Course]
+  'courseUpdate': [course: Course, previousId: string]
+  'courseRemove': [course: DisplayCourse]
+  'cellSelect': [weekday: number, startSection: number, endSection: number]
+  'courseFormRequest': [prefill: Partial<Course>]
+  'planAdd': [dateKey: string, text: string]
+  'planToggle': [dateKey: string, id: string]
+  'planRemove': [dateKey: string, id: string]
+  'backgroundChange': [dataUrl: string | null]
 }>()
 
 /* ------------------------------ 主题与派生 ------------------------------ */
@@ -425,7 +456,7 @@ let swipeOrigin: { x: number, y: number, time: number } | null = null
 let swipeAxis: 'horizontal' | 'vertical' | null = null
 
 function onPointerDown(event: PointerEvent) {
-  if (!props.swipeable || event.pointerType === 'mouse') {
+  if (!props.swipeable || props.editable || event.pointerType === 'mouse') {
     return
   }
   swipeOrigin = { x: event.clientX, y: event.clientY, time: performance.now() }
@@ -474,6 +505,12 @@ function onPointerEnd(event: PointerEvent) {
 const weekPickerOpen = ref(false)
 const detailOpen = ref(false)
 const detailStack = ref<DisplayCourse[]>([])
+const formOpen = ref(false)
+const formInitial = ref<Partial<Course> | null>(null)
+const plannerOpen = ref(false)
+const plannerDateKey = ref('')
+const plannerDateLabel = ref('')
+const backgroundOpen = ref(false)
 
 function requestWeekPicker() {
   emit('weekPickerOpen')
@@ -494,6 +531,142 @@ function handleCourseTap(course: DisplayCourse) {
     detailStack.value = stack
     detailOpen.value = true
   }
+}
+
+/** 详情里该课程"当日天气"文案 */
+const detailWeatherText = computed(() => {
+  const course = detailStack.value[0]
+  if (!course || !props.termStart || !props.weather) {
+    return undefined
+  }
+  const key = formatDateKey(dateFor(props.termStart, props.week, course.weekday))
+  const daily = props.weather.daily.find(item => item.date === key)
+  if (!daily) {
+    return undefined
+  }
+  const range = daily.highC != null ? ` ${Math.round(daily.lowC ?? 0)}~${Math.round(daily.highC)}°` : ''
+  return `${daily.label ?? daily.kind}${range}`
+})
+
+function openCourseForm(prefill: Partial<Course> | null = null) {
+  if (props.courseForm === 'builtin') {
+    formInitial.value = prefill
+    formOpen.value = true
+  }
+  else {
+    emit('courseFormRequest', prefill ?? {})
+  }
+}
+
+function handleDetailEdit(course: DisplayCourse) {
+  detailOpen.value = false
+  openCourseForm(course)
+}
+
+function handleDetailRemove(course: DisplayCourse) {
+  detailOpen.value = false
+  emit('courseRemove', course)
+}
+
+function handleFormSubmit(course: Course) {
+  formOpen.value = false
+  if (formInitial.value?.id) {
+    emit('courseUpdate', course, formInitial.value.id)
+  }
+  else {
+    emit('courseAdd', course)
+  }
+}
+
+function handleDayTap(weekday: number) {
+  const date = dayDate(weekday)
+  emit('dayTap', weekday, date)
+  if (props.dayPlanner === 'builtin' && date) {
+    plannerDateKey.value = formatDateKey(date)
+    plannerDateLabel.value = `${date.getMonth() + 1}月${date.getDate()}日 周${weekdayLabels.value[weekday - 1]}`
+    plannerOpen.value = true
+  }
+}
+
+function dayPendingCount(weekday: number): number {
+  const date = dayDate(weekday)
+  return date ? pendingPlanCount(props.dayPlans, date) : 0
+}
+
+function openDayPlanner(dateKey: string) {
+  plannerDateKey.value = dateKey
+  plannerDateLabel.value = dateKey
+  plannerOpen.value = true
+}
+
+function openBackgroundPicker() {
+  if (props.backgroundPicker === 'builtin') {
+    backgroundOpen.value = true
+  }
+}
+
+const backgroundStyle = computed(() => {
+  if (!props.background?.image) {
+    return null
+  }
+  return {
+    backgroundImage: `url(${props.background.image})`,
+    opacity: props.background.opacity ?? 0.5,
+    filter: props.background.blur ? `blur(${props.background.blur}px)` : undefined,
+  }
+})
+
+/* ------------------------------ 编辑模式：空白格拖选 ------------------------------ */
+
+const cellSelection = ref<{ weekday: number, start: number, end: number } | null>(null)
+let cellDragging = false
+
+function cellIsSelected(weekday: number, section: number): boolean {
+  const selection = cellSelection.value
+  return Boolean(
+    selection
+    && selection.weekday === weekday
+    && section >= Math.min(selection.start, selection.end)
+    && section <= Math.max(selection.start, selection.end),
+  )
+}
+
+function onCellPointerDown(event: PointerEvent, weekday: number, section: number) {
+  if (!props.editable) {
+    return
+  }
+  cellDragging = true
+  cellSelection.value = { weekday, start: section, end: section }
+  ;(event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId)
+}
+
+function onCellPointerMove(event: PointerEvent) {
+  if (!cellDragging || !cellSelection.value) {
+    return
+  }
+  event.preventDefault()
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-ys-cell]')
+  if (!target) {
+    return
+  }
+  const weekday = Number(target.dataset.weekday)
+  const section = Number(target.dataset.section)
+  if (weekday === cellSelection.value.weekday && section) {
+    cellSelection.value = { ...cellSelection.value, end: section }
+  }
+}
+
+function onCellPointerUp() {
+  if (!cellDragging || !cellSelection.value) {
+    return
+  }
+  cellDragging = false
+  const { weekday, start, end } = cellSelection.value
+  const startSection = Math.min(start, end)
+  const endSection = Math.max(start, end)
+  cellSelection.value = null
+  emit('cellSelect', weekday, startSection, endSection)
+  openCourseForm({ weekday, startSection, endSection, startWeek: 1, endWeek: props.totalWeeks })
 }
 
 /* ------------------------------ 对外方法 ------------------------------ */
@@ -518,6 +691,9 @@ function openCourse(courseId: string) {
 function closeSheets() {
   weekPickerOpen.value = false
   detailOpen.value = false
+  formOpen.value = false
+  plannerOpen.value = false
+  backgroundOpen.value = false
 }
 
 const rootEl = ref<HTMLElement | null>(null)
@@ -534,6 +710,9 @@ defineExpose({
   previous: () => setWeek(props.week - 1),
   openCourse,
   openWeekPicker: requestWeekPicker,
+  openCourseForm,
+  openDayPlanner,
+  openBackgroundPicker,
   closeSheets,
   startGuide,
 })
@@ -546,7 +725,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="rootEl" class="ys-schedule" :class="{ 'ys-dark': theme === 'dark' }" :style="cssVars">
+  <div ref="rootEl" class="ys-schedule" :class="{ 'ys-dark': theme === 'dark', 'is-editing': editable, 'has-bg': Boolean(backgroundStyle) }" :style="cssVars">
+    <div v-if="backgroundStyle" class="ys-schedule__bg" :style="backgroundStyle" aria-hidden="true" />
     <slot
       name="top-bar"
       :week="week"
@@ -580,7 +760,7 @@ onBeforeUnmount(() => {
         type="button"
         class="ys-schedule__day"
         :class="{ 'is-today': isToday(weekday) }"
-        @click="emit('dayTap', weekday, dayDate(weekday))"
+        @click="handleDayTap(weekday)"
       >
         <slot
           name="day"
@@ -593,6 +773,9 @@ onBeforeUnmount(() => {
             {{ (dayDate(weekday)?.getMonth() ?? 0) + 1 }}/{{ dayDate(weekday)?.getDate() }}
           </span>
           <i v-if="isToday(weekday)" class="ys-schedule__day-dot" aria-hidden="true" />
+          <b v-if="dayPendingCount(weekday)" class="ys-schedule__day-count">
+            {{ dayPendingCount(weekday) > 9 ? '9+' : dayPendingCount(weekday) }}
+          </b>
         </slot>
       </button>
     </div>
@@ -622,6 +805,33 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="ys-schedule__board" :style="{ gridTemplateRows: rowTemplate }">
+        <!-- 编辑模式：空白格拖选层（位于课程层之下） -->
+        <template v-if="editable">
+          <template v-for="row in rows" :key="`cells-${row.key}`">
+            <template v-if="row.section">
+              <button
+                v-for="weekday in visibleDays"
+                :key="`${weekday}-${row.section}`"
+                type="button"
+                class="ys-schedule__cell"
+                :class="{ 'is-selected': cellIsSelected(weekday, row.section) }"
+                :style="{
+                  gridColumn: `${weekday} / ${weekday + 1}`,
+                  gridRow: `${sectionToGridLine(row.section)} / ${sectionToGridLine(row.section) + 1}`,
+                }"
+                :data-weekday="weekday"
+                :data-section="row.section"
+                data-ys-cell
+                :aria-label="`周${weekday}第${row.section}节空白时间`"
+                @pointerdown="onCellPointerDown($event, weekday, row.section)"
+                @pointermove="onCellPointerMove"
+                @pointerup="onCellPointerUp"
+                @pointercancel="cellSelection = null; cellDragging = false"
+              />
+            </template>
+          </template>
+        </template>
+
         <div
           v-if="leavingModel && waveActive"
           :key="`leave-${leavingModel.week}`"
@@ -713,8 +923,12 @@ onBeforeUnmount(() => {
       :open="detailOpen"
       :stack="detailStack"
       :color-for="colorFor"
+      :editable="editable"
+      :weather-text="detailWeatherText"
       :vars="cssVars"
       @close="detailOpen = false"
+      @edit="handleDetailEdit"
+      @remove="handleDetailRemove"
     >
       <template #detail-extra="slotProps">
         <slot name="detail-extra" v-bind="slotProps" />
@@ -723,11 +937,44 @@ onBeforeUnmount(() => {
         <slot name="detail-actions" v-bind="slotProps" />
       </template>
     </YsCourseDetail>
+
+    <YsCourseForm
+      :open="formOpen"
+      :initial="formInitial"
+      :courses="courses"
+      :total-weeks="totalWeeks"
+      :tokens="tokens"
+      :weekday-labels="weekdayLabels"
+      :vars="cssVars"
+      @close="formOpen = false"
+      @submit="handleFormSubmit"
+    />
+
+    <YsDayPlanner
+      :open="plannerOpen"
+      :date-key="plannerDateKey"
+      :date-label="plannerDateLabel"
+      :plans="dayPlans[plannerDateKey] ?? []"
+      :vars="cssVars"
+      @close="plannerOpen = false"
+      @add="(dateKey, text) => emit('planAdd', dateKey, text)"
+      @toggle="(dateKey, id) => emit('planToggle', dateKey, id)"
+      @remove="(dateKey, id) => emit('planRemove', dateKey, id)"
+    />
+
+    <YsBackgroundSheet
+      :open="backgroundOpen"
+      :vars="cssVars"
+      @close="backgroundOpen = false"
+      @apply="(dataUrl) => { backgroundOpen = false; emit('backgroundChange', dataUrl) }"
+      @clear="backgroundOpen = false; emit('backgroundChange', null)"
+    />
   </div>
 </template>
 
 <style>
 .ys-schedule {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -736,6 +983,58 @@ onBeforeUnmount(() => {
   font-family: inherit;
   color: var(--ys-text-1);
   background: var(--ys-canvas);
+  isolation: isolate;
+}
+
+.ys-schedule__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+}
+
+.ys-schedule.has-bg .ys-schedule__weekday-bar,
+.ys-schedule.has-bg .ys-topbar {
+  background: color-mix(in srgb, var(--ys-surface-1) 72%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.ys-schedule__day-count {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  font-size: 8px;
+  font-weight: 750;
+  color: #fff;
+  background: var(--ys-danger);
+  border-radius: 8px;
+}
+
+.ys-schedule__cell {
+  z-index: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  touch-action: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--ys-grid-line);
+  border-bottom: 1px solid var(--ys-grid-line);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ys-schedule__cell.is-selected {
+  background: color-mix(in srgb, var(--ys-accent) 13%, transparent);
+  box-shadow: inset 0 0 0 2px var(--ys-accent);
+  border-radius: 6px;
 }
 
 .ys-schedule__weekday-bar {
