@@ -11,7 +11,8 @@
 | [`@iyotsuba/schedule-elements`](packages/elements) | `<ys-schedule>` / `<ys-today>` 自定义元素(uni-app H5 / 原生 HTML) |
 | [`@iyotsuba/schedule-react`](packages/react) | React 类型化绑定 `<YsSchedule>` `<YsToday>` |
 
-文档:https://isla4ever.github.io/yotsuba-kit/(建设中)
+文档官网:https://isla4ever.github.io/yotsuba-kit/
+消费方示例与依赖测试:https://github.com/isla4ever/yotsuba-kit-playground(Vue 全功能 / React / 原生 HTML,每日 CI 对最新发布版跑消费测试)
 
 ## 开发
 
