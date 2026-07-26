@@ -231,7 +231,9 @@ function submit() {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ys-accent) 18%, transparent);
 }
 
-.ys-form__pair { display: flex; gap: 6px; align-items: center; }
+.ys-form__pair { display: flex; gap: 6px; align-items: center; min-width: 0; }
+
+.ys-form__pair input { min-width: 0; flex: 1; }
 .ys-form__pair i { color: var(--ys-text-3); font-style: normal; }
 
 .ys-form__seg {

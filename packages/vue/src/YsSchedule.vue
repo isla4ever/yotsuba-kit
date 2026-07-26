@@ -1070,8 +1070,10 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
   height: 100%;
   overflow: hidden;
+  overflow-x: clip;
   font-family: inherit;
   color: var(--ys-text-1);
   background: var(--ys-canvas);
@@ -1187,6 +1189,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
   flex: 1;
+  overflow-x: hidden; /* overflow-y:auto 会把 overflow-x 联动为 auto,过渡层 translateX 会撑出横向滚动条 */
   overflow-y: auto;
   touch-action: pan-y;
 }

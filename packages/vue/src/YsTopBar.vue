@@ -79,7 +79,9 @@ const dateRange = computed(() => {
   display: flex;
   gap: 8px;
   align-items: center;
+  min-width: 0;
   padding: 4px 12px;
+  overflow: hidden;
   background: color-mix(in srgb, var(--ys-surface-1) 94%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--ys-border);
@@ -107,6 +109,7 @@ const dateRange = computed(() => {
   display: inline-flex;
   gap: 4px;
   align-items: center;
+  white-space: nowrap;
   min-height: 34px;
   padding: 0;
   font: inherit;
@@ -139,8 +142,11 @@ const dateRange = computed(() => {
 }
 
 .ys-topbar__range {
+  overflow: hidden;
   font-size: 11px;
   color: var(--ys-text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ys-topbar__spacer { flex: 1; }
