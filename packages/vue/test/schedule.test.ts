@@ -1,4 +1,4 @@
-import type { Course } from '@yotsuba/schedule-core'
+import type { Course } from '@iyotsuba/schedule-core'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'

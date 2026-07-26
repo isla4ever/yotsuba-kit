@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { BuiltinTransitionName, Course } from '@yotsuba/schedule-vue'
-import { YsSchedule } from '@yotsuba/schedule-vue'
+import type { BuiltinTransitionName, Course } from '@iyotsuba/schedule-vue'
+import { YsSchedule } from '@iyotsuba/schedule-vue'
 import { computed, ref } from 'vue'
 
 const week = ref(1)

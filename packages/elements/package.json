@@ -1,5 +1,5 @@
 {
-  "name": "@yotsuba/schedule-elements",
+  "name": "@iyotsuba/schedule-elements",
   "version": "0.1.0",
   "description": "Framework-agnostic <ys-schedule> custom element. Works in React, plain HTML, uni-app H5, Ionic — anywhere the DOM is.",
   "type": "module",
@@ -17,11 +17,11 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "echo 'covered by @yotsuba/schedule-vue tests'",
+    "test": "echo 'covered by @iyotsuba/schedule-vue tests'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@yotsuba/schedule-core": "workspace:*"
+    "@iyotsuba/schedule-core": "workspace:*"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",

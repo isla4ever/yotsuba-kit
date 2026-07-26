@@ -147,7 +147,7 @@ export interface WeatherSnapshot {
 
 /**
  * 天气由宿主注入，组件库绝不私自发起网络请求。
- * 参考实现见 `@yotsuba/schedule-core/weather/open-meteo`。
+ * 参考实现见 `@iyotsuba/schedule-core/weather/open-meteo`。
  */
 export interface WeatherProvider {
   getSnapshot: () => Promise<WeatherSnapshot>

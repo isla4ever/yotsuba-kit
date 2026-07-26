@@ -2,7 +2,7 @@
 // 忠实复刻微信公众号网页版 ScheduleCourseCard 的视觉规范：
 // 状态徽标（补班/非本周）置顶居中、周数绝对定位卡底、非本周置灰降层、
 // 补班卡警示色混合、自定义课程虚线边框、单节课紧凑排版。
-import type { DisplayCourse } from '@yotsuba/schedule-core'
+import type { DisplayCourse } from '@iyotsuba/schedule-core'
 import { computed } from 'vue'
 
 const props = defineProps<{

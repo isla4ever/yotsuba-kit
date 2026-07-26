@@ -2,7 +2,7 @@
 
 ## Vue 3
 
-直接使用 `@yotsuba/schedule-vue`,见[快速开始](/guide/getting-started)。
+直接使用 `@iyotsuba/schedule-vue`,见[快速开始](/guide/getting-started)。
 
 ## React
 
@@ -10,7 +10,7 @@
 
 ```tsx
 import { useEffect, useRef } from 'react'
-import '@yotsuba/schedule-elements'
+import '@iyotsuba/schedule-elements'
 
 export function Schedule({ courses, week, onWeekChange }) {
   const ref = useRef(null)
@@ -26,7 +26,7 @@ export function Schedule({ courses, week, onWeekChange }) {
 }
 ```
 
-> React 专属适配包 `@yotsuba/schedule-react` 在 P3 路线中。
+> React 专属适配包 `@iyotsuba/schedule-react` 在 P3 路线中。
 
 ## uni-app(H5)/ Ionic / 原生 HTML
 

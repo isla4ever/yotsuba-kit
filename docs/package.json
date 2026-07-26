@@ -8,7 +8,7 @@
     "preview": "vitepress preview"
   },
   "devDependencies": {
-    "@yotsuba/schedule-vue": "workspace:*",
+    "@iyotsuba/schedule-vue": "workspace:*",
     "vitepress": "^1.5.0",
     "vue": "^3.5.13"
   }

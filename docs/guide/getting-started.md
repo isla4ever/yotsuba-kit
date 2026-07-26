@@ -5,11 +5,11 @@
 ::: code-group
 
 ```bash [Vue 3]
-pnpm add @yotsuba/schedule-vue
+pnpm add @iyotsuba/schedule-vue
 ```
 
 ```bash [其他框架（Web Component）]
-pnpm add @yotsuba/schedule-elements
+pnpm add @iyotsuba/schedule-elements
 ```
 
 :::
@@ -18,8 +18,8 @@ pnpm add @yotsuba/schedule-elements
 
 ```vue
 <script setup lang="ts">
-import type { Course } from '@yotsuba/schedule-vue'
-import { YsSchedule } from '@yotsuba/schedule-vue'
+import type { Course } from '@iyotsuba/schedule-vue'
+import { YsSchedule } from '@iyotsuba/schedule-vue'
 import { ref } from 'vue'
 
 const week = ref(1)
@@ -64,7 +64,7 @@ const courses: Course[] = [
 
 ```html
 <script type="module">
-  import '@yotsuba/schedule-elements'
+  import '@iyotsuba/schedule-elements'
   const el = document.querySelector('ys-schedule')
   el.courses = [/* Course[] */]
   el.week = 1

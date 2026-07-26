@@ -25,7 +25,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @yotsuba/schedule-core build && pnpm --filter @yotsuba/schedule-vue build
+      - run: pnpm --filter @iyotsuba/schedule-core build && pnpm --filter @iyotsuba/schedule-vue build
       - run: pnpm docs:build
       - uses: actions/upload-pages-artifact@v3
         with:

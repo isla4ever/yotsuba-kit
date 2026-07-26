@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 内置课程详情（现成方案）：重叠课先选后看，详情信息区可用 slot 深度替换/追加
-import type { DisplayCourse } from '@yotsuba/schedule-core'
+import type { DisplayCourse } from '@iyotsuba/schedule-core'
 import { computed, ref, watch } from 'vue'
 import YsSheet from './YsSheet.vue'
 

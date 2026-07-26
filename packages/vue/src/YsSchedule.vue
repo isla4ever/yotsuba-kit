@@ -9,7 +9,7 @@ import type {
   TransitionSpec,
   WeatherSnapshot,
   WeekModel,
-} from '@yotsuba/schedule-core'
+} from '@iyotsuba/schedule-core'
 import {
   buildScheduleRows,
   buildWeekModel,
@@ -21,7 +21,7 @@ import {
   resolveTransition,
   STANDARD_COURSE_TIMES,
   tokensToCssVars,
-} from '@yotsuba/schedule-core'
+} from '@iyotsuba/schedule-core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import YsCourseCard from './YsCourseCard.vue'
 import YsCourseDetail from './YsCourseDetail.vue'

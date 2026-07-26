@@ -3,7 +3,7 @@
 `transition` prop 接受完整的 `TransitionSpec` 对象:
 
 ```ts
-import type { TransitionSpec } from '@yotsuba/schedule-vue'
+import type { TransitionSpec } from '@iyotsuba/schedule-vue'
 
 const diagonalDrop: TransitionSpec = {
   name: 'diagonal-drop',
@@ -25,7 +25,7 @@ const diagonalDrop: TransitionSpec = {
 发布前用 `validateTransition` 自检(超长时长、时间轴溢出、per-cell 未开 stableSkip 都会给出警告):
 
 ```ts
-import { validateTransition } from '@yotsuba/schedule-core'
+import { validateTransition } from '@iyotsuba/schedule-core'
 
 console.warn(validateTransition(diagonalDrop))
 ```

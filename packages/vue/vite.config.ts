@@ -11,7 +11,7 @@ export default defineConfig({
       fileName: 'index',
     },
     rollupOptions: {
-      external: ['vue', '@yotsuba/schedule-core'],
+      external: ['vue', '@iyotsuba/schedule-core'],
     },
   },
   test: {

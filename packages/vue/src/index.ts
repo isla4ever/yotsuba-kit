@@ -28,4 +28,4 @@ export type {
   WeatherProvider,
   WeatherSnapshot,
   WeekModel,
-} from '@yotsuba/schedule-core'
+} from '@iyotsuba/schedule-core'
