@@ -1,0 +1,34 @@
+{
+  "name": "@yotsuba/schedule-elements",
+  "version": "0.1.0",
+  "description": "Framework-agnostic <ys-schedule> custom element. Works in React, plain HTML, uni-app H5, Ionic — anywhere the DOM is.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/schedule-elements.iife.js",
+  "module": "./dist/schedule-elements.js",
+  "exports": {
+    ".": {
+      "import": "./dist/schedule-elements.js",
+      "default": "./dist/schedule-elements.iife.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "vite build",
+    "test": "echo 'covered by @yotsuba/schedule-vue tests'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@yotsuba/schedule-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.2",
+    "vue": "^3.5.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yotsuba-kit/yotsuba-kit"
+  }
+}

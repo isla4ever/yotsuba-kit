@@ -1,0 +1,39 @@
+{
+  "name": "@yotsuba/schedule-core",
+  "version": "0.1.0",
+  "description": "Framework-free schedule engine: Chinese academic-term semantics (odd/even weeks, makeup days, overlaps), transition timelines, theme tokens, weather & guide protocols.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./weather/open-meteo": {
+      "types": "./dist/weather/open-meteo.d.ts",
+      "import": "./dist/weather/open-meteo.js",
+      "require": "./dist/weather/open-meteo.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "keywords": ["schedule", "timetable", "course", "class-schedule", "headless"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yotsuba-kit/yotsuba-kit"
+  }
+}
