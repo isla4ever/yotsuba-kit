@@ -52,7 +52,7 @@ export default defineConfig({
       ],
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/yotsuba-kit/yotsuba-kit' },
+      { icon: 'github', link: 'https://github.com/isla4ever/yotsuba-kit' },
     ],
   },
 })

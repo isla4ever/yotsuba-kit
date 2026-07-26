@@ -10,7 +10,7 @@
 | [`@yotsuba/schedule-vue`](packages/vue) | Vue 3 组件 `<YsSchedule>` |
 | [`@yotsuba/schedule-elements`](packages/elements) | `<ys-schedule>` 自定义元素(React / uni-app H5 / 原生 HTML) |
 
-文档:https://yotsuba-kit.github.io/yotsuba-kit/(建设中)
+文档:https://isla4ever.github.io/yotsuba-kit/(建设中)
 
 ## 开发
 

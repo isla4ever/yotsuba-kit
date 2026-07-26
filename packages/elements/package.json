@@ -12,7 +12,9 @@
       "default": "./dist/schedule-elements.iife.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build",
     "test": "echo 'covered by @yotsuba/schedule-vue tests'",
@@ -29,6 +31,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yotsuba-kit/yotsuba-kit"
+    "url": "https://github.com/isla4ever/yotsuba-kit"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

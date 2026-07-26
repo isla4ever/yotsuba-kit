@@ -20,7 +20,9 @@
       "require": "./dist/weather/open-meteo.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -31,9 +33,18 @@
     "typescript": "^5.6.3",
     "vitest": "^2.1.8"
   },
-  "keywords": ["schedule", "timetable", "course", "class-schedule", "headless"],
+  "keywords": [
+    "schedule",
+    "timetable",
+    "course",
+    "class-schedule",
+    "headless"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yotsuba-kit/yotsuba-kit"
+    "url": "https://github.com/isla4ever/yotsuba-kit"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

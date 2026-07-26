@@ -40,6 +40,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yotsuba-kit/yotsuba-kit"
+    "url": "https://github.com/isla4ever/yotsuba-kit"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
