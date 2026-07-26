@@ -1,0 +1,21 @@
+/* 品牌化主题变量：与组件库主色一致 */
+:root {
+  --vp-c-brand-1: #3d76dd;
+  --vp-c-brand-2: #5b8def;
+  --vp-c-brand-3: #6c9aec;
+  --vp-c-brand-soft: rgb(61 118 221 / 14%);
+}
+
+.dark {
+  --vp-c-brand-1: #6c9aec;
+  --vp-c-brand-2: #5b8def;
+}
+
+/* 首页 layout: page 时去掉默认内边距,让 hero 全宽 */
+.VPPage :is(.vp-doc):has(.kit-home) {
+  padding: 0;
+}
+
+.vp-doc:has(> div > .kit-home) div[class*="language-"] {
+  margin: 0;
+}
