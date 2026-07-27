@@ -2,6 +2,8 @@
 
 Flutter 包与 Web 共享产品能力边界，但保留 Flutter 原生 Material、手势、语义和布局实现。包不依赖状态管理、定位、网络、日历或分享插件。
 
+源码、完整应用和只使用公开 API 的 Flutter 演示位于 [isla4ever/yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter)。
+
 ## 安装
 
 ```bash

@@ -1,86 +1,151 @@
-# Yotsuba Schedule Kit
+# Yotsuba Kit 四叶草课表组件库
 
-高度可配置的开源课表组件库。中国高校学期语义(单双周 / 调休补班 / 重叠课)开箱即用,
-课程天气场景、默认流光、教材与任务、详情过渡和移动端 Today 排版统一在同一套可插拔 API 中。
+面向中国大学课表场景的开源组件体系。Yotsuba Kit 把单双周、起止周、调休补班、重叠课等高校学期规则，以及天气联动、教材与任务、课程详情、弹层和「今日」排版，整理成可复用、可替换、可受控的 API。
+
+- 文档官网：[isla4ever.github.io/yotsuba-kit](https://isla4ever.github.io/yotsuba-kit/)
+- 开源协议：MIT
+- 当前主分支 API：`0.6.0`
+- 已发布版本与主分支存在差异，使用前请查看[版本与发布状态](https://isla4ever.github.io/yotsuba-kit/guide/release-status.html)
+
+## Yotsuba 项目关系
+
+三个仓库采用统一的 `yotsuba-kit-*` 命名：
+
+| 项目 | 定位 | 演示内容 |
+| --- | --- | --- |
+| **[yotsuba-kit](https://github.com/isla4ever/yotsuba-kit)** | Web 主体组件库与文档 | `core`、Vue、React、Custom Elements API 和官网内嵌移动演示 |
+| **[yotsuba-kit-playground](https://github.com/isla4ever/yotsuba-kit-playground)** | Web 消费方演示与依赖验证 | Vue 全功能演示、React 演示、原生 HTML 演示、每日 registry 消费测试 |
+| **[yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter)** | Flutter 组件包、完整应用与演示 | `yotsuba_schedule_kit`、Flutter 课表 / 今日 / 设置演示、跨平台完整应用 |
+
+Web 与 Flutter 复用同一组产品概念：`Schedule`、`Today`、课程数据、天气、详情、弹层和布局；平台实现保持独立，不为了“代码一致”牺牲 Vue / React / Flutter 各自的原生交互。
+
+## 包结构
 
 | 包 | 说明 |
 | --- | --- |
-| [`@iyotsuba/schedule-core`](packages/core) | 零依赖 TS:学期引擎、过渡协议、主题令牌、天气/引导协议 |
-| [`@iyotsuba/schedule-vue`](packages/vue) | Vue 3 组件 `<YsSchedule>` |
-| [`@iyotsuba/schedule-elements`](packages/elements) | `<ys-schedule>` / `<ys-today>` 自定义元素(uni-app H5 / 原生 HTML) |
-| [`@iyotsuba/schedule-react`](packages/react) | React 类型化绑定 `<YsSchedule>` `<YsToday>` |
+| [`@iyotsuba/schedule-core`](packages/core) | 零运行时依赖 TypeScript：学期引擎、重叠分组、提醒、ICS、分享码、主题、天气和动效协议 |
+| [`@iyotsuba/schedule-vue`](packages/vue) | Vue 3 `<YsSchedule>` / `<YsToday>`，包含完整插槽、事件和公开方法 |
+| [`@iyotsuba/schedule-elements`](packages/elements) | `<ys-schedule>` / `<ys-today>` 自定义元素，适用于原生 HTML、uni-app H5、Ionic 等 DOM 环境 |
+| [`@iyotsuba/schedule-react`](packages/react) | React 类型化绑定，提供 Props、事件回调和元素 ref |
 
-文档官网:https://isla4ever.github.io/yotsuba-kit/
-消费方示例与依赖测试:https://github.com/isla4ever/yotsuba-kit-playground(Vue 全功能 / React / 原生 HTML,每日 CI 对最新发布版跑消费测试)
+Flutter 对应包是 [`yotsuba_schedule_kit`](https://pub.dev/packages/yotsuba_schedule_kit)，源码和演示位于 [yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter)。
 
-## Vue 配置面
+## 核心能力
 
-`<YsSchedule>` 的主要展示与交互能力均可受控:
+### 学期与课程
 
-- Header:`topBar="compact | standard | expanded | none"`,并提供 `top-bar` / `top-bar-tools` slot。
-- 课表:`visibleDays`, `rowHeight`, `weekdayBar`, `density`, `palette`, `theme`;`Course` 支持结构化 `books` / `materials` / `tasks`,并兼容旧版字符串资料。
-- 动效:`transition` 支持 wave / slide / fade / cube / drop / zoom / 自定义协议;`cardEffect` 支持 5 档卡片效果,`shimmer` 为默认。
-- 天气:`weather` 接受宿主 Provider 的快照,课程卡天气图标/色调与 `weatherScene` 默认开启;组件不会自行请求定位或网络。
-- 详情:`detail.layout` 支持 compact / standard / full,`hero`, `fields`, `actions` 控制天气联动样式、字段顺序及分享 / 编辑 / 删除动作;`emptyText` / `emptyTexts` 保留空字段 label 并允许覆盖提示词,重叠课选择到详情使用层内过渡。
-- 弹层:`sheets.placement` 提供全局默认,`sheets.placements` 可按 weekPicker / courseDetail / courseForm / dayPlanner / background 分别设置;`adjustable` 在每个弹层 Header 提供局部位置切换。
-- 今日:`<YsToday v-model:widgets>` 控制模块顺序与 `1x1` / `1x2` / `2x1` / `2x2` 尺寸;`arrangeable` 开启长按/入口编辑、整卡拖动让位和四角连续缩放。任意模块可用 `#widget-<id>` 替换,并提供 `setWidgets` / `setArranging` / `moveWidget` / `resizeWidget` / `toggleWidget` / `layoutReset` 方法。
-- 按钮和面板:week picker、详情、课程表单、日计划、背景选择器均可使用内置实现或切换为宿主管理。
+- 中国高校常用的单双周、周次范围、调休补班、假日和重叠课程
+- 受控 `Course` 数据，支持教材 `books`、结构化携带物 `materials`、课程任务 `tasks`、备注和宿主 `meta`
+- 内置课程新增、编辑、删除、冲突提示、日计划和自定义背景
+- 纯函数导出 ICS、分享码、提醒计划和教务数据适配
+
+### 视觉与交互
+
+- `wave / slide / fade / cube / drop / zoom / none` 七种换周模式和自定义 `TransitionSpec`
+- 六套课程配色、三档信息密度和五种课程卡效果，默认 `shimmer` 流光
+- 课程卡、星期栏、详情 Hero 和背景场景共享宿主注入的天气快照
+- 减少动态效果、触摸换周、无空白帧过渡和浅深色主题令牌
+
+### 详情、弹层与 Today
+
+- 详情字段、空值提示、操作区、Hero 和紧凑 / 标准 / 全面布局均可编排
+- 周选择器、课程详情、表单、日计划和背景选择器可使用内置实现，也可由宿主接管
+- 弹层支持底部、居中、右侧，并可按弹层类型设置默认位置
+- Today 内置下一节课、时间线、课前准备、课程任务、计划、周概览和天气七种模块
+- 长按进入布局编辑、整卡拖动智能让位、四角缩放，并支持 `#widget-<id>` 自定义模块
+
+## 快速开始
+
+### Vue
+
+```bash
+pnpm add @iyotsuba/schedule-vue
+```
 
 ```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { YsSchedule, type Course } from '@iyotsuba/schedule-vue'
+
+const week = ref(1)
+const courses = ref<Course[]>([
+  {
+    id: 'math',
+    name: '高等数学',
+    weekday: 1,
+    startSection: 1,
+    endSection: 2,
+    startWeek: 1,
+    endWeek: 20,
+    books: [{ title: '高等数学（第八版）', required: true }],
+    materials: [{ name: '计算器', kind: 'device' }],
+    tasks: [{ id: 'math-3', title: '完成第三章课后题' }],
+  },
+])
+</script>
+
+<template>
+  <YsSchedule
+    v-model:week="week"
+    :courses="courses"
+    :term-start="new Date(2026, 8, 7)"
+    card-effect="shimmer"
+    weather-scene
+    style="height: 720px"
+  />
+</template>
+```
+
+### React
+
+```bash
+pnpm add @iyotsuba/schedule-react
+```
+
+```tsx
 <YsSchedule
-  v-model:week="week"
-  :courses="courses"
-  :weather="weatherSnapshot"
-  top-bar="expanded"
-  density="rich"
-  palette="morandi"
-  transition="wave"
-  card-effect="shimmer"
-  weather-scene
-  :sheets="{
-    placement: 'bottom',
-    placements: { courseDetail: 'right', weekPicker: 'center' },
-    glass: true,
-    contained: true,
-    adjustable: true,
-  }"
-  :detail="{
-    hero: 'weather',
-    layout: 'standard',
-    fields: ['time', 'weeks', 'location', 'teacher', 'weather', 'note', 'materials', 'tasks'],
-    emptyText: '暂无信息',
-    actions: ['share', 'edit'],
-    adjustable: true,
-  }"
-  @course-share="shareCourse"
-  @detail-layout-change="detailLayout = $event"
+  week={week}
+  courses={courses}
+  termStart={termStart}
+  onUpdateWeek={setWeek}
+  onCourseTap={openCourse}
 />
 ```
 
-`weather` 是受控数据,UI 库不会在加载时暗中申请定位或请求网络。宿主应在用户点击天气入口后调用 `navigator.geolocation`,再用 `@iyotsuba/schedule-core/weather/open-meteo` 导出的 `createOpenMeteoProvider({ latitude, longitude })`（或自有 WeatherProvider）生成 `WeatherSnapshot`,同时传给 `YsSchedule` 与 `YsToday`;详情、今日卡片与背景场景会共享这份天气状态。
+### Flutter
 
-## 0.6.0 重点
+```bash
+flutter pub add yotsuba_schedule_kit
+```
 
-- 课程卡默认显示对应日天气图标与背景色调,星期栏可显示天气与温度,动态天气场景与默认流光均可关闭或替换。
-- 课程数据增加教材、结构化携带物和课程任务;Today 直接汇总下一节课的教材和未完成任务。
-- 详情空值不再留白,重叠课进入详情有连续过渡;Vue / Elements / React 共用同一套行为和公开方法。
-- Today 专注移动端触摸交互:整卡拖动、智能让位、四角缩放,不绑定桌面方向键。
+Flutter 的完整接入与演示见 [yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter)。
 
-## 开发
+## 受控边界
+
+组件库不会在加载时暗中申请定位、请求天气、写入日历、发送通知或持久化课程。宿主负责权限、网络、缓存和业务副作用，再把 `WeatherSnapshot`、课程、计划和布局数据传入组件。这样组件可以在公众号 H5、普通 Web、桌面浏览器和 Flutter 应用中保持一致的能力边界。
+
+## 文档索引
+
+- [Schedule 组件](https://isla4ever.github.io/yotsuba-kit/components/schedule.html)
+- [Today 组件](https://isla4ever.github.io/yotsuba-kit/components/today.html)
+- [Course、教材、携带物与任务](https://isla4ever.github.io/yotsuba-kit/components/course-data.html)
+- [Core API](https://isla4ever.github.io/yotsuba-kit/api/core.html)
+- [事件 / 方法 / 插槽](https://isla4ever.github.io/yotsuba-kit/api/events.html)
+- [Vue / React / Elements / Flutter 接入](https://isla4ever.github.io/yotsuba-kit/frameworks/vue.html)
+
+## 本地开发
 
 ```bash
 pnpm install
-pnpm build        # 构建全部包
-pnpm test         # 全部测试
-pnpm docs:dev     # 本地文档站
+pnpm build
+pnpm test
+pnpm typecheck
+pnpm e2e
+pnpm docs:dev
 ```
 
-## 当前能力
-
-- core:学期引擎、提醒、ICS、分享码、主题、动效、天气与引导协议。
-- Vue:课表、今日、编辑、日计划、背景、引导、天气场景、可编排详情与弹层。
-- elements / React:自定义元素与类型化 React 绑定。
+发布包之前，还需要在 [yotsuba-kit-playground](https://github.com/isla4ever/yotsuba-kit-playground) 中使用 registry 产物完成独立消费验证。
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -13,3 +13,5 @@ Yotsuba Schedule Kit 是一套**高度可配置的课表组件库**,把中国高
 - **开放协议**:天气（`WeatherProvider`，组件库绝不私自发网络请求）、引导（`GuideMachine` 三模式状态机）、主题（`--ys-*` 令牌）、课程资料 / 教材 / 任务和受控 Today 布局。
 
 `<YsToday>` 已提供 7 个内置模块、整卡拖动智能让位、四角缩放、空状态文案和 `#widget-<id>` 自定义插槽。请从[组件](/components/today)开始查看，或从[Core API](/api/core)按函数检索。
+
+完整 Web 消费演示位于 [yotsuba-kit-playground](https://github.com/isla4ever/yotsuba-kit-playground)，Flutter 组件包、完整应用与演示位于 [yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter)。
