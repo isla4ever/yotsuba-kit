@@ -46,7 +46,7 @@ const t = computed(() => props.lang === 'zh'
       readMore: '查看文档',
       features: [
         { icon: CalendarDays, title: '中国高校学期语义', desc: '单双周、调休补班、重叠课程和非本周状态，都在零依赖 core 中计算。', meta: 'CORE / TERM', link: '/components/schedule', size: 'wide' },
-        { icon: CloudSun, title: '天气是受控数据', desc: '宿主注入天气快照；课程卡、星期栏、详情 Hero 与动态场景共享同一状态。', meta: 'DATA / WEATHER', link: '/api/core#天气主题与动效', size: 'narrow' },
+        { icon: CloudSun, title: '天气是受控数据', desc: '宿主注入天气快照；课程卡、星期栏、详情 Hero 与动态场景共享同一状态。', meta: 'DATA / WEATHER', link: '/api/weather-motion', size: 'narrow' },
         { icon: Layers3, title: '详情与弹层可编排', desc: '字段、空值文案、操作区、详情过渡和每类弹层位置都能单独配置。', meta: 'SHEETS / SLOTS', link: '/api/slots', size: 'narrow' },
         { icon: LayoutDashboard, title: '面向触摸的 Today', desc: '长按进入排版，整卡拖动智能让位，四角缩放，并展示课程任务与课前携带清单。', meta: 'TODAY / TOUCH', link: '/components/today', size: 'wide' },
         { icon: Workflow, title: '同一能力，多种宿主', desc: 'core、Vue、React、Custom Elements 与 Flutter 保持同一数据边界与行为语义。', meta: 'VUE / REACT / FLUTTER', link: '/guide/frameworks', size: 'half' },

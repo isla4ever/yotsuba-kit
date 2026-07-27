@@ -24,7 +24,7 @@ const courses = ref<Course[]>([])
 </template>
 ```
 
-课程数据、教材、携带物和任务的结构见 [Course 数据模型](/components/course-data)。纯学期计算、ICS、分享码和提醒见 [Core API](/api/core)。
+课程数据、教材、携带物和任务的结构见 [Course 数据模型](/components/course-data)。纯学期计算、ICS、分享码和提醒见[学期、冲突与交换 API](/api/term-data)。
 
 ## Props
 

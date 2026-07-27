@@ -62,8 +62,9 @@ const zhSidebar = {
       text: 'Core API',
       collapsed: false,
       items: [
-        { text: '学期、冲突与交换', link: '/api/core' },
-        { text: '天气、主题与动效', link: '/api/core#天气主题与动效' },
+        { text: '总览', link: '/api/core' },
+        { text: '学期、冲突与交换', link: '/api/term-data' },
+        { text: '天气、主题与动效', link: '/api/weather-motion' },
       ],
     },
     {
