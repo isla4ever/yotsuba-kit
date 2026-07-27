@@ -1,6 +1,6 @@
 # Today 今日指挥台
 
-`<YsToday>` 是由 widget 注册表驱动的移动端日程界面。它与 `<YsSchedule>` 共用课程、学期、天气和日计划数据；长按卡片或点击 Header 入口进入排版，整卡可拖动让位，四个角可连续缩放。
+`<YsToday>` 是由 widget 注册表驱动的移动端日程界面。它与 `<YsSchedule>` 共用课程、学期、天气和日计划数据；长按卡片或点击 Header 入口进入排版，整卡可拖动让位。点按某张卡片后，仅该卡片显示贴边的四角控点并可连续缩放。
 
 ```vue
 <YsToday
@@ -29,6 +29,17 @@
 
 `size` 支持旧别名 `compact / standard / large`，也支持明确网格尺寸 `1x1 / 1x2 / 2x1 / 2x2`。
 
+尺寸不是单纯拉伸外框。内置「本周一览」会按空间逐级披露内容，自定义 widget 也可通过插槽作用域实现同样的响应式内容：
+
+| 尺寸 | 推荐内容层级 | 内置示例 |
+| --- | --- | --- |
+| `1x1` | 一个核心数字和短标签 | 当前周、今日课程摘要 |
+| `1x2` | 核心数字加纵向列表或窄图表 | 周节奏与七日分布 |
+| `2x1` | 横向摘要加紧凑趋势 | 三项指标与迷你柱状图 |
+| `2x2` | 完整指标、图表和补充结论 | 七日课程柱状图与周总结 |
+
+拖动跨过网格尺寸阈值时，卡片尺寸、周围卡片让位和内容层级会一起过渡；`reduceMotion` 或系统减少动态效果开启时自动退化为即时切换。
+
 ## 配置与布局
 
 | Prop | 类型 | 默认 | 说明 |
@@ -53,15 +64,18 @@
 
 ```vue
 <YsToday :widgets="[{ id: 'focus' }, { id: 'next-course' }]" :courses="courses" :term-start="termStart">
-  <template #widget-focus="{ todayCourses, weather, arranging }">
+  <template #widget-focus="{ todayCourses, weather, layout, resizing }">
     <h3>专注计划</h3>
     <p>{{ todayCourses.length }} 节课 · {{ weather?.current?.label ?? '暂无信息' }}</p>
-    <small v-if="arranging">可拖动调整位置</small>
+    <FocusBars v-if="layout.columns === 2" :compact="layout.rows === 1" />
+    <FocusList v-else-if="layout.rows === 2" />
+    <strong v-else>126 分钟</strong>
+    <small v-if="resizing">正在调整内容层级</small>
   </template>
 </YsToday>
 ```
 
-插槽作用域还包括 `week`、`ongoing`、`upcoming`、`readiness`、`courseTasks` 和当前 `size`。完整作用域见 [插槽](/api/slots)。
+插槽作用域还包括 `week`、`ongoing`、`upcoming`、`readiness`、`courseTasks`、当前 `size`、`layout: { columns, rows }` 与 `resizing`。完整作用域见 [插槽](/api/slots)。
 
 ## 受控布局示例
 

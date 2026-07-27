@@ -1,7 +1,7 @@
 import type { Course } from '@iyotsuba/schedule-core'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { h, nextTick } from 'vue'
 import { defaultScheduleGuideSteps } from '../src/guidePresets'
 import YsSchedule from '../src/YsSchedule.vue'
 import YsToday from '../src/YsToday.vue'
@@ -38,13 +38,44 @@ describe('ysToday', () => {
         widgets: [{ id: 'week-glance' }, { id: 'my-widget' }, { id: 'weather', enabled: false }],
       },
       slots: {
-        'widget-my-widget': '<p class="custom-widget">自定义内容</p>',
+        'widget-my-widget': ({ size, layout, resizing }: {
+          size: string
+          layout: { columns: number, rows: number }
+          resizing: boolean
+        }) => h('p', {
+          class: 'custom-widget',
+          'data-size': size,
+          'data-layout': `${layout.columns}x${layout.rows}`,
+          'data-resizing': `${resizing}`,
+        }, '自定义内容'),
       },
     })
     const widgets = wrapper.findAll('.ys-today__widget')
     expect(widgets).toHaveLength(2)
     expect(wrapper.find('.custom-widget').text()).toBe('自定义内容')
+    expect(wrapper.find('.custom-widget').attributes('data-size')).toBe('2x1')
+    expect(wrapper.find('.custom-widget').attributes('data-layout')).toBe('2x1')
+    expect(wrapper.find('.custom-widget').attributes('data-resizing')).toBe('false')
     expect(wrapper.text()).not.toContain('WeatherProvider')
+  })
+
+  it('adapts the weekly overview content to the selected size', async () => {
+    const wrapper = mount(YsToday, {
+      props: {
+        courses,
+        termStart,
+        now: monday0910,
+        widgets: [{ id: 'week-glance', size: '2x2' }],
+      },
+    })
+    expect(wrapper.find('.ys-today__week-chart').exists()).toBe(true)
+    expect(wrapper.findAll('.ys-today__week-bar')).toHaveLength(7)
+    expect(wrapper.text()).toContain('本周共 3 个课程块')
+
+    await wrapper.setProps({ widgets: [{ id: 'week-glance', size: '1x1' }] })
+    await nextTick()
+    expect(wrapper.find('.ys-today__week-chart').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('本周共 3 个课程块')
   })
 
   it('supports mobile arrangement, four-corner resize, host moves, and reset', async () => {
@@ -63,7 +94,9 @@ describe('ysToday', () => {
     await nextTick()
     expect(wrapper.find('.ys-today').classes()).toContain('is-arranging')
     expect(wrapper.findAll('.ys-today__widget-controls')).toHaveLength(0)
-    expect(wrapper.findAll('.ys-today__resize-handle')).toHaveLength(8)
+    expect(wrapper.findAll('.ys-today__resize-handle')).toHaveLength(4)
+    expect(wrapper.findAll('[aria-label*="缩放next-course"]')).toHaveLength(4)
+    expect(wrapper.findAll('[aria-label*="缩放weather"]')).toHaveLength(0)
 
     const resize = wrapper.find('[aria-label="从bottom-right缩放next-course"]')
     await resize.trigger('pointerdown', { button: 0, clientX: 0, clientY: 0, pointerId: 1 })
@@ -74,6 +107,13 @@ describe('ysToday', () => {
       { id: 'weather', size: '1x1' },
     ])
     expect(wrapper.emitted('widgetResize')?.at(-1)).toEqual(['next-course', '2x2', 'bottom-right'])
+
+    const second = wrapper.find('[data-widget="weather"]')
+    await second.trigger('pointerdown', { button: 0, clientX: 10, clientY: 10, pointerId: 2 })
+    await second.trigger('pointerup', { clientX: 10, clientY: 10, pointerId: 2 })
+    expect(wrapper.findAll('.ys-today__resize-handle')).toHaveLength(4)
+    expect(wrapper.findAll('[aria-label*="缩放next-course"]')).toHaveLength(0)
+    expect(wrapper.findAll('[aria-label*="缩放weather"]')).toHaveLength(4)
 
     ;(wrapper.vm as unknown as { moveWidget: (id: string, offset: -1 | 1) => void })
       .moveWidget('next-course', 1)

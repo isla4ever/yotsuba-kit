@@ -39,13 +39,16 @@
 | `readiness` | 下一节课教材与携带物 |
 | `courseTasks` | 今日未完成课程任务 |
 | `size` | 当前 widget 网格尺寸 |
+| `layout` | 归一化后的 `{ columns, rows }`，便于按 `1x1 / 1x2 / 2x1 / 2x2` 响应式展示内容 |
 | `arranging` | 是否正在编辑布局 |
+| `resizing` | 当前 widget 是否正在被四角控点缩放 |
 
 ```vue
 <YsToday :courses="courses" :term-start="termStart" :widgets="[{ id: 'announcements' }]">
-  <template #widget-announcements="{ arranging }">
+  <template #widget-announcements="{ arranging, layout }">
     <h3>教务通知</h3>
-    <p>{{ arranging ? '拖动调整位置' : latestNotice }}</p>
+    <NoticeChart v-if="layout.columns === 2 && layout.rows === 2" />
+    <p v-else>{{ arranging ? '拖动调整位置' : latestNotice }}</p>
   </template>
 </YsToday>
 ```
