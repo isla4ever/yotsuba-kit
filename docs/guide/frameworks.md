@@ -1,37 +1,23 @@
-# 框架接入
+# 选择接入方式
 
-## Vue 3
+所有平台共享同一套课程、学期和 Today 语义，但使用各自原生的数据绑定与交互实现。先按项目运行环境选择入口，再阅读对应框架页。
 
-直接使用 `@iyotsuba/schedule-vue`，见[Vue 3 接入](/frameworks/vue)。
+| 项目环境 | 推荐包 | 何时选择 | 接入文档 |
+| --- | --- | --- | --- |
+| Vue 3 | `@iyotsuba/schedule-vue` | 需要完整组件、插槽、事件和模板引用 | [Vue 3](/frameworks/vue) |
+| React | `@iyotsuba/schedule-react` | 需要类型化配置、回调和组件引用 | [React](/frameworks/react-elements#react) |
+| 原生 HTML、Ionic、uni-app H5 | `@iyotsuba/schedule-elements` | 项目可以渲染标准 Custom Elements | [Custom Elements](/frameworks/react-elements#原生-html-elements) |
+| Flutter | `yotsuba_schedule_kit` | 需要 Flutter 原生手势、布局和 Material 集成 | [Flutter](/frameworks/flutter) |
+| 仅做数据计算 | `@iyotsuba/schedule-core` | 不需要界面，只处理学期、冲突、提醒或交换 | [Core API](/api/core) |
 
-## React
+## 共同的数据边界
 
-使用官方类型化绑定 `@iyotsuba/schedule-react`（内部桥接自定义元素，Props / 事件全量 TS 类型）：
+无论使用哪种框架，都建议由宿主维护 `courses`、当前周、天气、日计划和 Today 布局。组件通过事件或回调报告用户意图，不直接写入数据库、状态库或系统能力。
 
-```tsx
-import { YsSchedule, YsToday } from '@iyotsuba/schedule-react'
-import { useState } from 'react'
+这样可以让 Web 与 Flutter 共享业务语义，同时保留各平台原生的渲染、无障碍和交互体验。
 
-export function Schedule({ courses }) {
-  const [week, setWeek] = useState(1)
-  return (
-    <YsSchedule
-      courses={courses}
-      week={week}
-      onUpdateWeek={setWeek}
-      onCourseTap={(course, stack) => console.log(course, stack)}
-      style={{ height: 640 }}
-    />
-  )
-}
-```
+## 微信与小程序环境
 
-## uni-app(H5)/ Ionic / 原生 HTML
+微信内置浏览器和普通 H5 页面可以使用 Vue、React 或 Custom Elements。微信小程序原生运行时不支持标准 Custom Elements，因此不属于当前支持范围；使用 uni-app 时，请选择 H5 编译目标。
 
-任何能渲染 DOM 的环境都可以用 `<ys-schedule>` 自定义元素；iife 产物支持 CDN `<script>` 直接引入并自动注册。
-
-## 小程序原生
-
-微信小程序不支持自定义元素,暂不在支持范围;uni-app 编译到 H5 端可用。
-
-Flutter 包、发布状态和跨框架 API 对照分别见 [Flutter 接入](/frameworks/flutter)、[React 与 Elements](/frameworks/react-elements) 和 [版本与发布状态](/guide/release-status)。
+尚未确定技术栈时，可以先在 [在线演示](https://iyotsuba.top/schedule?preview=website&source=docs) 中确认交互，再从 [5 分钟接入](/guide/getting-started) 开始。

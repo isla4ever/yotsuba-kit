@@ -1,6 +1,6 @@
 # 自定义 TransitionSpec
 
-`transition` prop 接受完整的 `TransitionSpec` 对象:
+当内置预设无法满足产品节奏时，可以向 `transition` Prop 传入完整的 `TransitionSpec`。协议只描述过渡行为，不改变课表数据或组件结构。
 
 ```ts
 import type { TransitionSpec } from '@iyotsuba/schedule-vue'
@@ -20,9 +20,9 @@ const diagonalDrop: TransitionSpec = {
 }
 ```
 
-## 校验器
+## 接入前校验
 
-发布前用 `validateTransition` 自检(超长时长、时间轴溢出、per-cell 未开 stableSkip 都会给出警告):
+发布前使用 `validateTransition` 检查配置。时长过长、时间轴溢出，或 `per-cell` 模式未启用 `stableSkip` 时，校验器会返回警告。
 
 ```ts
 import { validateTransition } from '@iyotsuba/schedule-core'
@@ -32,6 +32,6 @@ console.warn(validateTransition(diagonalDrop))
 
 ## 约束
 
-- 只允许 `opacity` / `transform`(合成器友好,保证 60fps);
-- `mode: 'per-cell'` 下 `delayFor` 会收到方向与列数,请让波浪方向跟随 `direction`;
-- `reduceMotion` 生效时组件自动直切,你的 spec 无需处理。
+- 仅使用 `opacity` 和 `transform`，避免在动画期间触发布局计算。
+- `mode: 'per-cell'` 时，`delayFor` 会收到方向与列数；延迟顺序应跟随 `direction`。
+- 系统启用减少动态效果时，组件会自动改为直切，自定义配置无需重复处理。

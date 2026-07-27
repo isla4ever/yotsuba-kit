@@ -1,6 +1,6 @@
 # Flutter：yotsuba_schedule_kit
 
-Flutter 包与 Web 共享产品能力边界，但保留 Flutter 原生 Material、手势、语义和布局实现。包不依赖状态管理、定位、网络、日历或分享插件。
+`yotsuba_schedule_kit` 面向需要原生 Flutter 渲染、手势和无障碍语义的移动应用。它与 Web 版本共享课程模型和能力边界，但不依赖特定状态管理、定位、网络、日历或分享插件。
 
 源码、完整应用和只使用公开 API 的 Flutter 演示位于 [isla4ever/yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter)。
 
@@ -10,7 +10,9 @@ Flutter 包与 Web 共享产品能力边界，但保留 Flutter 原生 Material�
 flutter pub add yotsuba_schedule_kit
 ```
 
-pub.dev 当前稳定版是 `0.5.0`；工作区中的 `0.6.0` 为待发布源码。发布状态见 [版本与发布状态](/guide/release-status)。
+::: info 版本说明
+pub.dev 当前稳定版为 `0.5.0`。官网同时展示工作区中的 `0.6.0` 候选 API，生产项目升级前请查看[版本状态](/guide/release-status)。
+:::
 
 ## 完整课表
 
@@ -40,7 +42,7 @@ YsSchedule(
 )
 ```
 
-`YsSchedule` 只在 `onWeekChanged`、`onCourseTap`、`onCourseShare`、`onCourseEdit`、`onCourseRemove` 等回调中报告用户意图。日历写入、分享和持久化始终属于宿主应用。
+`YsSchedule` 通过 `onWeekChanged`、`onCourseTap`、`onCourseShare`、`onCourseEdit` 和 `onCourseRemove` 等回调报告用户操作。宿主应用负责更新状态，并决定是否写入日历、发起分享或持久化数据。
 
 ## 课程数据与 Today 联动
 
@@ -70,8 +72,17 @@ YsToday(
 )
 ```
 
-`YsTodayWidgetIds` 提供 `nextCourse`、`timeline`、`readiness`、`plans`、`courseTasks`、`weekGlance` 和 `weather`。通过 `customBuilders` 注入任意业务卡片，长按后可拖动整卡并从四角缩放。
+`YsTodayWidgetIds` 提供 `nextCourse`、`timeline`、`readiness`、`plans`、`courseTasks`、`weekGlance` 和 `weather`。通过 `customBuilders` 可以注入业务模块；布局编辑状态下支持拖动排序和四角缩放。
 
 ## 天气与权限
 
-传入 `YsWeatherSnapshot`，或实现 `YsWeatherProvider`；定位与网络请求仍由应用自己触发和处理。这样使用者可以选择系统定位、学校天气服务或本地缓存，而不会因导入组件包被动申请权限。
+传入 `YsWeatherSnapshot`，或实现 `YsWeatherProvider`。定位与网络请求仍由应用主动触发，因此可以自由选择系统定位、学校天气服务或本地缓存，也不会因导入组件包而自动申请权限。
+
+## 下一步
+
+| 目标 | 文档 |
+| --- | --- |
+| 查看完整 Flutter 示例 | [yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter) |
+| 理解跨端课程字段 | [课程数据](/components/course-data) |
+| 设计天气与主题接入 | [天气、主题与动效](/api/weather-motion) |
+| 比较 Web 与 Flutter 方案 | [选择接入方式](/guide/frameworks) |

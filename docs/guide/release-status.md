@@ -1,18 +1,21 @@
-# 版本与发布状态
+# 版本状态
 
-官网会区分 current main 的能力和 registry 已发布版本，避免文档展示了用户尚无法安装的 API。
+官网以稳定版使用文档为基础，同时展示下一版本的候选 API。候选版本来自当前 `main` 分支源码，不等同于已经发布到 NPM 或 pub.dev 的安装包。
 
-| 分发 | 注册表稳定版 | current main | 说明 |
+| 分发包 | 注册表稳定版 | 主分支候选版本 | 状态说明 |
 | --- | --- | --- | --- |
-| `@iyotsuba/schedule-core` | `0.5.0` | `0.6.0` | 0.6 增加课程资料、任务和统一视觉 / Today API |
-| `@iyotsuba/schedule-vue` | `0.5.0` | `0.6.0` | 在线官网演示使用 current main |
-| `@iyotsuba/schedule-elements` | `0.5.0` | `0.6.0` | 需要和 core / Vue 同步发版 |
-| `@iyotsuba/schedule-react` | `0.3.1` | `0.6.0` | React 包需单独验证并同步发版 |
-| `yotsuba_schedule_kit` (pub.dev) | `0.5.0` | `0.6.0` | Flutter 包需要通过 `dart pub publish --dry-run` 后发布 |
+| `@iyotsuba/schedule-core` | `0.5.0` | `0.6.0` | 候选版增加课程资料、任务和统一视觉协议 |
+| `@iyotsuba/schedule-vue` | `0.5.0` | `0.6.0` | 官网在线演示使用候选版能力 |
+| `@iyotsuba/schedule-elements` | `0.5.0` | `0.6.0` | 将与 Core、Vue 同步发布 |
+| `@iyotsuba/schedule-react` | `0.3.1` | `0.6.0` | 发布前需要完成独立消费者验证 |
+| `yotsuba_schedule_kit` | `0.5.0` | `0.6.0` | 发布前需要完成 pub.dev 检查 |
 
-## 使用原则
+## 如何选择版本
 
-- 生产安装请固定到表中“注册表稳定版”，并只使用该版本的 changelog 所列 API。
-- 官网中的 `0.6.0` 页面用于 current main、演示和即将发布的 API 审阅；不要把它当成已经可从 NPM 或 pub.dev 获取的版本。
-- 发布 `0.6.0` 前，Web 需要完成 package build、unit / e2e、consumer playground 验证和 NPM dry-run；Flutter 需要 `flutter analyze`、`flutter test`、example web build 与 `dart pub publish --dry-run`。
-- 完成上述验证且获得发布授权后，应同时更新本页稳定版、安装示例和 CHANGELOG，保持官网与注册表一致。
+- 新的生产项目：安装“注册表稳定版”，并以对应 CHANGELOG 为功能边界。
+- 评估下一版本：使用 `main` 分支源码、官网演示和候选 API 文档，不要将其视为已发布包。
+- 升级已有项目：等待正式版本发布后，再同时升级相互依赖的 Core、Vue、Elements 或 React 包。
+
+## 发布门槛
+
+Web 包需要通过构建、单元测试、端到端测试、消费者示例和 NPM dry-run；Flutter 包需要通过静态分析、测试、示例构建和 `dart pub publish --dry-run`。完成验证并获得发布授权后，官网安装命令、CHANGELOG 与本页会同步更新。

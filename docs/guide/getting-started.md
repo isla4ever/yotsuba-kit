@@ -1,22 +1,22 @@
-# 快速开始
+# 5 分钟接入
 
-## 安装
+本页使用 Vue 3 完成最小接入。你将安装稳定版、准备两门课程，并渲染一个支持触摸换周的课表。
 
-当前 NPM 稳定版为 `0.5.0`。`0.6.0` API 正在 current main 和官网演示中验证，发布前请不要按主分支文档直接假设注册表已可安装；详见 [版本与发布状态](/guide/release-status)。
+如果项目使用 React、原生 HTML 或 Flutter，请先前往 [选择接入方式](/guide/frameworks)。
 
-::: code-group
+::: info 版本说明
+NPM 当前稳定版为 `0.5.0`。官网同时展示正在验证的 `0.6.0` 候选 API；生产项目请先安装稳定版，并在升级前查看[版本状态](/guide/release-status)。
+:::
 
-```bash [Vue 3]
+## 1. 安装
+
+```bash
 pnpm add @iyotsuba/schedule-vue@0.5.0
 ```
 
-```bash [其他框架（Web Component）]
-pnpm add @iyotsuba/schedule-elements@0.5.0
-```
+## 2. 准备课程数据
 
-:::
-
-## 最小示例（Vue 3）
+每门课程至少需要名称、星期、节次和生效周次。单双周课程通过 `parity` 声明。
 
 ```vue
 <script setup lang="ts">
@@ -29,7 +29,7 @@ const courses: Course[] = [
   {
     id: 'math',
     name: '高等数学',
-    location: '教1-201',
+    location: '教一 201',
     weekday: 1,
     startSection: 1,
     endSection: 2,
@@ -38,7 +38,7 @@ const courses: Course[] = [
   },
   {
     id: 'pe',
-    name: '体育（单周）',
+    name: '体育',
     weekday: 4,
     startSection: 3,
     endSection: 4,
@@ -48,7 +48,13 @@ const courses: Course[] = [
   },
 ]
 </script>
+```
 
+## 3. 渲染课表
+
+`term-start` 表示第 1 周周一。`week` 是受控状态：用户滑动换周或外部修改周次时，组件都会通过 `v-model:week` 同步结果。
+
+```vue
 <template>
   <YsSchedule
     v-model:week="week"
@@ -60,17 +66,14 @@ const courses: Course[] = [
 </template>
 ```
 
-左右滑动即可换周（波浪覆盖动画）；`v-model:week` 受控，任何外部 UI（周选择器、按钮）改这个值都会触发同一套过渡。进一步的课程详情、Today、教材任务、天气和弹层编排见[组件](/components/schedule)与[API](/api/core)。
+此时页面应显示两门课程。左右滑动或修改 `week`，课表会使用同一套换周过渡更新。
 
-## Web Component（任意框架 / 原生 HTML）
+## 4. 选择下一步
 
-```html
-<script type="module">
-  import '@iyotsuba/schedule-elements'
-  const el = document.querySelector('ys-schedule')
-  el.courses = [/* Course[] */]
-  el.week = 1
-</script>
-
-<ys-schedule style="height: 640px"></ys-schedule>
-```
+| 接下来要做什么 | 阅读页面 |
+| --- | --- |
+| 添加详情、编辑、背景或天气 | [Schedule 课表组件](/components/schedule) |
+| 展示今日课程、教材和任务 | [Today 今日视图](/components/today) |
+| 定义教材、携带物和任务 | [课程数据模型](/components/course-data) |
+| 接管业务操作 | [事件](/api/events)、[方法](/api/methods)与[插槽](/api/slots) |
+| 切换框架或平台 | [选择接入方式](/guide/frameworks) |

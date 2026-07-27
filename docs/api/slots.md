@@ -1,13 +1,15 @@
 # 插槽
 
-插槽用于替换视图，不改变 core 行为。即使提供完整自定义课程卡、详情字段或 Today widget，周次、重叠、天气、拖动排版等数据仍由组件计算。
+插槽用于替换局部界面，同时保留组件的数据计算和交互协议。即使自定义课程卡、详情字段或 Today 模块，周次、重叠、天气和布局数据仍由组件提供。
+
+当只需要调整颜色、间距或字体时，优先使用[主题与品牌](/guide/theming)；只有结构和内容需要改变时再使用插槽。
 
 ## YsSchedule
 
 | 插槽 | 作用域 | 用途 |
 | --- | --- | --- |
-| `top-bar` | `{ week, totalWeeks, openWeekPicker }` | 完整替换顶部周 Header |
-| `top-bar-tools` | — | 在内置 Header 右侧放入宿主工具 |
+| `top-bar` | `{ week, totalWeeks, openWeekPicker }` | 完整替换顶部周次栏 |
+| `top-bar-tools` | — | 在内置顶部栏右侧放入宿主操作 |
 | `day` | `{ weekday, label, date }` | 替换单个日期表头 |
 | `course` | `{ course, active, color }` | 替换课程卡 |
 | `detail-field` | `{ field, label, course, emptyText }` | 逐字段替换详情内容 |
@@ -28,7 +30,7 @@
 
 ## YsToday
 
-使用 `#widget-<id>`。未知 id 可创建业务卡片，内置 id 可整体替换默认卡片：
+使用 `#widget-<id>` 注册或替换模块。自定义 id 会创建新的业务模块；内置 id 会替换对应的默认内容。
 
 | 作用域 | 含义 |
 | --- | --- |
@@ -38,10 +40,10 @@
 | `weather` | 当前日天气数据 |
 | `readiness` | 下一节课教材与携带物 |
 | `courseTasks` | 今日未完成课程任务 |
-| `size` | 当前 widget 网格尺寸 |
+| `size` | 当前模块的网格尺寸 |
 | `layout` | 归一化后的 `{ columns, rows }`，便于按 `1x1 / 1x2 / 2x1 / 2x2` 响应式展示内容 |
 | `arranging` | 是否正在编辑布局 |
-| `resizing` | 当前 widget 是否正在被四角控点缩放 |
+| `resizing` | 当前模块是否正在通过四角控点缩放 |
 
 ```vue
 <YsToday :courses="courses" :term-start="termStart" :widgets="[{ id: 'announcements' }]">

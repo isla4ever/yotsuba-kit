@@ -1,8 +1,12 @@
 # React 与 Custom Elements
 
-`@iyotsuba/schedule-elements` 注册 `<ys-schedule>` / `<ys-today>`，可在原生 HTML、uni-app H5、Ionic 等 DOM 环境使用。`@iyotsuba/schedule-react` 在此基础上提供类型化 Props、事件回调和 ref。
+React 项目使用 `@iyotsuba/schedule-react` 获得类型化 Props、事件回调和引用方法。原生 HTML、uni-app H5、Ionic 等 DOM 环境可以直接使用 `@iyotsuba/schedule-elements` 注册的 `<ys-schedule>` 与 `<ys-today>`。
 
-## React
+::: info 版本说明
+NPM 当前稳定版为 `0.5.0`。官网中的课程任务、Today 四角缩放和详情空状态属于 `0.6.0` 候选 API，生产项目升级前请查看[版本状态](/guide/release-status)。
+:::
+
+## React 接入
 
 ```tsx
 import { useRef, useState } from 'react'
@@ -32,7 +36,7 @@ export function SchedulePage() {
 }
 ```
 
-React 事件采用 `onUpdateWeek`、`onCourseTap`、`onWidgetResize` 等 camelCase Props；可调用的方法与 Vue ref 完全对齐。`YsScheduleElement`、`YsTodayElement`、Props 类型和 Course 类型均从包根导出。
+React 通过 `week` 与 `onUpdateWeek` 组成受控周次。其他事件使用 `onCourseTap`、`onWidgetResize` 等 camelCase Props；实例方法与 Vue 版本保持一致。`YsScheduleElement`、`YsTodayElement`、Props 类型和 `Course` 类型均从包根导出。
 
 ## 原生 HTML / Elements
 
@@ -49,8 +53,13 @@ schedule.addEventListener('update:week', event => {
 schedule.openCourse('math-01')
 ```
 
-对象 Props 应使用 DOM property 赋值，而不是 HTML attribute 字符串。框架包装会替你完成这一点；原生场景应在 `register()` 后再创建元素。
+课程、天气等对象 Props 应通过 DOM property 赋值，不能序列化为 HTML attribute 字符串。原生场景应先调用 `register()`，再创建和配置元素。
 
-## 版本边界
+## 下一步
 
-当前 NPM 已发布版本并未同步到 `0.6.0`。`0.6.0` 的课程任务、Today 四角缩放、详情空状态等 API 请以 current main 源码和演示验证，待 registry 发布后再把安装版本升级。详见 [版本与发布状态](/guide/release-status)。
+| 目标 | 文档 |
+| --- | --- |
+| 查询 React 事件名称 | [事件](/api/events) |
+| 调用周次、详情和布局方法 | [方法](/api/methods) |
+| 理解课程与任务字段 | [课程数据](/components/course-data) |
+| 查看其他框架的选择建议 | [选择接入方式](/guide/frameworks) |

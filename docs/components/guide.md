@@ -1,14 +1,18 @@
-# Guide 引导
+# Guide 新手引导
 
-内置三档引导模式,由 core 的 `GuideMachine` 状态机驱动,通过 `guide` prop 配置、`startGuide()` 触发:
+Guide 用于解释首次使用流程，也可以独立接入非课表页面。引导状态由 Core 的 `GuideMachine` 管理；组件负责定位目标、展示步骤和报告进度，是否自动启动及完成状态如何保存由宿主决定。
 
-| 模式 | 交互 | 适用 |
+## 模式选择
+
+| 模式 | 交互方式 | 建议场景 |
 | --- | --- | --- |
-| `tips` | 非阻塞小气泡逐条讲解,无遮罩 | 轻提示 |
-| `spotlight` | 遮罩挖孔高亮 + 讲解卡(上一步/下一步/跳过) | 常规首次引导 |
-| `walkthrough` | **手把手**:每步要求用户真实完成动作(点击高亮区 / 滑动课表)才前进;超时播放脉冲 + 手势暗示动画 | 最强的上手教学 |
+| `tips` | 无遮罩的非阻塞提示 | 介绍新增功能或次要入口 |
+| `spotlight` | 聚焦目标，并提供上一步、下一步和跳过 | 常规首次使用引导 |
+| `walkthrough` | 完成点击、滑动等指定操作后才进入下一步 | 需要用户实际练习的关键流程 |
 
-## 用法
+优先选择限制较少的模式。只有在操作本身难以通过说明理解时，才使用 `walkthrough` 阻塞流程。
+
+## 基础用法 {#用法}
 
 ```vue
 <script setup lang="ts">
@@ -25,21 +29,21 @@ const schedule = ref()
     :guide="{
       mode: 'walkthrough',
       steps: defaultScheduleGuideSteps,
-      storageKey: 'schedule-guide-done', // 只自动展示一次
+      storageKey: 'schedule-guide-done', // 自动展示一次后记录完成状态
     }"
     @guide-step="(step, i) => console.log('step', i, step.id)"
     @guide-finish="() => console.log('done')"
   />
-  <button @click="schedule.startGuide()">重播引导</button>
+  <button type="button" @click="schedule?.startGuide()">重新查看引导</button>
 </template>
 ```
 
 ## 自定义剧本
 
-`steps` 完全可自定义。`target` 支持两种写法:
+`steps` 用于定义步骤顺序、目标和预期操作。`target` 支持两种写法：
 
-- **语义锚点**:组件内置 `grid` / `top-bar-week` / `weekday-bar` / `course-card`;
-- **任意 CSS 选择器**:高亮宿主页面的任何元素(如你自己的 dock 按钮)。
+- 语义锚点：组件内置 `grid`、`top-bar-week`、`weekday-bar` 和 `course-card`。
+- CSS 选择器：定位宿主页面中的元素，例如自定义工具按钮。
 
 ```ts
 const steps: GuideStep[] = [
@@ -48,15 +52,20 @@ const steps: GuideStep[] = [
     target: '.my-dock-button', // 宿主元素
     title: '打开工具',
     body: '这里可以导入课表和切换设置。',
-    expect: 'tap',       // walkthrough 模式下要求真实点击
-    hintAfterMs: 3000,   // 3 秒未操作播放脉冲提示
+    expect: 'tap',
+    hintAfterMs: 3000,
   },
 ]
 ```
 
-`expect` 支持 `tap` / `swipe-left` / `swipe-right` / `longpress`;`tips` 与 `spotlight` 模式忽略 `expect`,按钮前进。
+`expect` 支持 `tap`、`swipe-left`、`swipe-right` 和 `longpress`。该字段只在 `walkthrough` 模式生效；其余模式由用户通过按钮切换步骤。
 
-## Events / Methods
+## 事件与方法 {#events-methods}
 
-- 事件:`guide-step (step, index)`、`guide-finish`
-- 方法:`startGuide()`;`YsGuide` 组件也可独立使用(`config` + `root` + `start()`),给非课表页面做引导。
+| 类型 | 名称 | 说明 |
+| --- | --- | --- |
+| 事件 | `guide-step(step, index)` | 当前步骤发生变化 |
+| 事件 | `guide-finish` | 用户完成或结束引导 |
+| 方法 | `startGuide()` | 从第一步启动已配置的引导 |
+
+`YsGuide` 也可作为独立组件使用，通过 `config`、`root` 和 `start()` 为其他页面提供相同的引导能力。

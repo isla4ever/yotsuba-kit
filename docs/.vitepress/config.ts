@@ -3,13 +3,13 @@ import { defineConfig } from 'vitepress'
 const zhSidebar = {
   '/guide/': [
     {
-      text: '指南',
+      text: '从这里开始',
       items: [
-        { text: '介绍', link: '/guide/introduction' },
-        { text: '快速开始', link: '/guide/getting-started' },
-        { text: '框架接入', link: '/guide/frameworks' },
-        { text: '主题定制', link: '/guide/theming' },
-        { text: '版本与发布状态', link: '/guide/release-status' },
+        { text: '选择阅读路径', link: '/guide/introduction' },
+        { text: '5 分钟接入', link: '/guide/getting-started' },
+        { text: '选择接入方式', link: '/guide/frameworks' },
+        { text: '主题与品牌', link: '/guide/theming' },
+        { text: '版本状态', link: '/guide/release-status' },
       ],
     },
   ],
@@ -19,10 +19,10 @@ const zhSidebar = {
       collapsed: false,
       items: [
         { text: '概览与用法', link: '/components/schedule' },
-        { text: 'Props 配置项', link: '/components/schedule#props' },
-        { text: 'Events 事件', link: '/api/events#ysschedule' },
-        { text: 'Methods 方法', link: '/api/methods#ysschedule' },
-        { text: 'Slots 插槽', link: '/api/slots#ysschedule' },
+        { text: '配置项（Props）', link: '/components/schedule#props' },
+        { text: '事件', link: '/api/events#ysschedule' },
+        { text: '方法', link: '/api/methods#ysschedule' },
+        { text: '插槽', link: '/api/slots#ysschedule' },
         { text: '编辑模式', link: '/components/schedule#编辑模式' },
         { text: '日计划', link: '/components/schedule#日计划' },
         { text: '自定义背景', link: '/components/schedule#自定义背景' },
@@ -30,12 +30,12 @@ const zhSidebar = {
       ],
     },
     {
-      text: 'Today 今日指挥台',
+      text: 'Today 今日视图',
       collapsed: false,
       items: [
         { text: '概览与用法', link: '/components/today' },
-        { text: '内置 widget', link: '/components/today#内置-widget' },
-        { text: '自定义 widget', link: '/components/today#自定义-widget' },
+        { text: '内置模块', link: '/components/today#内置-widget' },
+        { text: '自定义模块', link: '/components/today#自定义-widget' },
         { text: '配置与布局', link: '/components/today#配置与布局' },
       ],
     },
@@ -47,13 +47,13 @@ const zhSidebar = {
       ],
     },
     {
-      text: 'Guide 引导',
+      text: 'Guide 新手引导',
       collapsed: false,
       items: [
-        { text: '三模式概览', link: '/components/guide' },
-        { text: '用法', link: '/components/guide#用法' },
+        { text: '模式选择', link: '/components/guide' },
+        { text: '基础用法', link: '/components/guide#用法' },
         { text: '自定义剧本', link: '/components/guide#自定义剧本' },
-        { text: 'Events / Methods', link: '/components/guide#events-methods' },
+        { text: '事件与方法', link: '/components/guide#events-methods' },
       ],
     },
   ],
@@ -63,7 +63,7 @@ const zhSidebar = {
       collapsed: false,
       items: [
         { text: '总览', link: '/api/core' },
-        { text: '学期、冲突与交换', link: '/api/term-data' },
+        { text: '学期、课程与数据交换', link: '/api/term-data' },
         { text: '天气、主题与动效', link: '/api/weather-motion' },
       ],
     },
@@ -79,14 +79,14 @@ const zhSidebar = {
   ],
   '/frameworks/': [
     {
-      text: 'Web',
+      text: 'Web 接入',
       items: [
         { text: 'Vue 3', link: '/frameworks/vue' },
-        { text: 'React 与 Elements', link: '/frameworks/react-elements' },
+        { text: 'React 与 Custom Elements', link: '/frameworks/react-elements' },
       ],
     },
     {
-      text: 'Flutter',
+      text: 'Flutter 接入',
       items: [
         { text: 'yotsuba_schedule_kit', link: '/frameworks/flutter' },
       ],
@@ -148,13 +148,13 @@ export default defineConfig({
     root: {
       label: '简体中文',
       lang: 'zh-CN',
-      description: '高度可配置的开源课表组件库：中国高校学期语义、可插拔换周动画、主题令牌与今日指挥台。',
+      description: '面向中国高校课表的跨端开源组件库，提供学期计算、课表与今日视图、主题和受控交互。',
       themeConfig: {
         nav: [
-          { text: '指南', link: '/guide/getting-started' },
+          { text: '开始使用', link: '/guide/introduction' },
           { text: '组件', link: '/components/schedule' },
+          { text: '框架', link: '/guide/frameworks' },
           { text: 'API', link: '/api/core' },
-          { text: 'Frameworks', link: '/frameworks/vue' },
           { text: '动效', link: '/motion/transitions' },
         ],
         sidebar: zhSidebar,

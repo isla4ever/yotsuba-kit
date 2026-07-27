@@ -1,6 +1,6 @@
 # Vue 3
 
-Vue 包提供完整 `<YsSchedule>` 与 `<YsToday>`，包含所有 Slots、受控事件和 template ref 方法。
+使用 `@iyotsuba/schedule-vue` 在 Vue 3 项目中接入完整课表和 Today 今日视图。该包提供类型化 Props、`v-model`、事件、插槽和模板引用方法，适合需要由 Vue 状态统一管理课程与布局的项目。
 
 ## 安装
 
@@ -8,9 +8,11 @@ Vue 包提供完整 `<YsSchedule>` 与 `<YsToday>`，包含所有 Slots、受控
 pnpm add @iyotsuba/schedule-vue@0.5.0
 ```
 
-当前 main 的 `0.6.0` API 尚未发布到注册表。请先阅读 [版本与发布状态](/guide/release-status)，避免把 main 文档与已发布包混用。
+::: info 版本说明
+NPM 当前稳定版为 `0.5.0`。官网同时展示 `0.6.0` 候选 API，生产项目升级前请查看[版本状态](/guide/release-status)。
+:::
 
-## 受控课表
+## 最小受控接入
 
 ```vue
 <script setup lang="ts">
@@ -18,6 +20,7 @@ import { YsSchedule, YsToday, type Course, type TodayWidgetConfig } from '@iyots
 import { ref } from 'vue'
 
 const week = ref(1)
+const termStart = new Date(2026, 8, 7)
 const courses = ref<Course[]>([])
 const widgets = ref<TodayWidgetConfig[]>([
   { id: 'next-course', size: '2x1' },
@@ -36,11 +39,11 @@ const widgets = ref<TodayWidgetConfig[]>([
 </template>
 ```
 
-课程与 Today 使用同一份响应式引用即可联动。不要在组件内部复制数据；编辑、计划、任务完成等业务副作用应写在事件处理函数中。
+课表与 Today 直接使用同一份课程状态即可联动。编辑课程、完成任务和保存布局等业务操作应在事件处理函数中写回你的状态或服务端。
 
 ## 样式与主题
 
-组件将令牌应用为 `--ys-*` CSS 变量。优先通过 `theme` 传 `Partial<ThemeTokens>` 或在宿主容器上覆盖变量；避免使用深层选择器破坏内部交互。
+组件将主题令牌映射为 `--ys-*` CSS 变量。优先通过 `theme` 传入 `Partial<ThemeTokens>`，或在宿主容器上覆盖变量。不要依赖内部 DOM 结构编写深层选择器。
 
 ```vue
 <YsSchedule
@@ -49,4 +52,11 @@ const widgets = ref<TodayWidgetConfig[]>([
 />
 ```
 
-需要替换结构时使用 [插槽](/api/slots)，需要命令式打开某个面板时使用 [方法](/api/methods)。
+## 下一步
+
+| 目标 | 文档 |
+| --- | --- |
+| 完整配置课表与详情 | [Schedule 课表组件](/components/schedule) |
+| 组织今日课程、任务和自定义模块 | [Today 今日视图](/components/today) |
+| 接收用户操作并写回状态 | [事件](/api/events) |
+| 替换结构或打开内置面板 | [插槽](/api/slots)与[方法](/api/methods) |

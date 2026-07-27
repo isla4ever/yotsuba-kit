@@ -1,6 +1,8 @@
-# Today 今日指挥台
+# Today 今日视图
 
-`<YsToday>` 是由 widget 注册表驱动的移动端日程界面。它与 `<YsSchedule>` 共用课程、学期、天气和日计划数据；长按卡片或点击 Header 入口进入排版，整卡可拖动让位。点按某张卡片后，仅该卡片显示贴边的四角控点并可连续缩放。
+`<YsToday>` 用于构建移动端“今日”页面。它与 `<YsSchedule>` 共享课程、学期、天气和日计划数据，并将下一节课、教材、任务、计划与天气组织为可排版模块。
+
+长按卡片或使用顶部入口可以进入布局编辑。卡片支持整块拖动与智能让位；选中某张卡片后，仅该卡片显示贴合边框的四角缩放控点。
 
 ```vue
 <YsToday
@@ -15,9 +17,9 @@
 />
 ```
 
-## 内置 widget
+## 内置模块 {#内置-widget}
 
-| id | 内容 | 常用尺寸 |
+| 模块 id | 默认内容 | 常用尺寸 |
 | --- | --- | --- |
 | `next-course` | 正在上课或下一节课、倒计时、地点 | `2x1` |
 | `today-timeline` | 今日课程时间线与状态 | `2x1` |
@@ -29,7 +31,7 @@
 
 `size` 支持旧别名 `compact / standard / large`，也支持明确网格尺寸 `1x1 / 1x2 / 2x1 / 2x2`。
 
-尺寸不是单纯拉伸外框。内置「本周一览」会按空间逐级披露内容，自定义 widget 也可通过插槽作用域实现同样的响应式内容：
+尺寸变化不仅会调整外框，也会改变信息层级。内置“本周一览”会根据可用空间逐步展示内容；自定义模块可以通过插槽作用域采用同样的响应式策略。
 
 | 尺寸 | 推荐内容层级 | 内置示例 |
 | --- | --- | --- |
@@ -38,7 +40,7 @@
 | `2x1` | 横向摘要加紧凑趋势 | 三项指标与迷你柱状图 |
 | `2x2` | 完整指标、图表和补充结论 | 七日课程柱状图与周总结 |
 
-拖动跨过网格尺寸阈值时，卡片尺寸、周围卡片让位和内容层级会一起过渡；`reduceMotion` 或系统减少动态效果开启时自动退化为即时切换。
+缩放跨过网格尺寸阈值时，卡片尺寸、周围卡片让位和内容层级会同步过渡。启用 `reduceMotion` 或系统“减少动态效果”后，组件会改为即时切换。
 
 ## 配置与布局
 
@@ -50,17 +52,17 @@
 | `weather` / `weatherScene` | `WeatherSnapshot \| null` / `boolean` | `null` / `true` | 天气模块和背景场景 |
 | `theme` | 与 Schedule 相同 | `'light'` | 可复用主题令牌 |
 | `now` | `Date` | 当前时间 | 演示与测试可注入固定时间 |
-| `title` | `string` | `'今日'` | 标题 |
+| `title` | `string` | `'今日'` | 页面标题 |
 | `arrangeable` | `boolean` | `true` | 是否显示布局编辑入口并接受长按 |
 | `reduceMotion` | `boolean` | `false` | 减少拖动、背景和过渡动画 |
 | `emptyText` | `string` | 内置文案 | 统一空状态文案 |
-| `emptyTexts` | `Record<string, string>` | `{}` | 按 widget id 覆盖空状态 |
+| `emptyTexts` | `Record<string, string>` | `{}` | 按模块 id 覆盖空状态 |
 
-拖动和缩放始终通过 `update:widgets` / `layout-change` 回传；不要让组件在内部持久化布局。
+拖动和缩放始终通过 `update:widgets` 与 `layout-change` 回传，布局持久化由宿主负责。
 
-## 自定义 widget
+## 自定义模块 {#自定义-widget}
 
-把任意 id 写进 `widgets`，再提供 `#widget-<id>`。内置 id 使用同名插槽时会被整体替换：
+将任意 id 写入 `widgets`，再提供 `#widget-<id>` 插槽，即可注册业务模块。为内置 id 提供同名插槽时，会整体替换默认视图。
 
 ```vue
 <YsToday :widgets="[{ id: 'focus' }, { id: 'next-course' }]" :courses="courses" :term-start="termStart">
@@ -75,7 +77,7 @@
 </YsToday>
 ```
 
-插槽作用域还包括 `week`、`ongoing`、`upcoming`、`readiness`、`courseTasks`、当前 `size`、`layout: { columns, rows }` 与 `resizing`。完整作用域见 [插槽](/api/slots)。
+插槽作用域还包括 `week`、`ongoing`、`upcoming`、`readiness`、`courseTasks`、当前 `size`、`layout: { columns, rows }` 与 `resizing`。完整定义见[插槽](/api/slots)。
 
 ## 受控布局示例
 
@@ -96,4 +98,4 @@ const widgets = ref<TodayWidgetConfig[]>([
 </template>
 ```
 
-布局事件、方法和自定义 slot 分别见 [事件](/api/events#ystoday)、[方法](/api/methods#ystoday) 和 [插槽](/api/slots#ystoday)。
+布局事件、方法和自定义插槽分别见[事件](/api/events#ystoday)、[方法](/api/methods#ystoday)和[插槽](/api/slots#ystoday)。

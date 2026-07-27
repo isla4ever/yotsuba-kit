@@ -19,73 +19,87 @@ const props = withDefaults(defineProps<{ lang?: 'zh' | 'en' }>(), { lang: 'zh' }
 
 const t = computed(() => props.lang === 'zh'
   ? {
-      badge: 'current main · 0.6.0 API · registry latest 0.5.0',
-      title1: '把复杂课表，',
-      title2: '做成清晰的组件接口。',
-      sub: '中国高校学期语义、天气联动、教材与任务、弹层编排和移动端 Today，都由受控数据与可替换视图组成。',
-      start: '开始接入',
-      github: 'GitHub',
+      badge: '面向中国高校课表的跨端组件库',
+      title1: '一套课表数据，',
+      title2: '构建课表、今日视图与课程服务。',
+      sub: 'Yotsuba Schedule Kit 面向中国高校课表场景，提供可组合的学期引擎、跨端组件和受控交互。你负责业务数据与系统能力，组件负责稳定呈现。',
+      start: '5 分钟开始',
+      frameworks: '选择接入方式',
       install: 'pnpm add @iyotsuba/schedule-vue@0.5.0',
+      copy: '复制',
       copied: '已复制',
-      release: '0.6.0 能力已在 current main 和在线演示中；包注册表版本仍为 0.5.0，等待独立发版验证。',
-      demoLabel: '线上移动端演示',
-      demoState: '实时读取 iyotsuba.top',
+      release: '稳定版 0.5.0 · 官网同步展示 0.6.0 候选 API',
+      demoLabel: '可交互移动端示例',
+      demoState: '独立演示数据 · iyotsuba.top',
       focus: '聚焦演示',
       closeFocus: '退出聚焦演示',
       openExternal: '在新窗口打开线上演示',
       stats: [
         { value: 0, label: 'core 运行时依赖' },
+        { value: 4, label: 'Web 分发包' },
         { value: 7, label: '内置换周模式' },
         { value: 7, label: 'Today 内置模块' },
-        { value: 4, label: 'Web 分发包' },
       ],
-      capabilityKicker: 'COMPONENT MAP / 06',
-      capabilityTitle: '从课表到今日，一套明确的组件边界',
-      capabilitySub: '每项能力都有独立的数据契约、事件和替换点，可以按产品阶段渐进接入。',
-      capabilityLink: '浏览全部组件',
-      readMore: '查看文档',
+      pathKicker: '阅读入口',
+      pathTitle: '按你的目标开始',
+      pathSub: '不需要先通读全部文档。选择当前任务，完成后再进入下一层。',
+      paths: [
+        { icon: Command, meta: '约 5 分钟', title: '第一次接入', desc: '安装稳定版、准备最小课程数据，并运行第一个可换周课表。', action: '打开快速开始', link: '/guide/getting-started' },
+        { icon: Workflow, meta: '按技术栈', title: '接入现有项目', desc: '根据 Vue、React、Custom Elements 或 Flutter 选择对应包和数据绑定方式。', action: '选择接入方式', link: '/guide/frameworks' },
+        { icon: Layers3, meta: '按任务查询', title: '查找组件与 API', desc: '直接查阅配置项、事件、方法、插槽，以及课程、天气和动效协议。', action: '查看组件文档', link: '/components/schedule' },
+      ],
+      capabilityKicker: '能力索引',
+      capabilityTitle: '按产品问题查找能力',
+      capabilitySub: '指南负责学习路径，组件页解释使用方式，API 页用于精确查询。',
+      capabilityLink: '查看组件文档',
+      readMore: '继续阅读',
       features: [
-        { icon: CalendarDays, title: '中国高校学期语义', desc: '单双周、调休补班、重叠课程和非本周状态，都在零依赖 core 中计算。', meta: 'CORE / TERM', link: '/components/schedule', size: 'wide' },
-        { icon: CloudSun, title: '天气是受控数据', desc: '宿主注入天气快照；课程卡、星期栏、详情 Hero 与动态场景共享同一状态。', meta: 'DATA / WEATHER', link: '/api/weather-motion', size: 'narrow' },
-        { icon: Layers3, title: '详情与弹层可编排', desc: '字段、空值文案、操作区、详情过渡和每类弹层位置都能单独配置。', meta: 'SHEETS / SLOTS', link: '/api/slots', size: 'narrow' },
-        { icon: LayoutDashboard, title: '面向触摸的 Today', desc: '长按进入排版，整卡拖动智能让位，四角缩放，并展示课程任务与课前携带清单。', meta: 'TODAY / TOUCH', link: '/components/today', size: 'wide' },
-        { icon: Workflow, title: '同一能力，多种宿主', desc: 'core、Vue、React、Custom Elements 与 Flutter 保持同一数据边界与行为语义。', meta: 'VUE / REACT / FLUTTER', link: '/guide/frameworks', size: 'half' },
-        { icon: Command, title: '交给宿主的副作用', desc: '定位、网络、日历、分享和持久化都显式授权，组件只发事件和公开方法。', meta: 'EVENTS / METHODS', link: '/api/methods', size: 'half' },
+        { icon: CalendarDays, title: '正确处理学期与课程', desc: '覆盖单双周、调休补班、重叠课程、节次与非本周状态，并保持数据受控。', meta: '课表组件 · Core', link: '/components/schedule' },
+        { icon: LayoutDashboard, title: '组织今日课程与任务', desc: '用可排版的 Today 组件汇总下一节课、教材、携带物、任务、计划和天气。', meta: 'Today · 自定义模块', link: '/components/today' },
+        { icon: CloudSun, title: '统一天气、主题与动效', desc: '向课表与 Today 注入同一份天气数据，并通过令牌和协议统一视觉表现。', meta: '天气 · 主题 · 动效', link: '/api/weather-motion' },
+        { icon: Layers3, title: '接管详情与业务操作', desc: '使用事件、方法和插槽替换详情字段、操作区与弹层，同时保留核心计算。', meta: '事件 · 方法 · 插槽', link: '/api/slots' },
       ],
     }
   : {
-      badge: 'current main · 0.6.0 API · registry latest 0.5.0',
-      title1: 'Complex timetables,',
-      title2: 'clear component contracts.',
-      sub: 'Academic-term semantics, weather, course materials, tasks, adaptive sheets and a touch-first Today dashboard all stay controlled and replaceable.',
-      start: 'Get Started',
-      github: 'GitHub',
+      badge: 'Cross-platform components for academic schedules',
+      title1: 'One schedule model,',
+      title2: 'from timetable to the day ahead.',
+      sub: 'Yotsuba Schedule Kit combines academic-term logic, cross-platform components and controlled interactions. Your app owns data and system capabilities; the kit owns reliable presentation.',
+      start: 'Start in 5 minutes',
+      frameworks: 'Choose a framework',
       install: 'pnpm add @iyotsuba/schedule-vue@0.5.0',
+      copy: 'Copy',
       copied: 'Copied',
-      release: 'The 0.6.0 API is available in current main and this live demo. The registry remains on 0.5.0 pending an independent release gate.',
-      demoLabel: 'Live mobile demo',
-      demoState: 'Live from iyotsuba.top',
+      release: 'Stable 0.5.0 · This site also previews the 0.6.0 candidate API',
+      demoLabel: 'Interactive mobile example',
+      demoState: 'Isolated demo data · iyotsuba.top',
       focus: 'Focus demo',
       closeFocus: 'Exit focused demo',
       openExternal: 'Open the live demo in a new window',
       stats: [
         { value: 0, label: 'core runtime dependencies' },
+        { value: 4, label: 'Web packages' },
         { value: 7, label: 'built-in transitions' },
         { value: 7, label: 'built-in Today modules' },
-        { value: 4, label: 'Web packages' },
       ],
-      capabilityKicker: 'COMPONENT MAP / 06',
-      capabilityTitle: 'One explicit component boundary from schedule to Today',
-      capabilitySub: 'Each capability has its own data contract, events and replacement points, ready for progressive adoption.',
-      capabilityLink: 'Browse all components',
-      readMore: 'Read docs',
+      pathKicker: 'START HERE',
+      pathTitle: 'Start with your current goal',
+      pathSub: 'You do not need to read everything first. Pick a task, complete it, then move to the next layer.',
+      paths: [
+        { icon: Command, meta: 'About 5 minutes', title: 'First integration', desc: 'Install the stable package, prepare the smallest course model and render a week-switching schedule.', action: 'Open quick start', link: '/en/guide/getting-started' },
+        { icon: Workflow, meta: 'By stack', title: 'Add it to an existing app', desc: 'Choose the package and binding model for Vue, React, Custom Elements or Flutter.', action: 'Choose a framework', link: '/en/guide/getting-started' },
+        { icon: Layers3, meta: 'By task', title: 'Look up components and APIs', desc: 'Go directly to configuration, events, methods, slots, weather and motion contracts.', action: 'Open component docs', link: '/en/components/schedule' },
+      ],
+      capabilityKicker: 'BUILD BY TASK',
+      capabilityTitle: 'Find capabilities by product problem',
+      capabilitySub: 'Guides teach a path, component pages explain use, and API pages provide exact lookup.',
+      capabilityLink: 'Browse components',
+      readMore: 'Continue reading',
       features: [
-        { icon: CalendarDays, title: 'Academic-term semantics', desc: 'Odd/even weeks, makeup days, overlaps and inactive states are calculated in a zero-dependency core.', meta: 'CORE / TERM', link: '/en/components/schedule', size: 'wide' },
-        { icon: CloudSun, title: 'Weather stays controlled', desc: 'Inject one snapshot and share it across cards, weekday headers, detail heroes and dynamic scenes.', meta: 'DATA / WEATHER', link: '/en/components/schedule', size: 'narrow' },
-        { icon: Layers3, title: 'Composable details and sheets', desc: 'Fields, empty text, actions, detail transitions and each sheet placement remain independently configurable.', meta: 'SHEETS / SLOTS', link: '/en/components/schedule', size: 'narrow' },
-        { icon: LayoutDashboard, title: 'Today for touch', desc: 'Long press to arrange, drag whole cards with reflow, resize from four corners, and surface tasks and carry lists.', meta: 'TODAY / TOUCH', link: '/en/components/schedule', size: 'wide' },
-        { icon: Workflow, title: 'One contract, many hosts', desc: 'Core, Vue, React, Custom Elements and Flutter preserve the same data boundary and behavior.', meta: 'VUE / REACT / FLUTTER', link: '/en/guide/getting-started', size: 'half' },
-        { icon: Command, title: 'Host-owned side effects', desc: 'Location, network, calendar, sharing and persistence stay explicitly authorized by the host app.', meta: 'EVENTS / METHODS', link: '/en/guide/getting-started', size: 'half' },
+        { icon: CalendarDays, title: 'Model terms and courses correctly', desc: 'Handle odd and even weeks, makeup days, overlaps, sections and inactive states with controlled data.', meta: 'SCHEDULE / CORE', link: '/en/components/schedule' },
+        { icon: LayoutDashboard, title: 'Organize courses and tasks for today', desc: 'Compose the next course, materials, tasks, plans and weather in an adaptable Today surface.', meta: 'TODAY / WIDGETS', link: '/en/components/schedule' },
+        { icon: CloudSun, title: 'Unify weather, theme and motion', desc: 'Inject one weather source and use tokens and protocols to keep schedule surfaces consistent.', meta: 'WEATHER / MOTION', link: '/en/motion/transitions' },
+        { icon: Layers3, title: 'Own details and business actions', desc: 'Replace fields, actions and sheets through events, methods and slots while retaining core calculations.', meta: 'EVENTS / SLOTS', link: '/en/components/schedule' },
       ],
     })
 
@@ -95,6 +109,7 @@ const demoFocused = ref(false)
 const focusTrigger = ref<HTMLButtonElement | null>(null)
 const focusDialog = ref<HTMLElement | null>(null)
 const guideHref = computed(() => withBase(props.lang === 'zh' ? '/guide/getting-started' : '/en/guide/getting-started'))
+const frameworksHref = computed(() => withBase(props.lang === 'zh' ? '/guide/frameworks' : '/en/guide/getting-started'))
 
 function docHref(path: string) {
   return withBase(path)
@@ -171,10 +186,10 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
           <p class="hero__release">{{ t.release }}</p>
           <div class="hero__actions">
             <a class="hero__action hero__action--primary" :href="guideHref">{{ t.start }}</a>
-            <a class="hero__action hero__action--secondary" href="https://github.com/isla4ever/yotsuba-kit" target="_blank" rel="noreferrer">{{ t.github }}</a>
+            <a class="hero__action hero__action--secondary" :href="frameworksHref">{{ t.frameworks }}</a>
           </div>
           <button type="button" class="hero__install" :class="{ 'is-copied': copied }" @click="copyInstall">
-            <span aria-hidden="true">$</span><code>{{ t.install }}</code><small>{{ copied ? t.copied : 'Copy' }}</small>
+            <span aria-hidden="true">$</span><code>{{ t.install }}</code><small>{{ copied ? t.copied : t.copy }}</small>
           </button>
 
           <dl class="hero__stats" aria-label="组件库能力概览">
@@ -206,6 +221,30 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
       </div>
     </section>
 
+    <section class="paths" aria-labelledby="paths-title">
+      <div class="paths__inner">
+        <header class="section-intro">
+          <p>{{ t.pathKicker }}</p>
+          <div>
+            <h2 id="paths-title">{{ t.pathTitle }}</h2>
+            <span>{{ t.pathSub }}</span>
+          </div>
+        </header>
+
+        <div class="paths__grid">
+          <article v-for="path in t.paths" :key="path.title" class="pathway">
+            <div class="pathway__top">
+              <component :is="path.icon" :size="20" stroke-width="1.8" aria-hidden="true" />
+              <span>{{ path.meta }}</span>
+            </div>
+            <h3>{{ path.title }}</h3>
+            <p>{{ path.desc }}</p>
+            <a :href="docHref(path.link)">{{ path.action }}<ArrowUpRight :size="15" aria-hidden="true" /></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="capabilities" aria-labelledby="capabilities-title">
       <header class="capabilities__intro">
         <p>{{ t.capabilityKicker }}</p>
@@ -221,7 +260,6 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
           v-for="(feature, index) in t.features"
           :key="feature.title"
           class="capability"
-          :class="`capability--${feature.size}`"
         >
           <div class="capability__top">
             <span>{{ String(index + 1).padStart(2, '0') }}</span>
@@ -306,34 +344,40 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
 .phone__screen { width: 242px; aspect-ratio: 390 / 844; overflow: hidden; background: #f7f9fc; border-radius: 18px; clip-path: inset(0 round 18px); }
 .phone__viewport { width: 390px; height: 844px; transform: scale(0.62051); transform-origin: top left; }
 .phone iframe, .demo-focus iframe { display: block; width: 100%; height: 100%; background: #f7f9fc; border: 0; }
-.capabilities { padding: 76px 28px 92px; color: #192023; background: #f4f2ec; }
-.capabilities__intro { display: grid; grid-template-columns: minmax(0, 0.34fr) minmax(0, 1fr); gap: 15px 44px; max-width: 1160px; margin: 0 auto 34px; }
+.paths { padding: 62px 28px 68px; color: #192023; background: #fff; border-bottom: 1px solid #d6d7d2; }
+.paths__inner { max-width: 1160px; margin: 0 auto; }
+.section-intro { display: grid; grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr); gap: 44px; align-items: start; margin-bottom: 28px; }
+.section-intro > p { margin: 5px 0 0; font-family: var(--vp-font-family-mono); font-size: 10px; font-weight: 700; color: #247a70; }
+.section-intro h2 { margin: 0; font-size: clamp(27px, 3vw, 38px); font-weight: 780; line-height: 1.2; letter-spacing: 0; }
+.section-intro span { display: block; max-width: 660px; margin-top: 10px; font-size: 13px; line-height: 1.65; color: #5e6664; }
+.paths__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #cfd1cc; border-bottom: 1px solid #cfd1cc; }
+.pathway { display: flex; min-height: 238px; flex-direction: column; padding: 24px 26px 22px; }
+.pathway + .pathway { border-left: 1px solid #d8d9d5; }
+.pathway__top { display: flex; align-items: center; justify-content: space-between; color: #247a70; }
+.pathway__top span { font-family: var(--vp-font-family-mono); font-size: 9px; font-weight: 700; color: #7a827f; }
+.pathway h3 { margin: 27px 0 0; font-size: 19px; font-weight: 760; line-height: 1.35; letter-spacing: 0; }
+.pathway > p { margin: 10px 0 0; font-size: 12px; line-height: 1.72; color: #5e6664; }
+.pathway > a { display: inline-flex; gap: 4px; align-items: center; align-self: flex-start; margin-top: auto; padding-top: 20px; font-size: 11px; font-weight: 720; color: #185d56; text-decoration: none; }
+.capabilities { padding: 70px 28px 88px; color: #192023; background: #f4f2ec; }
+.capabilities__intro { display: grid; grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr); gap: 15px 44px; max-width: 1160px; margin: 0 auto 30px; }
 .capabilities__intro > p { margin: 5px 0 0; font-family: var(--vp-font-family-mono); font-size: 10px; font-weight: 700; color: #247a70; }
-.capabilities__intro h2 { max-width: 740px; margin: 0; font-size: clamp(27px, 3vw, 40px); font-weight: 780; line-height: 1.2; letter-spacing: 0; }
+.capabilities__intro h2 { max-width: 740px; margin: 0; font-size: clamp(27px, 3vw, 38px); font-weight: 780; line-height: 1.2; letter-spacing: 0; }
 .capabilities__intro > div { display: flex; grid-column: 2; gap: 24px; align-items: end; justify-content: space-between; padding-top: 2px; border-top: 1px solid #c9c9c2; }
 .capabilities__intro > div span { max-width: 650px; padding-top: 13px; font-size: 13px; line-height: 1.65; color: #5e6664; }
 .capabilities__intro > div a { display: inline-flex; flex: none; gap: 5px; align-items: center; padding-top: 13px; font-size: 12px; font-weight: 720; color: #185d56; text-decoration: none; }
-.capabilities__grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; max-width: 1160px; margin: 0 auto; }
-.capability { position: relative; display: flex; min-height: 226px; flex-direction: column; padding: 20px 21px 18px; overflow: hidden; background: #fff; border: 1px solid #d2d3ce; border-radius: 7px; transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease; --cap-accent: #247a70; }
-.capability::before { position: absolute; top: 0; right: 0; left: 0; height: 4px; content: ""; background: var(--cap-accent); }
-.capability:nth-child(1) { background: #eaf4f0; --cap-accent: #2d887d; }
-.capability:nth-child(2) { --cap-accent: #c18b24; }
-.capability:nth-child(3) { --cap-accent: #4e79c2; }
-.capability:nth-child(4) { background: #faeee8; --cap-accent: #cf6848; }
-.capability:nth-child(5) { --cap-accent: #7d6bab; }
-.capability:nth-child(6) { --cap-accent: #338578; }
-.capability:hover { z-index: 1; border-color: #919995; box-shadow: 0 12px 26px rgb(31 45 40 / 9%); transform: translateY(-3px); }
-.capability--wide { grid-column: span 4; }
-.capability--narrow { grid-column: span 2; }
-.capability--half { grid-column: span 3; }
+.capabilities__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 44px; max-width: 1160px; margin: 0 auto; }
+.capability { display: flex; min-height: 205px; flex-direction: column; padding: 24px 0 22px; border-top: 1px solid #c9c9c2; --cap-accent: #247a70; }
+.capability:nth-child(2) { --cap-accent: #bf704f; }
+.capability:nth-child(3) { --cap-accent: #b17b20; }
+.capability:nth-child(4) { --cap-accent: #4e79a8; }
 .capability__top { display: flex; align-items: center; justify-content: space-between; color: var(--cap-accent); }
 .capability__top span { font-family: var(--vp-font-family-mono); font-size: 10px; font-weight: 700; color: #858d89; }
-.capability__meta { margin: 28px 0 0; font-family: var(--vp-font-family-mono); font-size: 9px; font-weight: 700; color: var(--cap-accent); }
-.capability h3 { max-width: 520px; margin: 7px 0 0; font-size: 18px; font-weight: 760; line-height: 1.35; letter-spacing: 0; }
-.capability__desc { max-width: 600px; margin: 9px 0 0; font-size: 12px; line-height: 1.68; color: #5e6664; }
+.capability__meta { margin: 22px 0 0; font-family: var(--vp-font-family-mono); font-size: 9px; font-weight: 700; color: var(--cap-accent); }
+.capability h3 { max-width: 520px; margin: 7px 0 0; font-size: 19px; font-weight: 760; line-height: 1.35; letter-spacing: 0; }
+.capability__desc { max-width: 520px; margin: 9px 0 0; font-size: 12px; line-height: 1.7; color: #5e6664; }
 .capability__link { display: inline-flex; gap: 4px; align-items: center; align-self: flex-start; margin-top: auto; padding-top: 18px; font-size: 11px; font-weight: 720; color: #263e39; text-decoration: none; }
-.capability__link :deep(svg), .capabilities__intro a :deep(svg) { transition: transform 160ms ease; }
-.capability__link:hover :deep(svg), .capabilities__intro a:hover :deep(svg) { transform: translate(2px, -2px); }
+.pathway > a :deep(svg), .capability__link :deep(svg), .capabilities__intro a :deep(svg) { transition: transform 160ms ease; }
+.pathway > a:hover :deep(svg), .capability__link:hover :deep(svg), .capabilities__intro a:hover :deep(svg) { transform: translate(2px, -2px); }
 :global(body.kit-demo-focus-open) { overflow: hidden; }
 :global(.demo-focus) { position: fixed; inset: 0; z-index: 1000; display: grid; grid-template-rows: 54px minmax(0, 1fr); place-items: center; padding: 0 18px 20px; background: rgb(11 16 18 / 88%); backdrop-filter: blur(9px); }
 :global(.demo-focus__bar) { display: flex; width: min(390px, calc(100vw - 36px), calc((100dvh - 88px) * 0.4621)); align-items: center; justify-content: space-between; color: #dce9e4; font-size: 12px; font-weight: 700; }
@@ -358,6 +402,13 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
   .hero__demo { width: min(100%, 320px); }
   .hero__device-meta { width: 100%; padding: 10px 0; border-top: 1px solid #344044; border-bottom: 1px solid #344044; }
   .phone { display: none; }
+  .paths { padding: 52px 18px 58px; }
+  .section-intro { display: block; margin-bottom: 23px; }
+  .section-intro h2 { margin-top: 11px; font-size: 29px; }
+  .section-intro span { margin-top: 9px; }
+  .paths__grid { grid-template-columns: 1fr; }
+  .pathway { min-height: 205px; padding: 23px 2px 21px; }
+  .pathway + .pathway { border-top: 1px solid #d8d9d5; border-left: 0; }
   .capabilities { padding: 56px 18px 68px; }
   .capabilities__intro { display: block; margin-bottom: 25px; }
   .capabilities__intro h2 { margin-top: 12px; font-size: 29px; }
@@ -365,8 +416,7 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
   .capabilities__intro > div span { display: block; }
   .capabilities__intro > div a { margin-top: 3px; }
   .capabilities__grid { grid-template-columns: 1fr; }
-  .capability--wide, .capability--narrow, .capability--half { grid-column: auto; }
-  .capability { min-height: 210px; }
+  .capability { min-height: 190px; }
 }
 @media (width <= 390px) {
   .hero__demo, .hero__device-meta { width: 246px; }
@@ -376,6 +426,6 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
   .hero__device-actions b { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero__action, .hero__device-actions a, .hero__device-actions button, .capability, .capability__link :deep(svg), .capabilities__intro a :deep(svg) { transition: none; }
+  .hero__action, .hero__device-actions a, .hero__device-actions button, .pathway > a :deep(svg), .capability__link :deep(svg), .capabilities__intro a :deep(svg) { transition: none; }
 }
 </style>
