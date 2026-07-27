@@ -14,7 +14,7 @@ const emit = defineEmits<{ close: [], select: [week: number] }>()
 </script>
 
 <template>
-  <YsSheet :open="open" :title="title" :vars="vars" @close="emit('close')">
+  <YsSheet :open="open" kind="weekPicker" :title="title" :vars="vars" @close="emit('close')">
     <div class="ys-week-picker">
       <button
         v-for="candidate in totalWeeks"

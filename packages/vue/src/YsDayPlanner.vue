@@ -38,7 +38,7 @@ function submit() {
 </script>
 
 <template>
-  <YsSheet :open="open" :title="`${dateLabel} · 日计划`" :vars="vars" @close="emit('close')">
+  <YsSheet :open="open" kind="dayPlanner" :title="`${dateLabel} · 日计划`" :vars="vars" @close="emit('close')">
     <div class="ys-planner">
       <form class="ys-planner__add" @submit.prevent="submit">
         <input v-model="draft" type="text" placeholder="今天要做什么？回车添加">

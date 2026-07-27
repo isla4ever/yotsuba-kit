@@ -72,10 +72,16 @@ describe('ysSchedule', () => {
     await nextTick()
     expect(wrapper.find('.ys-schedule__board').attributes('style')).toContain('perspective: 1200px')
     const entering = wrapper.find('.ys-schedule__layer--current')
+    const leaving = wrapper.find('.ys-schedule__layer--leaving')
     expect(entering.attributes('style')).toContain('rotateY(-90deg)')
     expect(entering.attributes('style')).toContain('translateX(-100%)')
     expect(entering.attributes('style')).toContain('transform-origin: right center')
-    vi.advanceTimersByTime(700)
+    expect(leaving.attributes('style')).toContain('--ys-l-to-o: 0.02')
+    expect(leaving.attributes('style')).toContain('z-index: 3')
+    vi.advanceTimersByTime(590)
+    await nextTick()
+    expect(wrapper.findAll('.ys-schedule__layer')).toHaveLength(2)
+    vi.advanceTimersByTime(100)
     vi.useRealTimers()
   })
 
@@ -87,11 +93,14 @@ describe('ysSchedule', () => {
     await wrapper.setProps({ week: 2 })
     await nextTick()
     const entering = wrapper.find('.ys-schedule__layer--current')
-    expect(entering.attributes('style')).toContain('scale(0.92)')
+    const leaving = wrapper.find('.ys-schedule__layer--leaving')
+    expect(entering.attributes('style')).toContain('scale(0.94)')
+    expect(leaving.attributes('style')).toContain('ys-layer-out 480ms')
+    expect(leaving.attributes('style')).toContain('z-index: 3')
     vi.advanceTimersByTime(600)
-    await wrapper.setProps({ week: 1 }) // 反向 → 1.08
+    await wrapper.setProps({ week: 1 }) // 反向 → 1.06
     await nextTick()
-    expect(wrapper.find('.ys-schedule__layer--current').attributes('style')).toContain('scale(1.08')
+    expect(wrapper.find('.ys-schedule__layer--current').attributes('style')).toContain('scale(1.06')
     vi.advanceTimersByTime(600)
     vi.useRealTimers()
   })
@@ -184,5 +193,39 @@ describe('ysSchedule', () => {
     expect(wrapper.emitted('weekPickerOpen')).toBeTruthy()
     await nextTick()
     expect(document.body.textContent).toContain('选择教学周')
+  })
+
+  it('can keep builtin sheets inside the schedule container', async () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        reduceMotion: true,
+        sheets: { contained: true, adjustable: true, placements: { courseDetail: 'right' } },
+      },
+    })
+    await wrapper.find('.ys-course-card').trigger('click')
+    await nextTick()
+    const overlay = wrapper.find('.ys-sheet__overlay.is-contained')
+    expect(overlay.exists()).toBe(true)
+    expect(overlay.classes()).toContain('ys-sheet__overlay--right')
+    await wrapper.find('.ys-sheet__tool').trigger('click')
+    expect(overlay.classes()).toContain('ys-sheet__overlay--bottom')
+  })
+
+  it('bubbles the locally selected detail layout to the host', async () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        reduceMotion: true,
+        detail: { layout: 'standard', adjustable: true },
+        sheets: { contained: true },
+      },
+    })
+    await wrapper.find('.ys-course-card').trigger('click')
+    await nextTick()
+    await wrapper.find('.ys-detail__layout-switch').trigger('click')
+    expect(wrapper.emitted('detailLayoutChange')?.[0]).toEqual(['full'])
   })
 })

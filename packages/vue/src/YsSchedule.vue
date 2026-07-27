@@ -6,18 +6,23 @@ import type {
   CourseTime,
   DayOverride,
   DayPlanMap,
+  DetailAction,
   DetailField,
   DetailHero,
+  DetailLayout,
   DisplayCourse,
   GuideConfig,
   GuideStep,
   KeyframeSpec,
   PaletteName,
   ScheduleDensity,
-  SheetPlacement,
+  SheetConfig,
   ThemeTokens,
   TransitionSpec,
+  WeatherCardConfig,
+  WeatherKind,
   WeatherSnapshot,
+  WeekdayWeatherMode,
   WeekModel,
 } from '@iyotsuba/schedule-core'
 import {
@@ -43,6 +48,7 @@ import YsDayPlanner from './YsDayPlanner.vue'
 import YsGuide from './YsGuide.vue'
 import YsTopBar from './YsTopBar.vue'
 import YsWeatherScene from './YsWeatherScene.vue'
+import YsWeatherGlyph from './YsWeatherGlyph.vue'
 import YsWeekPicker from './YsWeekPicker.vue'
 
 const props = withDefaults(defineProps<{
@@ -89,12 +95,24 @@ const props = withDefaults(defineProps<{
   palette?: PaletteName | string[]
   /** 课程卡装饰特效（只作用于本周卡，换周动画期间自动暂停，reduced-motion 关闭） */
   cardEffect?: CardEffect
+  /** 每张课程卡的天气图标与动态卡面；默认开启。 */
+  weatherCard?: WeatherCardConfig | false
+  /** 星期栏天气档位。 */
+  weekdayWeather?: WeekdayWeatherMode
   /** 小米天气式实时背景场景（依赖 weather.current.kind） */
   weatherScene?: boolean
   /** 内置弹窗体系：位置（底部抽屉/居中对话框/侧滑抽屉）与毛玻璃 */
-  sheets?: { placement?: SheetPlacement, glass?: boolean }
+  sheets?: SheetConfig
   /** 课程详情编排：hero 风格 + 字段显隐与顺序 */
-  detail?: { hero?: DetailHero, fields?: DetailField[] }
+  detail?: {
+    hero?: DetailHero
+    layout?: DetailLayout
+    fields?: DetailField[]
+    actions?: DetailAction[]
+    adjustable?: boolean
+    emptyText?: string
+    emptyTexts?: Partial<Record<DetailField, string>>
+  }
   locale?: {
     weekdays?: string[]
     inactiveBadge?: string
@@ -130,8 +148,10 @@ const props = withDefaults(defineProps<{
   backgroundPicker: 'builtin',
   density: 'normal',
   palette: undefined,
-  cardEffect: 'none',
-  weatherScene: false,
+  cardEffect: 'shimmer',
+  weatherCard: () => ({ enabled: true, glyph: true, background: true, label: true, intensity: 0.72 }),
+  weekdayWeather: 'icon',
+  weatherScene: true,
   sheets: undefined,
   detail: undefined,
 })
@@ -156,6 +176,8 @@ const emit = defineEmits<{
   'planToggle': [dateKey: string, id: string]
   'planRemove': [dateKey: string, id: string]
   'backgroundChange': [dataUrl: string | null]
+  'courseShare': [course: DisplayCourse]
+  'detailLayoutChange': [layout: DetailLayout]
 }>()
 
 /* ------------------------------ 主题与派生 ------------------------------ */
@@ -224,6 +246,35 @@ const weatherText = computed(() => {
   }
   return current.temperatureC != null ? `${Math.round(current.temperatureC)}°` : current.label
 })
+
+const weatherLabels: Record<WeatherKind, string> = {
+  clear: '晴',
+  cloudy: '多云',
+  overcast: '阴',
+  fog: '雾',
+  drizzle: '小雨',
+  rain: '雨',
+  storm: '雷雨',
+  snow: '雪',
+  neutral: '天气',
+}
+
+function weatherFor(weekday: number, week = props.week) {
+  if (!props.termStart || !props.weather) {
+    return undefined
+  }
+  const key = formatDateKey(dateFor(props.termStart, week, weekday))
+  return props.weather.daily.find(item => item.date === key)
+}
+
+function weatherTextFor(weekday: number, week = props.week): string | undefined {
+  const daily = weatherFor(weekday, week)
+  if (!daily) {
+    return undefined
+  }
+  const range = daily.highC != null ? ` ${Math.round(daily.lowC ?? 0)}~${Math.round(daily.highC)}°` : ''
+  return `${daily.label ?? weatherLabels[daily.kind]}${range}`
+}
 
 function stackFor(model: WeekModel, course: DisplayCourse): DisplayCourse[] {
   return model.overlapGroups.find(group =>
@@ -494,6 +545,7 @@ function layerStyle(layer: 'enter' | 'leave') {
       '--ys-l-from-tf': composeTransform(frame, waveDirection.value, percentX),
       'transformOrigin': composeOrigin(frame, waveDirection.value),
       'animation': `ys-layer-in ${spec.value.enterMs}ms ${frame.easing} both`,
+      'zIndex': 2,
     }
   }
   const frame = spec.value.leave
@@ -503,6 +555,7 @@ function layerStyle(layer: 'enter' | 'leave') {
     'transformOrigin': composeOrigin(frame, waveDirection.value),
     'animation': `ys-layer-out ${spec.value.leaveMs}ms ${frame.easing} both`,
     'animationDelay': `${spec.value.leaveLagMs}ms`,
+    'zIndex': ['cube', 'zoom'].includes(spec.value.name) ? 3 : 1,
   }
 }
 
@@ -616,7 +669,7 @@ const detailWeatherText = computed(() => {
     return undefined
   }
   const range = daily.highC != null ? ` ${Math.round(daily.lowC ?? 0)}~${Math.round(daily.highC)}°` : ''
-  return `${daily.label ?? daily.kind}${range}`
+  return `${daily.label ?? weatherLabels[daily.kind]}${range}`
 })
 
 function openCourseForm(prefill: Partial<Course> | null = null) {
@@ -637,6 +690,10 @@ function handleDetailEdit(course: DisplayCourse) {
 function handleDetailRemove(course: DisplayCourse) {
   detailOpen.value = false
   emit('courseRemove', course)
+}
+
+function handleDetailShare(course: DisplayCourse) {
+  emit('courseShare', course)
 }
 
 function handleFormSubmit(course: Course) {
@@ -801,9 +858,10 @@ onBeforeUnmount(() => {
     class="ys-schedule"
     :class="[
       `ys-density-${density}`,
-      { 'ys-dark': theme === 'dark', 'is-editing': editable, 'has-bg': Boolean(backgroundStyle) },
+      { 'ys-dark': theme === 'dark', 'is-editing': editable, 'is-transitioning': waveActive, 'has-bg': Boolean(backgroundStyle) },
     ]"
     :data-ys-effect="!waveActive && cardEffect !== 'none' ? cardEffect : undefined"
+    :data-weather="weatherScene ? weather?.current?.kind : undefined"
     :style="cssVars"
   >
     <div v-if="backgroundStyle" class="ys-schedule__bg" :style="backgroundStyle" aria-hidden="true" />
@@ -854,10 +912,17 @@ onBeforeUnmount(() => {
           :weekday="weekday"
           :label="weekdayLabels[weekday - 1]"
           :date="dayDate(weekday)"
+          :weather="weatherFor(weekday)"
         >
           <span class="ys-schedule__day-label">{{ weekdayLabels[weekday - 1] }}</span>
           <span v-if="termStart" class="ys-schedule__day-date">
             {{ (dayDate(weekday)?.getMonth() ?? 0) + 1 }}/{{ dayDate(weekday)?.getDate() }}
+          </span>
+          <span v-if="weekdayWeather !== 'none' && weatherFor(weekday)" class="ys-schedule__day-weather">
+            <YsWeatherGlyph :kind="weatherFor(weekday)!.kind" :size="11" />
+            <small v-if="weekdayWeather === 'full'">
+              {{ weatherFor(weekday)!.highC == null ? weatherLabels[weatherFor(weekday)!.kind] : `${Math.round(weatherFor(weekday)!.highC!)}°` }}
+            </small>
           </span>
           <i v-if="isToday(weekday)" class="ys-schedule__day-dot" aria-hidden="true" />
           <b v-if="dayPendingCount(weekday)" class="ys-schedule__day-count">
@@ -937,6 +1002,9 @@ onBeforeUnmount(() => {
                 :course="course"
                 :color="colorFor(course.name, course.color)"
                 :density="density"
+                :weather-kind="weatherFor(course.weekday, leavingModel.week)?.kind"
+                :weather-text="weatherTextFor(course.weekday, leavingModel.week)"
+                :weather-card="weatherCard"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
               />
@@ -969,6 +1037,9 @@ onBeforeUnmount(() => {
                 :course="course"
                 :color="colorFor(course.name, course.color)"
                 :density="density"
+                :weather-kind="weatherFor(course.weekday, currentModel.week)?.kind"
+                :weather-text="weatherTextFor(course.weekday, currentModel.week)"
+                :weather-card="weatherCard"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
                 @select="handleCourseTap"
@@ -1015,17 +1086,27 @@ onBeforeUnmount(() => {
       :editable="editable"
       :weather-text="detailWeatherText"
       :hero="detail?.hero ?? 'color'"
+      :layout="detail?.layout ?? 'standard'"
       :fields="detail?.fields"
+      :actions="detail?.actions"
+      :adjustable-layout="detail?.adjustable"
+      :empty-text="detail?.emptyText"
+      :empty-texts="detail?.emptyTexts"
       :weather-kind="weather?.current?.kind"
       :vars="cssVars"
       @close="detailOpen = false"
       @edit="handleDetailEdit"
       @remove="handleDetailRemove"
+      @share="handleDetailShare"
+      @layout-change="emit('detailLayoutChange', $event)"
     >
-      <template #detail-extra="slotProps">
+      <template v-if="$slots['detail-field']" #detail-field="slotProps">
+        <slot name="detail-field" v-bind="slotProps" />
+      </template>
+      <template v-if="$slots['detail-extra']" #detail-extra="slotProps">
         <slot name="detail-extra" v-bind="slotProps" />
       </template>
-      <template #detail-actions="slotProps">
+      <template v-if="$slots['detail-actions']" #detail-actions="slotProps">
         <slot name="detail-actions" v-bind="slotProps" />
       </template>
     </YsCourseDetail>
@@ -1066,10 +1147,12 @@ onBeforeUnmount(() => {
 
 <style>
 .ys-schedule {
+  box-sizing: border-box;
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   height: 100%;
   overflow: hidden;
@@ -1081,8 +1164,22 @@ onBeforeUnmount(() => {
 }
 
 .ys-schedule__scene {
-  z-index: -1;
+  z-index: 0;
 }
+
+.ys-schedule > :not(.ys-schedule__scene, .ys-schedule__bg) {
+  position: relative;
+  z-index: 1;
+}
+
+.ys-schedule[data-weather='clear'] { background: linear-gradient(180deg, color-mix(in srgb, #f4c968 14%, var(--ys-canvas)) 0%, var(--ys-canvas) 46%); }
+.ys-schedule[data-weather='cloudy'],
+.ys-schedule[data-weather='overcast'] { background: linear-gradient(180deg, color-mix(in srgb, #8fa3bd 16%, var(--ys-canvas)) 0%, var(--ys-canvas) 48%); }
+.ys-schedule[data-weather='rain'],
+.ys-schedule[data-weather='drizzle'],
+.ys-schedule[data-weather='storm'] { background: linear-gradient(180deg, color-mix(in srgb, #4978b6 18%, var(--ys-canvas)) 0%, var(--ys-canvas) 52%); }
+.ys-schedule[data-weather='snow'] { background: linear-gradient(180deg, color-mix(in srgb, #b7d5e9 22%, var(--ys-canvas)) 0%, var(--ys-canvas) 52%); }
+.ys-schedule[data-weather='fog'] { background: linear-gradient(180deg, color-mix(in srgb, #9aa8b8 18%, var(--ys-canvas)) 0%, var(--ys-canvas) 48%); }
 
 .ys-schedule__bg {
   position: absolute;
@@ -1176,6 +1273,23 @@ onBeforeUnmount(() => {
 .ys-schedule__day-label { font-size: 13px; font-weight: 750; }
 .ys-schedule__day-date { font-size: 9px; color: var(--ys-text-3); }
 
+.ys-schedule__day-weather {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  min-width: 0;
+  font-size: 9px;
+  color: var(--ys-text-3);
+}
+
+.ys-schedule__day-weather small {
+  overflow: hidden;
+  font-size: 8px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ys-schedule__day-dot {
   position: absolute;
   bottom: 4px;
@@ -1189,10 +1303,16 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
   flex: 1;
+  width: 100%;
+  min-width: 0;
   overflow-x: hidden; /* overflow-y:auto 会把 overflow-x 联动为 auto,过渡层 translateX 会撑出横向滚动条 */
   overflow-y: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
   touch-action: pan-y;
 }
+
+.ys-schedule__body::-webkit-scrollbar { display: none; }
 
 /* 顶部 6px 呼吸位：保证首行卡片的重叠角标（-3px 出血）不被裁剪 */
 .ys-schedule__rail,
@@ -1221,6 +1341,7 @@ onBeforeUnmount(() => {
 .ys-schedule__board {
   position: relative;
   display: grid;
+  min-width: 0;
   grid-template-columns: repeat(v-bind(visibleDays), minmax(0, 1fr));
 }
 
@@ -1233,6 +1354,12 @@ onBeforeUnmount(() => {
   contain: layout;
 }
 
+.ys-schedule.is-transitioning .ys-schedule__layer {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
 .ys-schedule__layer--leaving { z-index: 1; }
 .ys-schedule__layer--current { z-index: 2; }
 .ys-schedule__layer--current > .ys-schedule__card-slot { pointer-events: auto; }
@@ -1241,6 +1368,7 @@ onBeforeUnmount(() => {
   /* grid item 上的 z-index 建立堆叠上下文，保证整卡（背景+文字）按 DOM 序原子绘制，
      否则前一张被盖卡的文字会按 CSS 绘制序浮到后一张卡的背景之上 */
   z-index: 0;
+  container: ys-course-slot / inline-size;
   min-width: 0;
   min-height: 0;
 }

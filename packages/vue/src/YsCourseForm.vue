@@ -103,7 +103,7 @@ function submit() {
 </script>
 
 <template>
-  <YsSheet :open="open" :title="isEdit ? '编辑课程' : '新增课程'" :vars="vars" @close="emit('close')">
+  <YsSheet :open="open" kind="courseForm" :title="isEdit ? '编辑课程' : '新增课程'" :vars="vars" @close="emit('close')">
     <div class="ys-form">
       <label class="ys-form__field ys-form__field--full">
         <span>课程名称 *</span>

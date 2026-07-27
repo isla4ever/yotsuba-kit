@@ -158,8 +158,13 @@ describe('transitions', () => {
   it('resolves builtin names and validates custom specs', () => {
     expect(resolveTransition('slide').name).toBe('slide')
     expect(resolveTransition('slide').mode).toBe('page')
+    expect(resolveTransition('fade').name).toBe('fade')
+    expect(resolveTransition('fade').mode).toBe('layer')
     expect(resolveTransition(undefined).name).toBe('wave')
     expect(validateTransition(waveTransition)).toHaveLength(0)
+    expect(validateTransition(resolveTransition('fade'))).toHaveLength(0)
+    expect(validateTransition(resolveTransition('cube'))).toHaveLength(0)
+    expect(validateTransition(resolveTransition('zoom'))).toHaveLength(0)
     expect(validateTransition({ ...waveTransition, totalMs: 2000 })).not.toHaveLength(0)
   })
 })

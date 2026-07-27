@@ -1,6 +1,40 @@
 /** 单双周规则 */
 export type WeekParity = 'every' | 'odd' | 'even'
 
+/** 课程资料类型；`book` 会同时进入教材与今日携带清单。 */
+export type CourseMaterialKind = 'book' | 'device' | 'equipment' | 'document' | 'other'
+
+/** 结构化课程资料。旧版 `materials: string[]` 仍完全兼容。 */
+export interface CourseMaterial {
+  id?: string
+  name: string
+  kind?: CourseMaterialKind
+  required?: boolean
+  quantity?: number
+  note?: string
+}
+
+/** 结构化教材信息。 */
+export interface CourseBook {
+  id?: string
+  title: string
+  author?: string
+  isbn?: string
+  required?: boolean
+  note?: string
+}
+
+/** 随课程展示的作业/任务；副作用和持久化仍由宿主负责。 */
+export interface CourseTask {
+  id: string
+  title: string
+  description?: string
+  /** ISO 8601 日期或日期时间。 */
+  dueAt?: string
+  done?: boolean
+  priority?: 'low' | 'normal' | 'high'
+}
+
 /** 组件库标准课程模型（干净模型；教务原始格式请用 adapters 转换） */
 export interface Course {
   /** 稳定唯一 id；同一门课跨节次拆分时应保持不同 id */
@@ -18,8 +52,12 @@ export interface Course {
   /** 任意合法 CSS 颜色；缺省时由主题的调色板自动分配 */
   color?: string
   custom?: boolean
-  /** 携带物品/上课准备（教材、实验服、球拍…），详情与今日板块展示"记得带" */
-  materials?: string[]
+  /** 携带物品/上课准备；兼容字符串并支持类型、数量与备注。 */
+  materials?: Array<string | CourseMaterial>
+  /** 课程教材。 */
+  books?: CourseBook[]
+  /** 课程作业/任务。 */
+  tasks?: CourseTask[]
   /** 备注 */
   note?: string
   /** 宿主自定义附加数据，组件库原样透传 */
@@ -149,16 +187,48 @@ export type PaletteName = 'classic' | 'macaron' | 'morandi' | 'cyber' | 'forest'
 export type ScheduleDensity = 'minimal' | 'normal' | 'rich'
 
 /** 详情面板可编排字段 */
-export type DetailField = 'time' | 'weeks' | 'location' | 'teacher' | 'weather' | 'note' | 'materials'
+export type DetailField = 'time' | 'weeks' | 'location' | 'teacher' | 'weather' | 'note' | 'materials' | 'tasks'
 
 /** 详情 hero 风格：课程色 / 当日天气渐变 / 极简 */
 export type DetailHero = 'color' | 'weather' | 'plain'
 
+/** 详情信息密度：精简摘要 / 适中信息 / 全面信息。 */
+export type DetailLayout = 'compact' | 'standard' | 'full'
+
+/** 课程详情底部动作；宿主通过事件接管分享、编辑与删除副作用 */
+export type DetailAction = 'share' | 'edit' | 'remove'
+
 /** 弹窗位置：底部抽屉 / 居中对话框 / 侧滑抽屉（平板友好） */
 export type SheetPlacement = 'bottom' | 'center' | 'right'
 
+/** 内置弹层类型，用于按弹层分别指定默认位置。 */
+export type SheetKind = 'weekPicker' | 'courseDetail' | 'courseForm' | 'dayPlanner' | 'background' | 'settings' | 'custom'
+
+/** 内置弹层配置。contained=true 时弹层约束在课表组件内部，而非整个浏览器视口。 */
+export interface SheetConfig {
+  placement?: SheetPlacement
+  placements?: Partial<Record<SheetKind, SheetPlacement>>
+  glass?: boolean
+  contained?: boolean
+  /** 在每个弹层 Header 显示位置切换按钮。 */
+  adjustable?: boolean
+}
+
 /** 课程卡装饰特效（只作用于本周卡，reduced-motion 自动关闭） */
 export type CardEffect = 'none' | 'shimmer' | 'glow' | 'aurora' | 'breathe'
+
+/** 课程卡天气联动；默认图标、动态卡面与日天气文案全部开启。 */
+export interface WeatherCardConfig {
+  enabled?: boolean
+  glyph?: boolean
+  background?: boolean
+  label?: boolean
+  /** 0-1，控制天气卡面的可见强度。 */
+  intensity?: number
+}
+
+/** 星期栏天气信息档位。 */
+export type WeekdayWeatherMode = 'none' | 'icon' | 'full'
 
 /* ------------------------------ 天气协议 ------------------------------ */
 

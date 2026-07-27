@@ -1,6 +1,6 @@
 import type { Course } from '@iyotsuba/schedule-core'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { defaultScheduleGuideSteps } from '../src/guidePresets'
 import YsSchedule from '../src/YsSchedule.vue'
@@ -45,6 +45,75 @@ describe('ysToday', () => {
     expect(widgets).toHaveLength(2)
     expect(wrapper.find('.custom-widget').text()).toBe('自定义内容')
     expect(wrapper.text()).not.toContain('WeatherProvider')
+  })
+
+  it('supports mobile arrangement, four-corner resize, host moves, and reset', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsToday, {
+      props: {
+        courses,
+        termStart,
+        now: monday0910,
+        widgets: [{ id: 'next-course' }, { id: 'weather' }],
+      },
+    })
+    const first = wrapper.find('[data-widget="next-course"]')
+    await first.trigger('pointerdown', { button: 0, clientX: 10, clientY: 10 })
+    vi.advanceTimersByTime(500)
+    await nextTick()
+    expect(wrapper.find('.ys-today').classes()).toContain('is-arranging')
+    expect(wrapper.findAll('.ys-today__widget-controls')).toHaveLength(0)
+    expect(wrapper.findAll('.ys-today__resize-handle')).toHaveLength(8)
+
+    const resize = wrapper.find('[aria-label="从bottom-right缩放next-course"]')
+    await resize.trigger('pointerdown', { button: 0, clientX: 0, clientY: 0, pointerId: 1 })
+    await resize.trigger('pointermove', { clientX: 90, clientY: 90, pointerId: 1 })
+    await resize.trigger('pointerup', { clientX: 90, clientY: 90, pointerId: 1 })
+    expect(wrapper.emitted('update:widgets')?.at(-1)?.[0]).toMatchObject([
+      { id: 'next-course', size: '2x2' },
+      { id: 'weather', size: '1x1' },
+    ])
+    expect(wrapper.emitted('widgetResize')?.at(-1)).toEqual(['next-course', '2x2', 'bottom-right'])
+
+    ;(wrapper.vm as unknown as { moveWidget: (id: string, offset: -1 | 1) => void })
+      .moveWidget('next-course', 1)
+    expect(wrapper.emitted('layoutChange')?.at(-1)?.[0]).toMatchObject([
+      { id: 'weather' },
+      { id: 'next-course' },
+    ])
+    expect(wrapper.emitted('widgetMove')?.at(-1)).toEqual(['next-course', 0, 1])
+
+    ;(wrapper.vm as unknown as { layoutReset: () => void }).layoutReset()
+    expect(wrapper.emitted('layoutChange')?.at(-1)?.[0]).toMatchObject([
+      { id: 'next-course', size: '2x1' },
+      { id: 'weather', size: '1x1' },
+    ])
+    wrapper.unmount()
+    vi.useRealTimers()
+  })
+
+  it('aggregates books and structured materials and renders weather motion by default', () => {
+    const wrapper = mount(YsToday, {
+      props: {
+        courses: [{
+          ...courses[0]!,
+          books: [{ title: '高等数学（第八版）' }],
+          materials: [{ name: '计算器', kind: 'device' }],
+          tasks: [{ id: 'task-1', title: '完成第三章习题' }],
+        }],
+        termStart,
+        now: monday0910,
+        weather: {
+          current: { kind: 'rain', temperatureC: 27 },
+          daily: [{ date: '2026-07-20', kind: 'rain', lowC: 24, highC: 30 }],
+          updatedAt: Date.now(),
+        },
+      },
+    })
+    expect(wrapper.text()).toContain('高等数学（第八版）、计算器')
+    expect(wrapper.text()).toContain('完成第三章习题')
+    expect(wrapper.find('.ys-today__weather-scene').exists()).toBe(true)
+    expect(wrapper.find('.ys-weather-glyph').exists()).toBe(true)
   })
 })
 

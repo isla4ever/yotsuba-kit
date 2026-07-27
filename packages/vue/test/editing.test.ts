@@ -7,7 +7,7 @@ import YsToday from '../src/YsToday.vue'
 
 const termStart = new Date(2026, 6, 20)
 const courses: Course[] = [
-  { id: 'math', name: '高等数学', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20, materials: ['教材', '计算器'] },
+  { id: 'math', name: '高等数学', teacher: '陈老师', location: '教1-201', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20, materials: ['教材', '计算器'], note: '课前完成习题' },
 ]
 
 describe('editing flow', () => {
@@ -46,7 +46,7 @@ describe('editing flow', () => {
     })
     await wrapper.find('.ys-course-card').trigger('click')
     await nextTick()
-    expect(document.body.textContent).toContain('记得带')
+    expect(document.body.textContent).toContain('教材与携带')
     expect(document.body.textContent).toContain('教材')
     const removeBtn = () =>
       Array.from(document.querySelectorAll('.ys-detail__btn')).find(b => b.textContent?.includes('删除')) as HTMLButtonElement
@@ -57,6 +57,65 @@ describe('editing flow', () => {
     removeBtn().click()
     await nextTick()
     expect(wrapper.emitted('courseRemove')).toBeTruthy()
+    wrapper.unmount()
+  })
+
+  it('exposes configurable detail share actions without owning the side effect', async () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        termStart,
+        reduceMotion: true,
+        detail: { actions: ['share'] },
+      },
+      attachTo: document.body,
+    })
+    await wrapper.find('.ys-course-card').trigger('click')
+    await nextTick()
+    const share = document.querySelector('.ys-detail__btn--primary') as HTMLButtonElement
+    expect(share.textContent).toContain('分享课程')
+    share.click()
+    await nextTick()
+    expect(wrapper.emitted('courseShare')?.[0]?.[0]).toMatchObject({ id: 'math' })
+    wrapper.unmount()
+  })
+
+  it('switches detail density locally and keeps the weather-linked surface', async () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        termStart,
+        reduceMotion: true,
+        weather: {
+          current: { kind: 'storm', temperatureC: 27 },
+          daily: [{ date: '2026-07-20', kind: 'storm', lowC: 23, highC: 31 }],
+          updatedAt: Date.now(),
+        },
+        detail: { hero: 'weather', layout: 'compact', adjustable: true },
+      },
+      attachTo: document.body,
+    })
+    await wrapper.find('.ys-course-card').trigger('click')
+    await nextTick()
+    const detail = () => document.querySelector('.ys-detail') as HTMLElement
+    expect(detail().classList).toContain('is-layout-compact')
+    expect(detail().classList).toContain('is-weather-linked')
+    expect(detail().textContent).not.toContain('周次')
+    expect(detail().textContent).toContain('雷雨 23~31°')
+
+    const layoutSwitch = document.querySelector('.ys-detail__layout-switch') as HTMLButtonElement
+    layoutSwitch.click()
+    await nextTick()
+    expect(detail().classList).toContain('is-layout-standard')
+    expect(detail().textContent).toContain('周次')
+
+    layoutSwitch.click()
+    await nextTick()
+    expect(detail().classList).toContain('is-layout-full')
+    expect(detail().textContent).toContain('课前完成习题')
+    expect(detail().textContent).toContain('教材')
     wrapper.unmount()
   })
 })

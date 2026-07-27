@@ -10,6 +10,7 @@ import YsSheet from './YsSheet.vue'
 import YsToday from './YsToday.vue'
 import YsTopBar from './YsTopBar.vue'
 import YsWeatherScene from './YsWeatherScene.vue'
+import YsWeatherGlyph from './YsWeatherGlyph.vue'
 import YsWeekPicker from './YsWeekPicker.vue'
 
 export {
@@ -24,10 +25,11 @@ export {
   YsToday,
   YsTopBar,
   YsWeatherScene,
+  YsWeatherGlyph,
   YsWeekPicker,
 }
 export { defaultScheduleGuideSteps } from './guidePresets'
-export type { TodayWidgetConfig } from './YsToday.vue'
+export type { TodayResizeCorner, TodayWidgetConfig, TodayWidgetSize } from './YsToday.vue'
 
 export function install(app: App): void {
   app.component('YsSchedule', YsSchedule)
@@ -39,8 +41,10 @@ export default { install }
 export type {
   BuiltinTransitionName,
   CardEffect,
+  DetailAction,
   DetailField,
   DetailHero,
+  DetailLayout,
   PaletteName,
   ScheduleDensity,
   SheetPlacement,
@@ -54,6 +58,8 @@ export type {
   GuideMode,
   GuideStep,
   Reminder,
+  SheetConfig,
+  SheetKind,
   ThemeTokens,
   TransitionSpec,
   WeatherProvider,

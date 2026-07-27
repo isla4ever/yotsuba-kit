@@ -149,7 +149,7 @@ function apply() {
 </script>
 
 <template>
-  <YsSheet :open="open" title="自定义背景" :vars="vars" @close="emit('close')">
+  <YsSheet :open="open" kind="background" title="自定义背景" :vars="vars" @close="emit('close')">
     <div class="ys-bg">
       <template v-if="!source">
         <label class="ys-bg__drop">

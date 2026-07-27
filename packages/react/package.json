@@ -1,7 +1,7 @@
 {
   "name": "@iyotsuba/schedule-react",
-  "version": "0.3.1",
-  "description": "Typed React bindings for the yotsuba schedule kit (<YsSchedule> / <YsToday> over custom elements).",
+  "version": "0.6.0",
+  "description": "Typed React bindings for the complete Yotsuba schedule and Today experience over custom elements.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,

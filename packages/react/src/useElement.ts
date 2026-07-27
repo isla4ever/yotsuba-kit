@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef } from 'react'
+import type { MutableRefObject, Ref } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 
 /**
  * 自定义元素桥：props 以 DOM property 形式下发（支持对象/数组/Date），
@@ -7,8 +8,18 @@ import { useLayoutEffect, useRef } from 'react'
 export function useElementBridge<T extends HTMLElement>(
   properties: Record<string, unknown>,
   events: Record<string, ((...args: never[]) => void) | undefined>,
+  forwardedRef?: Ref<T>,
 ) {
   const ref = useRef<T | null>(null)
+  const setRef = useCallback((node: T | null) => {
+    ref.current = node
+    if (typeof forwardedRef === 'function') {
+      forwardedRef(node)
+    }
+    else if (forwardedRef) {
+      (forwardedRef as MutableRefObject<T | null>).current = node
+    }
+  }, [forwardedRef])
 
   useLayoutEffect(() => {
     const el = ref.current
@@ -47,5 +58,5 @@ export function useElementBridge<T extends HTMLElement>(
     return () => disposers.forEach(dispose => dispose())
   })
 
-  return ref
+  return setRef
 }

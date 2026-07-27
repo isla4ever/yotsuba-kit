@@ -1,125 +1,144 @@
 # Schedule 课表
 
-`<YsSchedule>` 是核心课表组件:顶部周信息栏 + 星期表头 + 周视图网格 + 换周过渡 + 手势 + 内置周选择器/课程详情。
+`<YsSchedule>` 是面向应用页的高层组件：周 Header、日期表头、课表网格、天气场景、内置详情、表单、日计划、背景和引导都已组合好。它不保存你的业务数据，所有可变数据都通过 Props 输入、事件回传。
 
-内置面板均为"现成方案 + 完全可替换":`weekPicker` / `courseDetail` 设为 `'none'` 后只发事件,由宿主接管;保留内置方案时可用 slots 与 `--ys-*` 变量深度微调样式。
+> `0.6.0` 是 current main 的 API。注册表当前稳定版仍为 `0.5.0`；在发布完成前，请以 [版本与发布状态](/guide/release-status) 判断安装版本。
+
+## 最小接入
+
+```vue
+<script setup lang="ts">
+import { YsSchedule, type Course } from '@iyotsuba/schedule-vue'
+import { ref } from 'vue'
+
+const week = ref(1)
+const courses = ref<Course[]>([])
+</script>
+
+<template>
+  <YsSchedule
+    v-model:week="week"
+    :courses="courses"
+    :term-start="new Date(2026, 8, 7)"
+  />
+</template>
+```
+
+课程数据、教材、携带物和任务的结构见 [Course 数据模型](/components/course-data)。纯学期计算、ICS、分享码和提醒见 [Core API](/api/core)。
 
 ## Props
 
-| 分组 | 属性 | 类型 / 取值 | 默认 | 说明 |
-| --- | --- | --- | --- | --- |
-| 数据 | `courses` | `Course[]` | — | 课程数据(受控) |
-| | `week` | `number` | `1` | 当前周,支持 `v-model:week` |
-| | `totalWeeks` | `number` | `20` | 总周数(setWeek 自动 clamp) |
-| | `termStart` | `Date` | — | 第 1 周周一;传入后日期/今日高亮/补班生效 |
-| | `overrides` | `DayOverride[]` | `[]` | 调休(makeup)/假日(holiday) |
-| | `courseTimes` | `CourseTime[] \| 'standard'` | `'standard'` | 作息表 |
-| 布局 | `visibleDays` | `5 \| 6 \| 7` | `7` | 显示天数 |
-| | `rowHeight` | `number` | `56` | 节次行高(px) |
-| | `breakAfterSection` | `number` | `4` | 午休分隔位置 |
-| 顶栏 | `topBar` | `'compact' \| 'standard' \| 'expanded' \| 'none'` | `'standard'` | 顶部周信息栏三档形态:compact 单行极简 / standard 微信版复刻 / expanded 双行信息面板(日期范围+学期进度) |
-| | `topBarTitle` | `string` | `'本学期课表'` | 顶栏标题 |
-| 表头 | `weekdayBar` | `boolean` | `true` | 星期/日期表头行 |
-| 动效 | `transition` | `'wave' \| 'slide' \| 'none' \| TransitionSpec` | `'wave'` | 换周过渡 |
-| | `reduceMotion` | `boolean \| 'auto'` | `'auto'` | 减弱动效;auto 跟随系统 |
-| | `swipeable` | `boolean` | `true` | 触摸滑动换周 |
-| 面板 | `weekPicker` | `'builtin' \| 'none'` | `'builtin'` | 内置周选择器 |
-| | `courseDetail` | `'builtin' \| 'none'` | `'builtin'` | 内置课程详情(重叠课先选后看) |
-| 外观 | `theme` | `'light' \| 'dark' \| Partial<ThemeTokens>` | `'light'` | 主题令牌 |
-| | `weather` | `WeatherSnapshot \| null` | `null` | 天气数据(expanded 顶栏展示) |
-| | `locale` | `{ weekdays?, inactiveBadge?, makeupBadge?, breakLabel?, weekPickerTitle? }` | — | 文案定制 |
+### 数据与学期
 
-## Events
+| Prop | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `courses` | `Course[]` | `[]` | 受控课程数据 |
+| `week` | `number` | `1` | 当前周，配合 `v-model:week` |
+| `totalWeeks` | `number` | `20` | 总周数；公开 `setWeek()` 会自动 clamp |
+| `termStart` | `Date` | — | 第 1 周周一；日期、今日态和调休依赖它 |
+| `overrides` | `DayOverride[]` | `[]` | `makeup` 补班和 `holiday` 假日 |
+| `courseTimes` | `CourseTime[] \| 'standard'` | `'standard'` | 作息表 |
+| `dayPlans` | `DayPlanMap` | `{}` | 日期键到计划列表；与 Today 传同一份即可联动 |
 
-| 事件 | 参数 | 说明 |
-| --- | --- | --- |
-| `update:week` | `(week)` | v-model 配套 |
-| `week-change` | `(week, previous)` | 周变化(滑动/选择器/外部 setWeek) |
-| `course-tap` | `(course, stack)` | 点课;stack 为该格重叠组全部课程。`courseDetail: 'none'` 时以此接管详情 |
-| `day-tap` | `(weekday, date)` | 点表头某天 |
-| `swipe` | `(direction)` | 滑动触发翻周(1 下一周 / -1 上一周) |
-| `week-picker-open` | — | 点击顶栏周数。`weekPicker: 'none'` 时以此接管选择器 |
-| `transition-start` / `transition-end` | `(spec)` | 过渡生命周期 |
+### 网格与顶栏
 
-## Methods(ref 暴露)
+| Prop | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `visibleDays` | `5 \| 6 \| 7` | `7` | 可见工作日数量 |
+| `rowHeight` | `number` | `56` | 普通节次行高（px） |
+| `breakAfterSection` | `number` | `4` | 午休分隔位置 |
+| `topBar` | `'compact' \| 'standard' \| 'expanded' \| 'none'` | `'standard'` | 课表 Header 档位 |
+| `topBarTitle` | `string` | `'本学期课表'` | Header 标题 |
+| `weekdayBar` | `boolean` | `true` | 星期 / 日期表头 |
+| `swipeable` | `boolean` | `true` | 触摸滑动换周 |
+| `reduceMotion` | `boolean \| 'auto'` | `'auto'` | `auto` 跟随系统减少动态效果 |
 
-| 方法 | 说明 |
-| --- | --- |
-| `setWeek(week)` | 跳转周(自动 clamp,带过渡) |
-| `getWeek()` | 当前周 |
-| `next()` / `previous()` | 前后翻周 |
-| `openCourse(id)` | 打开某课程的内置详情 |
-| `openWeekPicker()` | 打开周选择器(或触发接管事件) |
-| `closeSheets()` | 关闭全部内置面板 |
+### 视觉、天气与动效
 
-## Slots
+| Prop | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `transition` | 内置名或 `TransitionSpec` | `'wave'` | `wave / slide / fade / cube / drop / zoom / none`，也可传自定义协议 |
+| `theme` | `'light' \| 'dark' \| Partial<ThemeTokens>` | `'light'` | 主题令牌 |
+| `density` | `'minimal' \| 'normal' \| 'rich'` | `'normal'` | 课程信息密度 |
+| `palette` | `PaletteName \| string[]` | 内置 | 六套内置配色或自定义颜色数组 |
+| `cardEffect` | `'none' \| 'shimmer' \| 'glow' \| 'aurora' \| 'breathe'` | `'shimmer'` | 流光为默认；换周和 reduce-motion 时自动收敛 |
+| `weather` | `WeatherSnapshot \| null` | `null` | 由宿主提供的天气快照 |
+| `weatherCard` | `WeatherCardConfig \| false` | 全开 | 控制课程卡图标、背景色调、文案和强度 |
+| `weekdayWeather` | `'none' \| 'icon' \| 'full'` | `'icon'` | 星期栏天气信息层级 |
+| `weatherScene` | `boolean` | `true` | 受天气快照驱动的背景场景 |
 
-| 插槽 | 作用域 | 说明 |
-| --- | --- | --- |
-| `top-bar` | `{ week, totalWeeks, openWeekPicker }` | 整体替换顶栏 |
-| `top-bar-tools` | — | 顶栏右侧工具位(天气按钮、管理入口等) |
-| `day` | `{ weekday, label, date }` | 整体替换表头单日 |
-| `course` | `{ course, active, color }` | 整体替换课程卡 |
-| `detail-extra` | `{ course }` | 内置详情追加内容(作业、计划等) |
-| `detail-actions` | `{ course, close }` | 内置详情底部操作区 |
+### 内置界面与宿主接管
+
+| Prop | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `weekPicker` / `courseDetail` | `'builtin' \| 'none'` | `'builtin'` | 关闭后只发事件，由宿主渲染界面 |
+| `courseForm` | `'builtin' \| 'none'` | `'builtin'` | 编辑模式的课程表单 |
+| `dayPlanner` | `'builtin' \| 'none'` | `'builtin'` | 日期计划面板 |
+| `backgroundPicker` | `'builtin' \| 'none'` | `'builtin'` | 上传、裁剪课表背景的面板 |
+| `editable` | `boolean` | `false` | 空白格选节次新增、详情编辑和删除 |
+| `background` | `{ image?, opacity?, blur? } \| null` | `null` | 受控背景配置 |
+| `sheets` | `SheetConfig` | — | 全局和按类型的弹层位置、毛玻璃、contained、adjustable |
+| `detail` | `ScheduleDetailConfig` | — | Hero、布局、字段、操作、空状态文案和局部调整入口 |
+| `guide` | `GuideConfig \| false` | `false` | tips / spotlight / walkthrough 引导 |
+
+完整事件见 [事件](/api/events)，公开 ref 方法见 [方法](/api/methods)，替换点见 [插槽](/api/slots)。
 
 ## 编辑模式
 
-`editable: true` 开启微信版同款编辑体验:空白格**点击或拖选节次范围** → 打开内置课程表单(名称/地点/教师/星期/节次/周次/单双周/调色板/携带物品/备注,冲突实时提示);详情面板出现 **编辑** 与 **两段确认删除**。
-
-数据完全受控——组件只发事件,由宿主写回 `courses`:
+`editable` 开启后，用户可点击或拖选空白节次，组件会发出课程新增、更新和删除请求。组件不会写入你的 store：
 
 ```vue
 <YsSchedule
   :courses="courses"
   editable
-  @course-add="c => courses.push(c)"
-  @course-update="(c, prevId) => replaceById(prevId, c)"
-  @course-remove="c => removeById(c.id)"
+  @course-add="course => courses.push(course)"
+  @course-update="(course, previousId) => replaceById(previousId, course)"
+  @course-remove="course => removeById(course.id)"
 />
 ```
 
-不想用内置表单:`course-form: 'none'`,监听 `cell-select(weekday, start, end)` / `course-form-request(prefill)` 自行接管;或随时用方法 `openCourseForm(prefill?)` 主动唤起。
+设置 `course-form="none"` 后，可监听 `cell-select` 和 `course-form-request` 自行接管表单。编辑所需的 `books`、`materials`、`tasks` 都是 [Course](/components/course-data) 的受控字段。
 
 ## 日计划
 
-传入受控的 `dayPlans`(`dateKey → DayPlan[]`),表头日期自动出现**未完成角标**;点日期打开内置日计划面板(增/勾/删都只发事件:`plan-add/plan-toggle/plan-remove`)。`day-planner: 'none'` 可关,`openDayPlanner(dateKey)` 可开。与 `<YsToday>` 传同一份 `dayPlans` 即联动出"今日计划"widget。
+向 `dayPlans` 传入 `YYYY-MM-DD -> DayPlan[]`。日期栏会显示未完成角标；内置面板只发出 `plan-add`、`plan-toggle`、`plan-remove`，由宿主持久化。将同一 `dayPlans` 传给 `<YsToday>`，计划会自然同步到 Today 模块。
 
 ## 自定义背景
 
 ```vue
 <YsSchedule
-  :background="{ image: url, opacity: 0.35, blur: 0 }"
-  @background-change="url => save(url)"
+  :background="{ image: coverUrl, opacity: 0.32, blur: 0 }"
+  @background-change="value => saveBackground(value)"
 />
 ```
 
-`openBackgroundPicker()` 打开内置**上传 + 拖动/缩放裁剪**面板(按课表容器比例出图,产出 dataURL 由宿主持久化);设置背景后顶栏与表头自动切换毛玻璃。`background-picker: 'none'` 可完全自行实现。
+调用 `openBackgroundPicker()` 可打开内置上传与裁剪面板。关闭 `backgroundPicker` 后，背景选择仍可由宿主自行实现。
 
-## 导出、分享与提醒（core 纯函数）
+## 天气、详情与弹层
 
-```ts
-import { computeReminders, createShareCode, exportICS, parseShareCode } from '@iyotsuba/schedule-core'
+天气不是组件内部网络请求。宿主完成定位、权限、缓存和 Provider 选择后，将 `WeatherSnapshot` 同时传给 `<YsSchedule>` 和 `<YsToday>`：
 
-// ICS：写 .ics 文件 / 日历订阅源,导入系统日历、Google Calendar、Outlook
-const ics = exportICS(courses, { termStart, courseTimes, totalWeeks: 20 })
-
-// 课表分享码：口令/二维码皆可
-const code = createShareCode(courses)
-const restored = parseShareCode(code)
-
-// 上课提醒时刻表：对接 Notification / Service Worker / App 推送
-const reminders = computeReminders(courses, { termStart, courseTimes, leadMinutes: 15, from: new Date() })
+```vue
+<YsSchedule
+  :weather="weatherSnapshot"
+  weekday-weather="full"
+  weather-scene
+  :sheets="{
+    placement: 'bottom',
+    placements: { weekPicker: 'center', courseDetail: 'right' },
+    glass: true,
+    contained: true,
+    adjustable: true,
+  }"
+  :detail="{
+    hero: 'weather',
+    layout: 'standard',
+    fields: ['time', 'weeks', 'location', 'teacher', 'weather', 'note', 'materials', 'tasks'],
+    emptyText: '暂无信息',
+    actions: ['share', 'edit'],
+    adjustable: true,
+  }"
+/>
 ```
 
-
-## 次世代视觉体系（0.5.0）
-
-| Prop | 取值 | 说明 |
-| --- | --- | --- |
-| `density` | `'minimal' \| 'normal' \| 'rich'` | 三档界面密度:精简近日历块 / 现状 / 信息全面(教师行、携带 🎒 角标) |
-| `palette` | 六库名 \| `string[]` | 课程配色库:`classic / macaron / morandi / cyber / forest / sunset`(50 色全部通过白字对比度 ≥3:1 验证)或自定义数组 |
-| `cardEffect` | `'none' \| 'shimmer' \| 'glow' \| 'aurora' \| 'breathe'` | 卡片装饰特效:流光 / 呼吸辉光 / 极光描边 / 微呼吸。只作用本周卡,换周动画期间自动暂停,reduced-motion 关闭,合成器动画零重绘(aurora 除外,已带低端机关闭规则) |
-| `weatherScene` | `boolean` | 小米天气式实时背景场景:晴/多云/阴/雨/雷/雪/雾 纯 CSS 分层动画,依赖 `weather.current.kind`,强度上限不喧宾夺主 |
-| `sheets` | `{ placement, glass }` | 全部内置弹窗统一配置:`bottom` 底部抽屉 / `center` 居中对话框 / `right` 侧滑抽屉(平板友好)+ 毛玻璃开关(自动降级) |
-| `detail` | `{ hero, fields }` | 详情编排:hero `'color'/'weather'/'plain'` 三风格;`fields` 数组控制 time/weeks/location/teacher/weather/note/materials 的显隐与顺序 |
+缺少信息时保留字段 label 并显示 `emptyText`；`emptyTexts` 可按 `DetailField` 逐项覆盖。重叠课从选择态进入详情时保持同一弹层内连续过渡。

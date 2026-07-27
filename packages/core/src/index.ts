@@ -1,4 +1,5 @@
 export * from './adapters'
+export * from './course'
 export * from './engine'
 export * from './exchange'
 export * from './guide'

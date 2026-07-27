@@ -2,14 +2,16 @@
 
 ## 安装
 
+当前 NPM 稳定版为 `0.5.0`。`0.6.0` API 正在 current main 和官网演示中验证，发布前请不要按主分支文档直接假设注册表已可安装；详见 [版本与发布状态](/guide/release-status)。
+
 ::: code-group
 
 ```bash [Vue 3]
-pnpm add @iyotsuba/schedule-vue
+pnpm add @iyotsuba/schedule-vue@0.5.0
 ```
 
 ```bash [其他框架（Web Component）]
-pnpm add @iyotsuba/schedule-elements
+pnpm add @iyotsuba/schedule-elements@0.5.0
 ```
 
 :::
@@ -58,7 +60,7 @@ const courses: Course[] = [
 </template>
 ```
 
-左右滑动即可换周（波浪覆盖动画）；`v-model:week` 受控,任何外部 UI（周选择器、按钮）改这个值都会触发同一套过渡。
+左右滑动即可换周（波浪覆盖动画）；`v-model:week` 受控，任何外部 UI（周选择器、按钮）改这个值都会触发同一套过渡。进一步的课程详情、Today、教材任务、天气和弹层编排见[组件](/components/schedule)与[API](/api/core)。
 
 ## Web Component（任意框架 / 原生 HTML）
 

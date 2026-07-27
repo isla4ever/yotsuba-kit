@@ -43,6 +43,20 @@ export const slideTransition: TransitionSpec = {
   cellStagger: { fromOpacity: 0.3, stepMs: 16, durationMs: 260, easing: 'ease-out' },
 }
 
+/** 纯淡入淡出：旧周始终保留到离场完成，适合低干扰切换。 */
+export const fadeTransition: TransitionSpec = {
+  name: 'fade',
+  mode: 'layer',
+  totalMs: 320,
+  enterMs: 300,
+  leaveMs: 280,
+  leaveLagMs: 0,
+  stableSkip: false,
+  delayFor: () => 0,
+  enter: { opacity: 0, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' },
+  leave: { opacity: 0, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+}
+
 /** 直切（无障碍 / 截图场景） */
 export const noneTransition: TransitionSpec = {
   name: 'none',
@@ -65,28 +79,28 @@ export const noneTransition: TransitionSpec = {
 export const cubeTransition: TransitionSpec = {
   name: 'cube',
   mode: 'page',
-  totalMs: 520,
-  enterMs: 520,
-  leaveMs: 520,
+  totalMs: 620,
+  enterMs: 580,
+  leaveMs: 580,
   leaveLagMs: 0,
   stableSkip: false,
   perspectivePx: 1200,
   delayFor: () => 0,
   enter: {
-    opacity: 0.7,
+    opacity: 0.18,
     translateX: 100,
     rotateY: 90,
     transformOrigin: 'left center',
     directional: ['translateX', 'rotateY', 'transformOrigin'],
-    easing: 'cubic-bezier(0.35, 0, 0.22, 1)',
+    easing: 'cubic-bezier(0.22, 0.68, 0.24, 1)',
   },
   leave: {
-    opacity: 0.7,
+    opacity: 0.02,
     translateX: -100,
     rotateY: -90,
     transformOrigin: 'right center',
     directional: ['translateX', 'rotateY', 'transformOrigin'],
-    easing: 'cubic-bezier(0.35, 0, 0.22, 1)',
+    easing: 'cubic-bezier(0.32, 0, 0.28, 1)',
   },
 }
 
@@ -97,25 +111,25 @@ export const cubeTransition: TransitionSpec = {
 export const zoomTransition: TransitionSpec = {
   name: 'zoom',
   mode: 'layer',
-  totalMs: 420,
-  enterMs: 420,
-  leaveMs: 300,
+  totalMs: 520,
+  enterMs: 500,
+  leaveMs: 480,
   leaveLagMs: 0,
   stableSkip: false,
   delayFor: () => 0,
   enter: {
-    opacity: 0,
-    scale: 0.92,
+    opacity: 0.08,
+    scale: 0.94,
     transformOrigin: '50% 40%',
     directional: ['scale'],
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
   },
   leave: {
     opacity: 0,
-    scale: 1.06,
+    scale: 1.04,
     transformOrigin: '50% 40%',
     directional: ['scale'],
-    easing: 'cubic-bezier(0.3, 0, 0.8, 0.15)',
+    easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
   },
 }
 
@@ -154,6 +168,7 @@ export const dropTransition: TransitionSpec = {
 export const builtinTransitions = {
   wave: waveTransition,
   slide: slideTransition,
+  fade: fadeTransition,
   cube: cubeTransition,
   zoom: zoomTransition,
   drop: dropTransition,

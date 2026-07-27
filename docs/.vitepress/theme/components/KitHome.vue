@@ -1,671 +1,283 @@
 <script setup lang="ts">
-// 演示按真实 390px 手机密度渲染,再整体缩放进壳体——与微信版观感一致
-import type { BuiltinTransitionName, Course } from '@iyotsuba/schedule-vue'
-import { defaultScheduleGuideSteps, YsSchedule } from '@iyotsuba/schedule-vue'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  CalendarDays,
+  CloudSun,
+  Command,
+  Layers3,
+  LayoutDashboard,
+  Maximize2,
+  Minimize2,
+  Moon,
+  Palette,
+  Sparkles,
+  Sun,
+  Workflow,
+} from '@lucide/vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import KitMobileDemo from './KitMobileDemo.vue'
+import ReactCountUp from './ReactCountUp.vue'
 
 const props = withDefaults(defineProps<{ lang?: 'zh' | 'en' }>(), { lang: 'zh' })
 
 const t = computed(() => props.lang === 'zh'
   ? {
-      badge: 'v0.3 · MIT 开源 · Vue / React / Web Components',
-      title1: '把课表组件',
-      title2: '做到像素级顺滑',
-      sub: '中国高校学期语义开箱即用 · 波浪覆盖换周动画任何一帧不空 · 主题令牌深浅色 · 三模式手把手引导 · 今日指挥台',
-      start: '快速开始',
+      badge: 'current main · 0.6.0 API · registry latest 0.5.0',
+      title1: '把复杂课表，',
+      title2: '做成清晰的组件接口。',
+      sub: '中国高校学期语义、天气联动、教材与任务、弹层编排和移动端 Today，都由受控数据与可替换视图组成。',
+      start: '开始接入',
       github: 'GitHub',
-      install: 'pnpm add @iyotsuba/schedule-vue',
+      install: 'pnpm add @iyotsuba/schedule-vue@0.5.0',
       copied: '已复制',
-      demoTip: '真实组件可交互:滑动换周 · 点课程看内置详情 · 点周数跳任意周',
-      features: [
-        { icon: '🌊', title: '波浪覆盖换周', desc: '骨架常驻、稳定格静止、旧周垫底新卡逐列扫入——任何一帧不出现空网格,e2e 探针持续回归。' },
-        { icon: '📅', title: '学期语义引擎', desc: '单双周、调休补班、假日、重叠课连通分组、非本周置灰。零依赖 TypeScript,任何框架可用。' },
-        { icon: '🎨', title: '主题令牌体系', desc: '--ys-* CSS 变量双层定制,light/dark 内置,课程颜色按名稳定分配,一行代码换品牌色。' },
-        { icon: '🧭', title: '三模式引导', desc: 'tips 气泡 / spotlight 聚光 / walkthrough 手把手——真实完成点击滑动才前进,超时手势暗示。' },
-        { icon: '🧩', title: '双组件联动', desc: '课表 + 今日指挥台共享同一引擎;widget 注册表,#widget-<id> 插槽即插即换。' },
-        { icon: '📦', title: '四包一体', desc: 'core 引擎 / Vue 3 / React 绑定 / <ys-schedule> 自定义元素,uni-app H5 与原生 HTML 直接可用。' },
-      ],
+      release: '0.6.0 能力已在 current main 和在线演示中；包注册表版本仍为 0.5.0，等待独立发版验证。',
+      demoLabel: '真实移动端演示',
+      focus: '聚焦全屏',
+      closeFocus: '退出聚焦演示',
       stats: [
-        { value: '0', label: 'core 运行时依赖' },
-        { value: '3+', label: '内置换周动画' },
-        { value: '34', label: '单测 + e2e 断言' },
-        { value: '4', label: 'npm 包' },
+        { value: 0, label: 'core 运行时依赖' },
+        { value: 7, label: '内置换周模式' },
+        { value: 7, label: 'Today 内置模块' },
+        { value: 4, label: 'Web 分发包' },
+      ],
+      features: [
+        { icon: CalendarDays, title: '中国高校学期语义', desc: '单双周、调休补班、重叠课程和非本周状态，都在零依赖 core 中计算。' },
+        { icon: CloudSun, title: '天气是受控数据', desc: '宿主注入天气快照；课程卡、星期栏、详情 Hero 与动态场景共享同一状态。' },
+        { icon: Layers3, title: '详情与弹层可编排', desc: '字段、空值文案、操作区、课程详情层级和每类弹层位置都能单独配置。' },
+        { icon: LayoutDashboard, title: '面向触摸的 Today', desc: '长按进入排版，整卡拖动智能让位，四角缩放，内置任务与课前携带清单。' },
+        { icon: Workflow, title: '同一份能力，多种宿主', desc: 'core、Vue、React、Custom Elements 与 Flutter 保持同一数据边界与行为语义。' },
+        { icon: Command, title: '交给宿主的副作用', desc: '定位、网络、日历、分享和持久化都显式授权，组件只发事件和公开方法。' },
       ],
     }
   : {
-      badge: 'v0.3 · MIT · Vue / React / Web Components',
-      title1: 'Class-schedule components,',
-      title2: 'polished to the pixel',
-      sub: 'Chinese academic-term semantics out of the box · wave transitions with zero empty frames · theme tokens · hands-on onboarding · today dashboard',
+      badge: 'current main · 0.6.0 API · registry latest 0.5.0',
+      title1: 'Complex timetables,',
+      title2: 'clear component contracts.',
+      sub: 'Academic-term semantics, weather, course materials, tasks, adaptive sheets and a touch-first Today dashboard all stay controlled and replaceable.',
       start: 'Get Started',
       github: 'GitHub',
-      install: 'pnpm add @iyotsuba/schedule-vue',
+      install: 'pnpm add @iyotsuba/schedule-vue@0.5.0',
       copied: 'Copied',
-      demoTip: 'Fully interactive: swipe to change weeks · tap a course for the built-in detail · tap the week for the picker',
-      features: [
-        { icon: '🌊', title: 'Wave-cover transitions', desc: 'Persistent chrome, still stable cells, old week beneath while new cards sweep in — no empty frame, ever. Guarded by e2e probes.' },
-        { icon: '📅', title: 'Term-semantics engine', desc: 'Odd/even weeks, makeup days, holidays, overlap grouping, inactive dimming. Zero-dep TypeScript.' },
-        { icon: '🎨', title: 'Theme tokens', desc: 'Two-layer --ys-* CSS variables, light/dark built in, stable per-course colors.' },
-        { icon: '🧭', title: 'Three-mode guide', desc: 'tips / spotlight / hands-on walkthrough that only advances on real taps & swipes.' },
-        { icon: '🧩', title: 'Linked dashboard', desc: 'Schedule + today dashboard share one engine; widget registry with slot overrides.' },
-        { icon: '📦', title: 'Four packages', desc: 'core / Vue 3 / React bindings / custom elements for anything with a DOM.' },
-      ],
+      release: 'The 0.6.0 API is available in current main and this live demo. The registry remains on 0.5.0 pending an independent release gate.',
+      demoLabel: 'Live mobile demo',
+      focus: 'Focus fullscreen',
+      closeFocus: 'Exit focused demo',
       stats: [
-        { value: '0', label: 'core runtime deps' },
-        { value: '3+', label: 'built-in transitions' },
-        { value: '34', label: 'tests & e2e probes' },
-        { value: '4', label: 'npm packages' },
+        { value: 0, label: 'core runtime dependencies' },
+        { value: 7, label: 'built-in transitions' },
+        { value: 7, label: 'built-in Today modules' },
+        { value: 4, label: 'Web packages' },
+      ],
+      features: [
+        { icon: CalendarDays, title: 'Academic-term semantics', desc: 'Odd/even weeks, makeup days, overlaps and inactive states are calculated in a zero-dependency core.' },
+        { icon: CloudSun, title: 'Weather stays controlled', desc: 'Inject one snapshot and share it across cards, weekday headers, detail heroes and dynamic scenes.' },
+        { icon: Layers3, title: 'Composable details and sheets', desc: 'Fields, empty text, actions, detail transitions and each sheet placement remain independently configurable.' },
+        { icon: LayoutDashboard, title: 'Today for touch', desc: 'Long press to arrange, drag whole cards with reflow, resize from four corners, and surface tasks and carry lists.' },
+        { icon: Workflow, title: 'One contract, many hosts', desc: 'Core, Vue, React, Custom Elements and Flutter preserve the same data boundary and behavior.' },
+        { icon: Command, title: 'Host-owned side effects', desc: 'Location, network, calendar, sharing and persistence stay explicitly authorized by the host app.' },
       ],
     })
 
 const base = computed(() => props.lang === 'zh' ? '' : '/en')
-
-/* 实机演示：可玩的完整配置面板,按真实 390px 手机密度渲染再整体缩放 */
-const week = ref(1)
-const transition = ref<BuiltinTransitionName>('wave')
-const demoTheme = ref<'light' | 'dark'>('light')
-const demoTopBar = ref<'compact' | 'standard' | 'expanded'>('standard')
-const demoDays = ref<5 | 7>(7)
-const demoDensity = ref<ScheduleDensity>('normal')
-const demoPalette = ref<PaletteName>('classic')
-const demoEffect = ref<CardEffect>('none')
-const demoWeather = ref<WeatherKind | 'off'>('off')
-const scheduleRef = ref<InstanceType<typeof YsSchedule> | null>(null)
-const autoPlay = ref(true)
-const transitions: BuiltinTransitionName[] = ['wave', 'slide', 'cube', 'zoom', 'drop']
-const palettes: Array<{ name: PaletteName, swatch: string }> = [
-  { name: 'classic', swatch: '#3d76dd' },
-  { name: 'macaron', swatch: '#c76075' },
-  { name: 'morandi', swatch: '#7690a7' },
-  { name: 'cyber', swatch: '#d41193' },
-  { name: 'forest', swatch: '#27684d' },
-  { name: 'sunset', swatch: '#d06425' },
-]
-const effects: CardEffect[] = ['none', 'shimmer', 'glow', 'aurora', 'breathe']
-const weatherKinds: Array<{ kind: WeatherKind | 'off', label: string }> = [
-  { kind: 'off', label: '关' },
-  { kind: 'clear', label: '晴' },
-  { kind: 'rain', label: '雨' },
-  { kind: 'snow', label: '雪' },
-  { kind: 'storm', label: '雷' },
-  { kind: 'fog', label: '雾' },
-]
-
-const demoWeatherSnapshot = computed<WeatherSnapshot | null>(() => {
-  if (demoWeather.value === 'off') {
-    return null
-  }
-  const today = new Date()
-  const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-  return {
-    current: { kind: demoWeather.value, temperatureC: 24, label: '演示' },
-    daily: [{ date: key, kind: demoWeather.value, highC: 28, lowC: 19 }],
-    updatedAt: 0,
-  }
-})
-const termStart = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - ((new Date().getDay() || 7) - 1))
-
-// 8 节次,贴近真实课表密度
-const demoTimes = [
-  { start: '08:00', end: '08:45' },
-  { start: '08:55', end: '09:40' },
-  { start: '10:00', end: '10:45' },
-  { start: '10:55', end: '11:40' },
-  { start: '14:30', end: '15:15' },
-  { start: '15:25', end: '16:10' },
-  { start: '16:20', end: '17:05' },
-  { start: '17:15', end: '18:00' },
-]
-
-const courses: Course[] = [
-  { id: 'a', name: '高等数学', teacher: '陈老师', location: '教1-201', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20 },
-  { id: 'b', name: '数据结构', location: '教2-105', weekday: 1, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
-  { id: 'c', name: '大学英语', location: '外语楼302', weekday: 2, startSection: 3, endSection: 4, startWeek: 1, endWeek: 20 },
-  { id: 'g', name: '专业导论', location: '报告厅', weekday: 2, startSection: 7, endSection: 8, startWeek: 2, endWeek: 6 },
-  { id: 'p', name: '程序设计', location: '机房A', weekday: 3, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
-  { id: 'z', name: '自习（自定义）', location: '图书馆', weekday: 3, startSection: 7, endSection: 8, startWeek: 1, endWeek: 20, custom: true },
-  { id: 'd', name: '体育（单周）', location: '东操场', weekday: 4, startSection: 1, endSection: 2, startWeek: 1, endWeek: 16, parity: 'odd' },
-  { id: 'e', name: '线性代数（双周）', location: '教1-305', weekday: 4, startSection: 1, endSection: 2, startWeek: 2, endWeek: 16, parity: 'even' },
-  { id: 'f', name: '大学物理', location: '理科楼210', weekday: 5, startSection: 3, endSection: 4, startWeek: 1, endWeek: 16 },
-  { id: 'i', name: '化学实验', location: '实验楼404', weekday: 5, startSection: 7, endSection: 8, startWeek: 1, endWeek: 8 },
-  { id: 'h', name: '形势与政策', location: '教3-101', weekday: 6, startSection: 3, endSection: 4, startWeek: 1, endWeek: 4 },
-]
-
-let timer: ReturnType<typeof setInterval> | null = null
-onMounted(() => {
-  timer = setInterval(() => {
-    if (autoPlay.value) {
-      week.value = week.value === 1 ? 2 : 1
-    }
-  }, 2600)
-})
-onBeforeUnmount(() => {
-  if (timer) {
-    clearInterval(timer)
-  }
-})
-
-function playGuide() {
-  autoPlay.value = false
-  scheduleRef.value?.startGuide()
-}
-
-/* 复制安装命令 */
 const copied = ref(false)
+const demoView = ref<'schedule' | 'today'>('schedule')
+const demoTheme = ref<'light' | 'dark'>('light')
+const weatherScene = ref(true)
+const demoFocused = ref(false)
+const inlineDemo = ref<InstanceType<typeof KitMobileDemo> | null>(null)
+const focusedDemo = ref<InstanceType<typeof KitMobileDemo> | null>(null)
+
 async function copyInstall() {
   try {
     await navigator.clipboard.writeText(t.value.install)
     copied.value = true
-    setTimeout(() => copied.value = false, 1600)
+    window.setTimeout(() => copied.value = false, 1600)
   }
   catch {}
 }
 
-/* aceternity 式聚光灯卡片：鼠标位置驱动径向高光 */
-function spotlight(event: MouseEvent) {
-  const card = event.currentTarget as HTMLElement
-  const rect = card.getBoundingClientRect()
-  card.style.setProperty('--spot-x', `${event.clientX - rect.left}px`)
-  card.style.setProperty('--spot-y', `${event.clientY - rect.top}px`)
+async function startGuide() {
+  demoView.value = 'schedule'
+  await nextTick()
+  const target = demoFocused.value ? focusedDemo.value : inlineDemo.value
+  target?.startGuide()
 }
+
+function toggleTheme() {
+  demoTheme.value = demoTheme.value === 'light' ? 'dark' : 'light'
+}
+
+watch(demoFocused, (focused) => {
+  document.body.classList.toggle('kit-demo-focus-open', focused)
+})
+
+onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
 </script>
 
 <template>
   <div class="kit-home">
-    <!-- Hero：极光背景 + 网格纹理 -->
     <section class="hero">
-      <div class="hero__aurora" aria-hidden="true">
-        <i class="hero__blob hero__blob--1" /><i class="hero__blob hero__blob--2" /><i class="hero__blob hero__blob--3" />
-      </div>
       <div class="hero__grid" aria-hidden="true" />
-
       <div class="hero__inner">
         <div class="hero__copy">
           <span class="hero__badge">{{ t.badge }}</span>
           <h1 class="hero__title">
             {{ t.title1 }}<br>
-            <span class="hero__title-gradient">{{ t.title2 }}</span>
+            <span>{{ t.title2 }}</span>
           </h1>
           <p class="hero__sub">{{ t.sub }}</p>
+          <p class="hero__release">{{ t.release }}</p>
           <div class="hero__actions">
-            <a class="hero__btn hero__btn--primary" :href="`${base}/guide/getting-started`">{{ t.start }} →</a>
-            <a class="hero__btn hero__btn--ghost" href="https://github.com/isla4ever/yotsuba-kit" target="_blank" rel="noreferrer">
-              {{ t.github }}
-            </a>
+            <a class="hero__action hero__action--primary" :href="`${base}/guide/getting-started`">{{ t.start }}</a>
+            <a class="hero__action hero__action--secondary" href="https://github.com/isla4ever/yotsuba-kit" target="_blank" rel="noreferrer">{{ t.github }}</a>
           </div>
           <button type="button" class="hero__install" :class="{ 'is-copied': copied }" @click="copyInstall">
-            <span class="hero__install-dollar">$</span>
-            <code>{{ t.install }}</code>
-            <span class="hero__install-copy">{{ copied ? `✓ ${t.copied}` : '⧉' }}</span>
+            <span aria-hidden="true">$</span><code>{{ t.install }}</code><small>{{ copied ? t.copied : 'Copy' }}</small>
           </button>
+
+          <dl class="hero__stats" aria-label="组件库能力概览">
+            <div v-for="(stat, index) in t.stats" :key="stat.label" class="hero__stat">
+              <dt><ReactCountUp :to="stat.value" :delay="index * 0.1" :duration="1.35" class-name="hero__stat-value" /></dt>
+              <dd>{{ stat.label }}</dd>
+            </div>
+          </dl>
         </div>
 
-        <!-- 手机壳实机演示：390px 真实密度 × 0.77 缩放,右侧配置边栏 -->
-        <div class="hero__demo">
-          <div class="phone" :class="{ 'is-dark': demoTheme === 'dark' }">
-            <div class="phone__screen">
-              <div class="phone__viewport">
-                <YsSchedule
-                  ref="scheduleRef"
-                  v-model:week="week"
-                  :courses="courses"
-                  :term-start="termStart"
-                  :transition="transition"
-                  :visible-days="demoDays"
-                  :row-height="54"
-                  :course-times="demoTimes"
-                  :top-bar="demoTopBar"
-                  :theme="demoTheme"
-                  :density="demoDensity"
-                  :palette="demoPalette"
-                  :card-effect="demoEffect"
-                  :weather-scene="demoWeather !== 'off'"
-                  :weather="demoWeatherSnapshot"
-                  :swipeable="true"
-                  week-picker="builtin"
-                  course-detail="builtin"
-                  :detail="{ hero: demoWeather !== 'off' ? 'weather' : 'color' }"
-                  :guide="{ mode: 'walkthrough', steps: defaultScheduleGuideSteps }"
-                  @course-tap="autoPlay = false"
-                  @week-picker-open="autoPlay = false"
-                />
+        <div class="hero__demo" :aria-label="t.demoLabel">
+          <div class="hero__device">
+            <div class="hero__device-meta"><span>{{ t.demoLabel }}</span><b>390 × 844</b></div>
+            <div class="phone" :class="{ 'is-dark': demoTheme === 'dark' }">
+              <div class="phone__screen">
+                <div class="phone__viewport">
+                  <KitMobileDemo
+                    ref="inlineDemo"
+                    v-model:view="demoView"
+                    v-model:theme="demoTheme"
+                    v-model:weather-scene="weatherScene"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <aside class="hero__panel">
-            <div class="hero__panel-group">
-              <span class="hero__panel-label">换周动画</span>
-              <div class="hero__panel-chips">
-                <button v-for="name in transitions" :key="name" type="button" class="hero__chip" :class="{ 'is-active': transition === name }" @click="transition = name">
-                  {{ name }}
-                </button>
-              </div>
-            </div>
-            <div class="hero__panel-group">
-              <span class="hero__panel-label">配色库</span>
-              <div class="hero__panel-chips">
-                <button
-                  v-for="item in palettes"
-                  :key="item.name"
-                  type="button"
-                  class="hero__swatch"
-                  :class="{ 'is-active': demoPalette === item.name }"
-                  :style="{ background: item.swatch }"
-                  :aria-label="item.name"
-                  :title="item.name"
-                  @click="demoPalette = item.name"
-                />
-              </div>
-            </div>
-            <div class="hero__panel-group">
-              <span class="hero__panel-label">卡片特效</span>
-              <div class="hero__panel-chips">
-                <button v-for="name in effects" :key="name" type="button" class="hero__chip" :class="{ 'is-active': demoEffect === name }" @click="demoEffect = name">
-                  {{ name }}
-                </button>
-              </div>
-            </div>
-            <div class="hero__panel-group">
-              <span class="hero__panel-label">天气场景</span>
-              <div class="hero__panel-chips">
-                <button v-for="item in weatherKinds" :key="item.kind" type="button" class="hero__chip" :class="{ 'is-active': demoWeather === item.kind }" @click="demoWeather = item.kind">
-                  {{ item.label }}
-                </button>
-              </div>
-            </div>
-            <div class="hero__panel-group">
-              <span class="hero__panel-label">密度 / 顶栏</span>
-              <div class="hero__panel-chips">
-                <button v-for="d in (['minimal', 'normal', 'rich'] as const)" :key="d" type="button" class="hero__chip" :class="{ 'is-active': demoDensity === d }" @click="demoDensity = d">
-                  {{ d }}
-                </button>
-                <button v-for="preset in (['compact', 'standard', 'expanded'] as const)" :key="preset" type="button" class="hero__chip" :class="{ 'is-active': demoTopBar === preset }" @click="demoTopBar = preset">
-                  {{ preset[0] }}
-                </button>
-              </div>
-            </div>
-            <div class="hero__panel-group">
-              <span class="hero__panel-label">更多</span>
-              <div class="hero__panel-chips">
-                <button type="button" class="hero__chip" :class="{ 'is-active': demoTheme === 'dark' }" @click="demoTheme = demoTheme === 'dark' ? 'light' : 'dark'">深色</button>
-                <button type="button" class="hero__chip" :class="{ 'is-active': demoDays === 5 }" @click="demoDays = demoDays === 5 ? 7 : 5">藏周末</button>
-                <button type="button" class="hero__chip hero__chip--guide" @click="playGuide">引导 ✨</button>
-              </div>
-            </div>
-            <p class="hero__demo-tip">{{ t.demoTip }}</p>
+          <aside class="hero__dock" aria-label="演示控制">
+            <button type="button" :class="{ 'is-active': demoView === 'schedule' }" title="课表" aria-label="课表" @click="demoView = 'schedule'"><CalendarDays :size="18" aria-hidden="true" /></button>
+            <button type="button" :class="{ 'is-active': demoView === 'today' }" title="今日" aria-label="今日" @click="demoView = 'today'"><LayoutDashboard :size="18" aria-hidden="true" /></button>
+            <button type="button" :class="{ 'is-active': weatherScene }" title="天气场景" aria-label="切换天气场景" @click="weatherScene = !weatherScene"><CloudSun :size="18" aria-hidden="true" /></button>
+            <button type="button" :class="{ 'is-active': demoTheme === 'dark' }" title="切换主题" aria-label="切换主题" @click="toggleTheme"><Moon v-if="demoTheme === 'light'" :size="18" aria-hidden="true" /><Sun v-else :size="18" aria-hidden="true" /></button>
+            <button type="button" title="体验引导" aria-label="体验引导" @click="startGuide"><Sparkles :size="18" aria-hidden="true" /></button>
+            <button type="button" title="聚焦全屏" :aria-label="t.focus" @click="demoFocused = true"><Maximize2 :size="18" aria-hidden="true" /></button>
           </aside>
         </div>
       </div>
-
-      <!-- 统计条 -->
-      <div class="stats">
-        <div v-for="stat in t.stats" :key="stat.label" class="stats__item">
-          <b>{{ stat.value }}</b>
-          <span>{{ stat.label }}</span>
-        </div>
-      </div>
     </section>
 
-    <!-- Bento 特性网格：聚光灯悬停 -->
-    <section class="bento">
-      <article
-        v-for="feature in t.features"
-        :key="feature.title"
-        class="bento__card"
-        @mousemove="spotlight"
-      >
-        <span class="bento__icon">{{ feature.icon }}</span>
-        <h3>{{ feature.title }}</h3>
+    <section class="capabilities" aria-label="核心能力">
+      <article v-for="feature in t.features" :key="feature.title" class="capability">
+        <component :is="feature.icon" :size="22" stroke-width="1.7" aria-hidden="true" />
+        <h2>{{ feature.title }}</h2>
         <p>{{ feature.desc }}</p>
       </article>
     </section>
+
+    <Teleport to="body">
+      <Transition name="demo-focus">
+        <section v-if="demoFocused" class="demo-focus" role="dialog" aria-modal="true" :aria-label="t.demoLabel">
+          <header class="demo-focus__bar">
+            <span>{{ t.demoLabel }}</span>
+            <button type="button" :aria-label="t.closeFocus" :title="t.closeFocus" @click="demoFocused = false"><Minimize2 :size="20" aria-hidden="true" /></button>
+          </header>
+          <div class="demo-focus__surface">
+            <KitMobileDemo
+              ref="focusedDemo"
+              v-model:view="demoView"
+              v-model:theme="demoTheme"
+              v-model:weather-scene="weatherScene"
+            />
+          </div>
+        </section>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
-.kit-home {
-  --kh-bg: #0b0e14;
-  --kh-text: #eef1f7;
-  --kh-text-2: #9aa4b6;
-  --kh-accent: #5b8def;
-  --kh-accent-2: #8f6bef;
-  --kh-accent-3: #35b795;
+.kit-home { color: var(--vp-c-text-1); background: var(--vp-c-bg); }
+.hero { position: relative; overflow: hidden; color: #eef4f8; background: #101820; }
+.hero__grid { position: absolute; inset: 0; opacity: 0.32; background-image: linear-gradient(rgb(213 232 240 / 12%) 1px, transparent 1px), linear-gradient(90deg, rgb(213 232 240 / 12%) 1px, transparent 1px); background-size: 40px 40px; mask-image: linear-gradient(to bottom, #000 35%, transparent 92%); }
+.hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 0.94fr) minmax(440px, 1.06fr); gap: 46px; align-items: start; max-width: 1180px; padding: 48px 28px 28px; margin: 0 auto; }
+.hero__copy { padding-top: 5px; }
+.hero__badge { display: inline-flex; min-height: 26px; align-items: center; padding: 0 9px; font-size: 11px; font-weight: 650; color: #b9d9d5; border: 1px solid rgb(124 201 190 / 36%); border-radius: 5px; background: rgb(14 51 55 / 46%); }
+.hero__title { max-width: 610px; margin: 18px 0 0; font-size: clamp(33px, 3.5vw, 46px); font-weight: 760; line-height: 1.14; letter-spacing: 0; }
+.hero__title span { color: #65c8b8; }
+.hero__sub { max-width: 560px; margin: 18px 0 0; font-size: 15px; line-height: 1.75; color: #c0cbd3; }
+.hero__release { max-width: 560px; padding-left: 10px; margin: 14px 0 0; font-size: 12px; line-height: 1.55; color: #9fbdc6; border-left: 2px solid #e08061; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 24px; }
+.hero__action { display: inline-flex; min-height: 37px; align-items: center; padding: 0 15px; font-size: 13px; font-weight: 700; text-decoration: none !important; border-radius: 6px; transition: transform 160ms ease, background-color 160ms ease; }
+.hero__action:hover { transform: translateY(-1px); }
+.hero__action--primary { color: #102127 !important; background: #65c8b8; }
+.hero__action--secondary { color: #e5eef3 !important; border: 1px solid #40515d; background: rgb(255 255 255 / 4%); }
+.hero__install { display: inline-flex; gap: 8px; align-items: center; max-width: 100%; min-height: 37px; padding: 0 10px; margin-top: 15px; overflow: hidden; font-family: var(--vp-font-family-mono); font-size: 11px; color: #d9e5ec; cursor: pointer; background: #17242e; border: 1px solid #31414e; border-radius: 6px; }
+.hero__install code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hero__install > span { color: #65c8b8; }
+.hero__install small { padding-left: 7px; color: #9bb1bd; border-left: 1px solid #41515d; }
+.hero__install.is-copied { border-color: #65c8b8; }
+.hero__stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; max-width: 560px; padding: 18px 0 0; margin: 27px 0 0; border-top: 1px solid #30404b; }
+.hero__stat { min-width: 0; padding-right: 11px; }
+.hero__stat + .hero__stat { padding-left: 12px; border-left: 1px solid #30404b; }
+.hero__stat dt { margin: 0; font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; color: #f6fbfc; }
+.hero__stat dd { margin: 4px 0 0; font-size: 10px; line-height: 1.45; color: #9fb0ba; }
+.hero__demo { display: grid; grid-template-columns: minmax(0, 288px) 40px; gap: 10px; justify-content: center; align-items: end; min-height: 600px; }
+.hero__device-meta { display: flex; justify-content: space-between; width: 288px; padding: 0 2px 7px; font-size: 10px; color: #a4b8c2; }
+.hero__device-meta b { font-family: var(--vp-font-family-mono); font-weight: 500; color: #6f8f9b; }
+.phone { position: relative; width: 288px; height: 610px; padding: 9px; background: #202b34; border: 1px solid #4b5c66; border-radius: 27px; box-shadow: 0 22px 55px rgb(0 0 0 / 32%), inset 0 1px 0 rgb(255 255 255 / 14%); }
+.phone__screen { width: 270px; height: 592px; overflow: hidden; background: #f7f9fc; border-radius: 20px; clip-path: inset(0 round 20px); }
+.phone.is-dark .phone__screen { background: #141922; }
+.phone__viewport { width: 390px; height: 844px; transform: scale(0.6923); transform-origin: top left; }
+.hero__dock { display: grid; gap: 6px; align-content: end; padding-bottom: 0; }
+.hero__dock button { display: grid; place-items: center; width: 42px; height: 42px; padding: 0; color: #b5c6ce; cursor: pointer; background: #17242e; border: 1px solid #354650; border-radius: 6px; transition: color 140ms ease, background-color 140ms ease, transform 140ms ease; }
+.hero__dock button:hover { color: #f3fbfc; background: #263943; transform: translateY(-1px); }
+.hero__dock button.is-active { color: #102127; background: #65c8b8; border-color: #65c8b8; }
+.hero__dock button:focus-visible { outline: 3px solid #a3dfd5; outline-offset: 2px; }
+.capabilities { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; max-width: 1180px; margin: 0 auto; border-right: 1px solid var(--vp-c-divider); border-bottom: 1px solid var(--vp-c-divider); }
+.capability { min-height: 187px; padding: 25px 24px; border-top: 1px solid var(--vp-c-divider); border-left: 1px solid var(--vp-c-divider); }
+.capability :deep(svg) { color: #1e7f83; }
+.capability h2 { margin: 16px 0 7px; font-size: 15px; font-weight: 720; letter-spacing: 0; }
+.capability p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--vp-c-text-2); }
+:global(body.kit-demo-focus-open) { overflow: hidden; }
+:global(.demo-focus) { position: fixed; inset: 0; z-index: 1000; display: grid; grid-template-rows: 52px minmax(0, 1fr); place-items: center; padding: 0 18px 20px; background: rgb(10 16 22 / 86%); backdrop-filter: blur(10px); }
+:global(.demo-focus__bar) { display: flex; width: min(100%, 470px); align-items: center; justify-content: space-between; color: #dce9ef; font-size: 13px; font-weight: 700; }
+:global(.demo-focus__bar button) { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; color: #dce9ef; cursor: pointer; background: transparent; border: 1px solid #49606c; border-radius: 6px; }
+:global(.demo-focus__surface) { width: min(430px, 100%); height: min(844px, calc(100dvh - 88px)); overflow: hidden; border: 1px solid #526673; border-radius: 12px; box-shadow: 0 28px 90px rgb(0 0 0 / 40%); }
+:global(.demo-focus-enter-active), :global(.demo-focus-leave-active) { transition: opacity 180ms ease; }
+:global(.demo-focus-enter-from), :global(.demo-focus-leave-to) { opacity: 0; }
 
-  margin: 0 auto;
-  color: var(--kh-text);
+@media (width <= 960px) {
+  .hero__inner { grid-template-columns: minmax(0, 1fr); gap: 38px; max-width: 680px; }
+  .hero__copy { padding-top: 0; }
+  .hero__demo { justify-content: start; }
 }
-
-/* ------------------------------ Hero ------------------------------ */
-
-.hero {
-  position: relative;
-  padding: 72px 24px 34px;
-  overflow: hidden;
-  background: var(--kh-bg);
-  border-radius: 0 0 28px 28px;
-  isolation: isolate;
+@media (width <= 700px) {
+  .hero__inner { padding: 43px 18px 38px; }
+  .hero__title { font-size: 35px; }
+  .hero__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 0; }
+  .hero__stat:nth-child(3) { padding-left: 0; border-left: 0; }
+  .hero__demo { grid-template-columns: minmax(0, 300px) 40px; min-height: 637px; justify-content: center; }
+  .hero__device-meta, .phone { width: 300px; }
+  .phone { height: 628px; padding: 9px; border-radius: 26px; }
+  .phone__screen { width: 282px; height: 610px; border-radius: 18px; clip-path: inset(0 round 18px); }
+  .phone__viewport { transform: scale(0.72308); }
+  .hero__dock button { width: 40px; height: 40px; }
+  .capabilities { grid-template-columns: 1fr; margin: 0 18px; }
 }
-
-.hero__aurora { position: absolute; inset: 0; z-index: -2; filter: blur(70px); }
-
-.hero__blob {
-  position: absolute;
-  display: block;
-  border-radius: 50%;
-  opacity: 0.5;
-  animation: kh-drift 16s ease-in-out infinite alternate;
+@media (width <= 390px) {
+  .hero__demo { grid-template-columns: minmax(0, 270px) 36px; gap: 8px; }
+  .hero__device-meta, .phone { width: 270px; }
+  .phone { height: 565px; padding: 8px; border-radius: 24px; }
+  .phone__screen { width: 254px; height: 549px; border-radius: 17px; clip-path: inset(0 round 17px); }
+  .phone__viewport { transform: scale(0.65128); }
+  .hero__dock button { width: 36px; height: 36px; }
 }
-
-.hero__blob--1 { top: -18%; left: -8%; width: 46%; height: 60%; background: #274bb3; }
-.hero__blob--2 { right: -10%; bottom: -30%; width: 52%; height: 70%; background: #5b2fb0; animation-delay: -6s; }
-.hero__blob--3 { top: 22%; left: 42%; width: 30%; height: 44%; background: #0f6b5c; animation-delay: -11s; }
-
-.hero__grid {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 4%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, #000 55%, transparent 100%);
-}
-
-.hero__inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  gap: 34px;
-  align-items: center;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-@media (width <= 860px) {
-  .hero__inner { grid-template-columns: 1fr; }
-}
-
-.hero__badge {
-  display: inline-block;
-  padding: 5px 13px;
-  font-size: 12px;
-  color: var(--kh-text-2);
-  background: rgb(255 255 255 / 6%);
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 99px;
-}
-
-.hero__title {
-  margin: 18px 0 0;
-  font-size: clamp(30px, 4.6vw, 50px);
-  font-weight: 800;
-  line-height: 1.16;
-  letter-spacing: -0.5px;
-}
-
-.hero__title-gradient {
-  background: linear-gradient(100deg, var(--kh-accent), var(--kh-accent-2) 55%, var(--kh-accent-3));
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.hero__sub {
-  max-width: 480px;
-  margin: 16px 0 0;
-  font-size: 15px;
-  line-height: 1.75;
-  color: var(--kh-text-2);
-}
-
-.hero__actions { display: flex; gap: 12px; margin-top: 26px; }
-
-.hero__btn {
-  padding: 10px 22px;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none !important;
-  border-radius: 10px;
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-
-.hero__btn:hover { transform: translateY(-1px); }
-
-.hero__btn--primary {
-  color: #fff !important;
-  background: linear-gradient(120deg, var(--kh-accent), var(--kh-accent-2));
-  box-shadow: 0 8px 26px rgb(91 141 239 / 34%);
-}
-
-.hero__btn--ghost {
-  color: var(--kh-text) !important;
-  background: rgb(255 255 255 / 7%);
-  border: 1px solid rgb(255 255 255 / 14%);
-}
-
-/* uiverse 风格复制安装条 */
-.hero__install {
-  display: inline-flex;
-  gap: 9px;
-  align-items: center;
-  padding: 10px 14px;
-  margin-top: 20px;
-  font-family: var(--vp-font-family-mono, monospace);
-  font-size: 13px;
-  color: var(--kh-text);
-  cursor: pointer;
-  background: rgb(255 255 255 / 5%);
-  border: 1px solid rgb(255 255 255 / 14%);
-  border-radius: 10px;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.hero__install:hover {
-  border-color: rgb(91 141 239 / 60%);
-  box-shadow: 0 0 0 3px rgb(91 141 239 / 14%);
-}
-
-.hero__install.is-copied { border-color: var(--kh-accent-3); }
-.hero__install-dollar { color: var(--kh-accent-3); }
-.hero__install-copy { font-size: 12px; color: var(--kh-text-2); }
-.hero__install.is-copied .hero__install-copy { color: var(--kh-accent-3); }
-
-/* 手机壳：390px 真实密度 × 0.77 缩放,严丝合缝;右侧配置边栏 */
-.hero__demo {
-  display: flex;
-  gap: 18px;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-@media (width <= 1080px) {
-  .hero__demo { flex-direction: column; align-items: center; }
-}
-
-.phone {
-  position: relative;
-  width: 320px;
-  padding: 10px;
-  background: linear-gradient(160deg, #2a3140, #161b25);
-  border-radius: 40px;
-  box-shadow:
-    0 24px 70px rgb(0 0 0 / 55%),
-    inset 0 1px 0 rgb(255 255 255 / 14%);
-}
-
-.phone__screen {
-  position: relative;
-  width: 300px;
-  height: 480px;
-  overflow: hidden;
-  background: #f6f7f9;
-  border-radius: 30px;
-  /* transform 子层会逃逸祖先圆角裁剪,clip-path 保证四角封死 */
-  clip-path: inset(0 round 30px);
-  isolation: isolate;
-}
-
-.phone.is-dark .phone__screen { background: #14171c; }
-
-.phone__viewport {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 390px;
-  height: 623px;
-  transform: scale(0.7692);
-  transform-origin: top left;
-}
-
-.phone__viewport > * { height: 100%; }
-
-/* 右侧配置边栏 */
-.hero__panel {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  width: 216px;
-  padding: 14px;
-  background: rgb(255 255 255 / 5%);
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 14px;
-}
-
-.hero__panel-group { display: flex; flex-direction: column; gap: 6px; }
-
-.hero__panel-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-
-.hero__panel-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--kh-text-2);
-  letter-spacing: 0.4px;
-}
-
-.hero__swatch {
-  width: 22px;
-  height: 22px;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  transition: transform 140ms ease, border-color 140ms ease;
-}
-
-.hero__swatch:hover { transform: scale(1.12); }
-.hero__swatch.is-active { border-color: #fff; }
-
-.hero__chip {
-  padding: 3px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--kh-text-2);
-  cursor: pointer;
-  background: rgb(255 255 255 / 6%);
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 99px;
-  transition: all 160ms ease;
-}
-
-.hero__chip.is-active {
-  color: #fff;
-  background: linear-gradient(120deg, var(--kh-accent), var(--kh-accent-2));
-  border-color: transparent;
-}
-
-.hero__chip--guide {
-  color: #ffd98a;
-  border-color: rgb(255 217 138 / 34%);
-}
-
-.hero__demo-tip { margin-top: 9px; font-size: 11px; color: var(--kh-text-2); }
-
-/* 统计条 */
-.stats {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  max-width: 1100px;
-  padding: 26px 0 6px;
-  margin: 26px auto 0;
-  border-top: 1px solid rgb(255 255 255 / 8%);
-}
-
-.stats__item {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  max-width: 190px;
-  align-items: center;
-}
-
-.stats__item b {
-  font-size: 26px;
-  background: linear-gradient(120deg, var(--kh-accent), var(--kh-accent-2));
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.stats__item span { font-size: 11px; color: var(--kh-text-2); }
-
-/* ------------------------------ Bento ------------------------------ */
-
-.bento {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  max-width: 1100px;
-  padding: 40px 24px 64px;
-  margin: 0 auto;
-}
-
-@media (width <= 860px) {
-  .bento { grid-template-columns: 1fr; }
-}
-
-.bento__card {
-  position: relative;
-  padding: 22px 20px;
-  overflow: hidden;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 16px;
-  transition: transform 200ms ease, border-color 200ms ease;
-}
-
-.bento__card::before {
-  position: absolute;
-  inset: 0;
-  content: "";
-  pointer-events: none;
-  background: radial-gradient(340px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgb(91 141 239 / 12%), transparent 65%);
-  opacity: 0;
-  transition: opacity 250ms ease;
-}
-
-.bento__card:hover { border-color: rgb(91 141 239 / 45%); transform: translateY(-2px); }
-.bento__card:hover::before { opacity: 1; }
-
-.bento__icon { font-size: 22px; }
-
-.bento__card h3 {
-  margin: 10px 0 6px;
-  font-size: 15px;
-  font-weight: 760;
-  color: var(--vp-c-text-1);
-}
-
-.bento__card p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--vp-c-text-2);
-}
-
-@keyframes kh-drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(4%, 6%, 0) scale(1.12); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .hero__blob { animation: none; }
+  .hero__action, .hero__dock button { transition: none; }
 }
 </style>
