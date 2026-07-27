@@ -381,21 +381,21 @@ const carryItems = computed(() => courseCarryItems(props.course))
 
 /* ---------- 卡片装饰特效（只作用本周卡,换周期间由宿主摘除属性,reduced-motion 关闭） ---------- */
 
-/* shimmer 流光：伪元素条带 transform 扫过(合成器),5.6s 中 66% 静默 */
+/* shimmer 流光：窄条带低透明度扫过，大部分时间保持静默。 */
 [data-ys-effect='shimmer'] .ys-course-card.is-active {
-  --fx-shimmer-tint: rgb(255 255 255 / 10%);
-  --fx-shimmer-peak: rgb(255 255 255 / 30%);
+  --fx-shimmer-tint: rgb(255 255 255 / 5%);
+  --fx-shimmer-peak: rgb(255 255 255 / 18%);
 }
 
 .ys-dark[data-ys-effect='shimmer'] .ys-course-card.is-active {
-  --fx-shimmer-tint: rgb(255 255 255 / 6%);
-  --fx-shimmer-peak: rgb(255 255 255 / 17%);
+  --fx-shimmer-tint: rgb(255 255 255 / 4%);
+  --fx-shimmer-peak: rgb(255 255 255 / 12%);
 }
 
 [data-ys-effect='shimmer'] .ys-course-card.is-active::after {
   position: absolute;
   inset: -20% auto -20% 0;
-  width: 46%;
+  width: 32%;
   content: "";
   pointer-events: none;
   background: linear-gradient(105deg, transparent 0%, var(--fx-shimmer-tint) 42%, var(--fx-shimmer-peak) 50%, var(--fx-shimmer-tint) 58%, transparent 100%);
@@ -464,8 +464,8 @@ const carryItems = computed(() => courseCarryItems(props.course))
 
 @media (prefers-reduced-motion: no-preference) {
   [data-ys-effect='shimmer'] .ys-course-card.is-active::after {
-    animation: ys-fx-shimmer 5.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    animation-delay: calc(var(--fx-seed, 0) * -0.8s);
+    animation: ys-fx-shimmer 7.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation-delay: calc(var(--fx-seed, 0) * -1s);
   }
 
   [data-ys-effect='glow'] .ys-course-card.is-active::before {
@@ -498,8 +498,8 @@ const carryItems = computed(() => courseCarryItems(props.course))
 
 @keyframes ys-fx-shimmer {
   0% { transform: translate3d(-180%, 0, 0) skewX(-16deg); }
-  34% { transform: translate3d(360%, 0, 0) skewX(-16deg); }
-  100% { transform: translate3d(360%, 0, 0) skewX(-16deg); }
+  22% { transform: translate3d(430%, 0, 0) skewX(-16deg); }
+  100% { transform: translate3d(430%, 0, 0) skewX(-16deg); }
 }
 
 @keyframes ys-fx-glow {
