@@ -11,6 +11,19 @@
   --vp-c-brand-2: #5b8def;
 }
 
+/* VitePress 只按页面路径标记侧栏 active；同页锚点由这里补齐。 */
+.VPSidebarItem.is-hash-suppressed > .item > .link > .text {
+  color: var(--vp-c-text-2) !important;
+}
+
+.VPSidebarItem.is-hash-active > .item > .link > .text {
+  color: var(--vp-c-brand-1) !important;
+}
+
+.VPSidebarItem.is-hash-active > .item > .indicator {
+  background-color: var(--vp-c-brand-1) !important;
+}
+
 /* 首页 layout: page 时去掉默认内边距,让 hero 全宽 */
 .VPPage :is(.vp-doc):has(.kit-home) {
   padding: 0;
