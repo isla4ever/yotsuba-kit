@@ -93,7 +93,7 @@ const props = withDefaults(defineProps<{
   density?: ScheduleDensity
   /** 课程卡配色库：六套精选库名或自定义 string[]（白字对比度自行保证） */
   palette?: PaletteName | string[]
-  /** 课程卡装饰特效（只作用于本周卡，换周动画期间自动暂停，reduced-motion 关闭） */
+  /** 课程卡装饰特效；启用时自动关闭课程卡天气背景。 */
   cardEffect?: CardEffect
   /** 每张课程卡的天气图标与动态卡面；默认开启。 */
   weatherCard?: WeatherCardConfig | false
@@ -148,7 +148,7 @@ const props = withDefaults(defineProps<{
   backgroundPicker: 'builtin',
   density: 'normal',
   palette: undefined,
-  cardEffect: 'shimmer',
+  cardEffect: 'none',
   weatherCard: () => ({ enabled: true, glyph: true, background: true, label: true, intensity: 0.72 }),
   weekdayWeather: 'icon',
   weatherScene: true,
@@ -195,6 +195,12 @@ provide('ysSheetConfig', computed(() => props.sheets ?? {}))
 
 const cssVars = computed(() => tokensToCssVars(tokens.value))
 const colorFor = computed(() => createCourseColorResolver(tokens.value))
+const resolvedWeatherCard = computed<WeatherCardConfig | false>(() => {
+  if (props.weatherCard === false || props.cardEffect === 'none') {
+    return props.weatherCard
+  }
+  return { ...props.weatherCard, background: false }
+})
 
 const times = computed<CourseTime[]>(() =>
   props.courseTimes === 'standard' ? STANDARD_COURSE_TIMES : props.courseTimes,
@@ -254,6 +260,7 @@ const weatherLabels: Record<WeatherKind, string> = {
   fog: '雾',
   drizzle: '小雨',
   rain: '雨',
+  'heavy-rain': '大雨',
   storm: '雷雨',
   snow: '雪',
   neutral: '天气',
@@ -1004,7 +1011,7 @@ onBeforeUnmount(() => {
                 :density="density"
                 :weather-kind="weatherFor(course.weekday, leavingModel.week)?.kind"
                 :weather-text="weatherTextFor(course.weekday, leavingModel.week)"
-                :weather-card="weatherCard"
+                :weather-card="resolvedWeatherCard"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
               />
@@ -1039,7 +1046,7 @@ onBeforeUnmount(() => {
                 :density="density"
                 :weather-kind="weatherFor(course.weekday, currentModel.week)?.kind"
                 :weather-text="weatherTextFor(course.weekday, currentModel.week)"
-                :weather-card="weatherCard"
+                :weather-card="resolvedWeatherCard"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
                 @select="handleCourseTap"
@@ -1176,6 +1183,7 @@ onBeforeUnmount(() => {
 .ys-schedule[data-weather='cloudy'],
 .ys-schedule[data-weather='overcast'] { background: linear-gradient(180deg, color-mix(in srgb, #8fa3bd 16%, var(--ys-canvas)) 0%, var(--ys-canvas) 48%); }
 .ys-schedule[data-weather='rain'],
+.ys-schedule[data-weather='heavy-rain'],
 .ys-schedule[data-weather='drizzle'],
 .ys-schedule[data-weather='storm'] { background: linear-gradient(180deg, color-mix(in srgb, #4978b6 18%, var(--ys-canvas)) 0%, var(--ys-canvas) 52%); }
 .ys-schedule[data-weather='snow'] { background: linear-gradient(180deg, color-mix(in srgb, #b7d5e9 22%, var(--ys-canvas)) 0%, var(--ys-canvas) 52%); }

@@ -143,6 +143,8 @@ const sceneClass = computed(() => `ys-weather--${props.kind}`)
 /* ---------- rain / drizzle 雨：双层雨丝平移循环 ---------- */
 .ys-weather--rain .ys-weather__a,
 .ys-weather--rain .ys-weather__b,
+.ys-weather--heavy-rain .ys-weather__a,
+.ys-weather--heavy-rain .ys-weather__b,
 .ys-weather--drizzle .ys-weather__a,
 .ys-weather--storm .ys-weather__a,
 .ys-weather--storm .ys-weather__b {
@@ -166,6 +168,26 @@ const sceneClass = computed(() => `ys-weather--${props.kind}`)
   animation-duration: 1.4s;
 }
 
+.ys-weather--heavy-rain .ys-weather__a {
+  background: repeating-linear-gradient(
+    16deg,
+    transparent 0 6px,
+    rgb(139 181 229 / 58%) 6px 8px,
+    transparent 8px 14px
+  );
+  animation-duration: 0.58s;
+}
+
+.ys-weather--heavy-rain .ys-weather__b {
+  background: repeating-linear-gradient(
+    16deg,
+    transparent 0 10px,
+    rgb(177 207 239 / 38%) 10px 11.5px,
+    transparent 11.5px 20px
+  );
+  animation-duration: 0.82s;
+}
+
 .ys-weather--drizzle .ys-weather__a {
   background: repeating-linear-gradient(
     14deg,
@@ -177,8 +199,13 @@ const sceneClass = computed(() => `ys-weather--${props.kind}`)
 }
 
 .ys-weather--rain .ys-weather__c,
+.ys-weather--heavy-rain .ys-weather__c,
 .ys-weather--storm .ys-weather__c {
   background: linear-gradient(180deg, rgb(70 92 122 / 20%), transparent 60%);
+}
+
+.ys-weather--heavy-rain .ys-weather__c {
+  background: linear-gradient(180deg, rgb(38 61 91 / 36%), rgb(45 74 107 / 12%) 62%, transparent);
 }
 
 /* ---------- storm 雷雨：雨 + 周期性闪电 ---------- */

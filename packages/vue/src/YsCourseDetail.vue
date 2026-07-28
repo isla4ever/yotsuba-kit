@@ -85,7 +85,7 @@ const visibleActions = computed<DetailAction[]>(() => {
 const weatherTint = computed(() => {
   const tint: Record<WeatherKind, string> = {
     clear: '#f2a93c', cloudy: '#8fa3bd', overcast: '#76889f', fog: '#9aa8b8',
-    drizzle: '#5b8cc9', rain: '#3f74b8', storm: '#5a5f9e', snow: '#7fb6dd', neutral: '#8793a3',
+    drizzle: '#5b8cc9', rain: '#3f74b8', 'heavy-rain': '#315f98', storm: '#5a5f9e', snow: '#7fb6dd', neutral: '#8793a3',
   }
   return tint[props.weatherKind ?? 'neutral']
 })

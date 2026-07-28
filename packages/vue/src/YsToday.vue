@@ -110,7 +110,7 @@ const colorFor = computed(() => createCourseColorResolver(tokens.value))
 
 const weatherTints: Record<WeatherKind, string> = {
   clear: '#f2a93c', cloudy: '#8fa3bd', overcast: '#76889f', fog: '#9aa8b8',
-  drizzle: '#5b8cc9', rain: '#3f74b8', storm: '#5a5f9e', snow: '#7fb6dd', neutral: '#8793a3',
+  drizzle: '#5b8cc9', rain: '#3f74b8', 'heavy-rain': '#315f98', storm: '#5a5f9e', snow: '#7fb6dd', neutral: '#8793a3',
 }
 
 const now = computed(() => props.now ?? new Date())
@@ -197,6 +197,7 @@ const WEATHER_LABELS: Record<WeatherKind, string> = {
   fog: '雾',
   drizzle: '毛毛雨',
   rain: '雨',
+  'heavy-rain': '大雨',
   storm: '雷雨',
   snow: '雪',
   neutral: '—',

@@ -26,7 +26,8 @@ YsSchedule(
   transition: YsTransition.wave,
   headerStyle: YsHeaderStyle.standard,
   density: YsScheduleDensity.rich,
-  cardEffect: YsCardEffect.shimmer,
+  cardEffect: YsCardEffect.none,
+  weatherCardBackground: true,
   weather: weather,
   weatherScene: true,
   detail: const YsCourseDetailConfig(

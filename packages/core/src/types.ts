@@ -234,7 +234,7 @@ export type WeekdayWeatherMode = 'none' | 'icon' | 'full'
 
 export type WeatherKind
   = | 'clear' | 'cloudy' | 'overcast' | 'fog'
-    | 'drizzle' | 'rain' | 'storm' | 'snow' | 'neutral'
+    | 'drizzle' | 'rain' | 'heavy-rain' | 'storm' | 'snow' | 'neutral'
 
 export interface DailyWeather {
   /** YYYY-MM-DD */

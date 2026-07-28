@@ -132,6 +132,30 @@ describe('ysSchedule', () => {
     expect(wrapper.find('.ys-course-card__weeks').exists()).toBe(false)
   })
 
+  it('keeps weather glyphs while making weather backgrounds and card effects exclusive', async () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        termStart: new Date(2026, 6, 20),
+        reduceMotion: true,
+        weather: {
+          current: { kind: 'heavy-rain', temperatureC: 24 },
+          daily: [{ date: '2026-07-20', kind: 'heavy-rain', lowC: 21, highC: 26 }],
+          updatedAt: Date.now(),
+        },
+      },
+    })
+    expect(wrapper.find('.ys-course-card').attributes('data-weather')).toBe('heavy-rain')
+    expect(wrapper.find('.ys-course-card__weather-bg').exists()).toBe(true)
+    expect(wrapper.find('.ys-weather-glyph').exists()).toBe(true)
+
+    await wrapper.setProps({ cardEffect: 'glow' })
+    expect(wrapper.attributes('data-ys-effect')).toBe('glow')
+    expect(wrapper.find('.ys-course-card__weather-bg').exists()).toBe(false)
+    expect(wrapper.find('.ys-weather-glyph').exists()).toBe(true)
+  })
+
   it('pauses card effects while transitioning', async () => {
     vi.useFakeTimers()
     const wrapper = mount(YsSchedule, {

@@ -65,7 +65,7 @@ const courses = ref<Course[]>([])
 | `theme` | `'light' \| 'dark' \| Partial<ThemeTokens>` | `'light'` | 主题令牌 |
 | `density` | `'minimal' \| 'normal' \| 'rich'` | `'normal'` | 课程信息密度 |
 | `palette` | `PaletteName \| string[]` | 内置 | 六套内置配色或自定义颜色数组 |
-| `cardEffect` | `'none' \| 'shimmer' \| 'glow' \| 'aurora' \| 'breathe'` | `'shimmer'` | 流光为默认；换周和 reduce-motion 时自动收敛 |
+| `cardEffect` | `'none' \| 'shimmer' \| 'glow' \| 'aurora' \| 'breathe'` | `'none'` | 显式光效会替换课程卡天气背景，换周和 reduce-motion 时自动收敛 |
 | `weather` | `WeatherSnapshot \| null` | `null` | 由宿主提供的天气快照 |
 | `weatherCard` | `WeatherCardConfig \| false` | 全开 | 控制课程卡图标、背景色调、文案和强度 |
 | `weekdayWeather` | `'none' \| 'icon' \| 'full'` | `'icon'` | 星期栏天气信息层级 |
