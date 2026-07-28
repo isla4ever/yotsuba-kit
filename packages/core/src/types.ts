@@ -217,7 +217,7 @@ export interface SheetConfig {
 /** 课程卡装饰特效（只作用于本周卡，reduced-motion 自动关闭） */
 export type CardEffect = 'none' | 'shimmer' | 'glow' | 'aurora' | 'breathe'
 
-/** 课程卡天气联动；默认图标、动态卡面与日天气文案全部开启。 */
+/** 课程卡天气联动；默认只开启局部微动态天气材质，图标与文案可显式启用。 */
 export interface WeatherCardConfig {
   enabled?: boolean
   glyph?: boolean

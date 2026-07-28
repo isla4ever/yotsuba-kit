@@ -61,7 +61,7 @@ function cyclePlacement() {
 
 <template>
   <Teleport to="body" :disabled="contained">
-    <Transition name="ys-sheet-fade">
+    <Transition name="ys-sheet-fade" appear :duration="340">
       <div
         v-if="open"
         class="ys-sheet__overlay"
@@ -69,7 +69,7 @@ function cyclePlacement() {
         :style="vars"
         @click.self="emit('close')"
       >
-        <Transition :name="`ys-sheet-${placement}`" appear>
+        <Transition :name="`ys-sheet-${placement}`" appear :duration="340">
           <section class="ys-sheet" :class="[`ys-sheet--${placement}`, { 'is-glass': glass }]" role="dialog" aria-modal="true">
             <header v-if="title || $slots.title || $slots['header-tools'] || adjustable" class="ys-sheet__head">
               <slot name="title">
@@ -108,6 +108,7 @@ function cyclePlacement() {
   display: flex;
   isolation: isolate;
   background: rgb(12 16 22 / 42%);
+  overscroll-behavior: contain;
 }
 
 .ys-sheet__overlay.is-contained {
@@ -220,6 +221,7 @@ function cyclePlacement() {
   background: var(--ys-surface-2);
   border: 0;
   border-radius: 50%;
+  line-height: 1;
 }
 
 .ys-sheet__tool:focus-visible,
@@ -252,7 +254,7 @@ function cyclePlacement() {
 /* 进出场：全部 transform/opacity */
 .ys-sheet-fade-enter-active,
 .ys-sheet-fade-leave-active {
-  transition: opacity 220ms ease;
+  transition: opacity 300ms ease;
 }
 
 .ys-sheet-fade-enter-from,

@@ -149,7 +149,7 @@ const props = withDefaults(defineProps<{
   density: 'normal',
   palette: undefined,
   cardEffect: 'none',
-  weatherCard: () => ({ enabled: true, glyph: true, background: true, label: true, intensity: 0.72 }),
+  weatherCard: () => ({ enabled: true, glyph: false, background: true, label: false, intensity: 0.66 }),
   weekdayWeather: 'icon',
   weatherScene: true,
   sheets: undefined,
@@ -633,15 +633,53 @@ function onPointerEnd(event: PointerEvent) {
 
 /* ------------------------------ 内置面板 ------------------------------ */
 
-const weekPickerOpen = ref(false)
-const detailOpen = ref(false)
+type BuiltinSheetName = 'weekPicker' | 'courseDetail' | 'courseForm' | 'dayPlanner' | 'background'
+
+const activeSheet = ref<BuiltinSheetName | null>(null)
+let sheetSwitchTimer: ReturnType<typeof setTimeout> | undefined
+
+function activateSheet(name: BuiltinSheetName) {
+  if (activeSheet.value === name) {
+    return
+  }
+  if (sheetSwitchTimer) {
+    clearTimeout(sheetSwitchTimer)
+    sheetSwitchTimer = undefined
+  }
+  if (activeSheet.value) {
+    activeSheet.value = null
+    sheetSwitchTimer = setTimeout(() => {
+      activeSheet.value = name
+      sheetSwitchTimer = undefined
+    }, 340)
+    return
+  }
+  activeSheet.value = name
+}
+
+function sheetState(name: BuiltinSheetName) {
+  return computed({
+    get: () => activeSheet.value === name,
+    set: (open: boolean) => {
+      if (open) {
+        activateSheet(name)
+      }
+      else if (activeSheet.value === name) {
+        activeSheet.value = null
+      }
+    },
+  })
+}
+
+const weekPickerOpen = sheetState('weekPicker')
+const detailOpen = sheetState('courseDetail')
 const detailStack = ref<DisplayCourse[]>([])
-const formOpen = ref(false)
+const formOpen = sheetState('courseForm')
 const formInitial = ref<Partial<Course> | null>(null)
-const plannerOpen = ref(false)
+const plannerOpen = sheetState('dayPlanner')
 const plannerDateKey = ref('')
 const plannerDateLabel = ref('')
-const backgroundOpen = ref(false)
+const backgroundOpen = sheetState('background')
 
 function requestWeekPicker() {
   emit('weekPickerOpen')
@@ -690,7 +728,6 @@ function openCourseForm(prefill: Partial<Course> | null = null) {
 }
 
 function handleDetailEdit(course: DisplayCourse) {
-  detailOpen.value = false
   openCourseForm(course)
 }
 
@@ -824,11 +861,11 @@ function openCourse(courseId: string) {
 }
 
 function closeSheets() {
-  weekPickerOpen.value = false
-  detailOpen.value = false
-  formOpen.value = false
-  plannerOpen.value = false
-  backgroundOpen.value = false
+  if (sheetSwitchTimer) {
+    clearTimeout(sheetSwitchTimer)
+    sheetSwitchTimer = undefined
+  }
+  activeSheet.value = null
 }
 
 const rootEl = ref<HTMLElement | null>(null)
@@ -856,6 +893,9 @@ onBeforeUnmount(() => {
   if (waveTimer) {
     clearTimeout(waveTimer)
   }
+  if (sheetSwitchTimer) {
+    clearTimeout(sheetSwitchTimer)
+  }
 })
 </script>
 
@@ -872,13 +912,16 @@ onBeforeUnmount(() => {
     :style="cssVars"
   >
     <div v-if="backgroundStyle" class="ys-schedule__bg" :style="backgroundStyle" aria-hidden="true" />
-    <YsWeatherScene
-      v-if="weatherScene && weather?.current"
-      class="ys-schedule__scene"
-      :kind="weather.current.kind"
-      :dark="theme === 'dark'"
-      :intensity="0.5"
-    />
+    <Transition name="ys-weather-ambient" mode="out-in">
+      <YsWeatherScene
+        v-if="weatherScene && weather?.current"
+        :key="weather.current.kind"
+        class="ys-schedule__scene"
+        :kind="weather.current.kind"
+        :dark="theme === 'dark'"
+        :intensity="0.5"
+      />
+    </Transition>
     <slot
       name="top-bar"
       :week="week"
@@ -1172,6 +1215,16 @@ onBeforeUnmount(() => {
 
 .ys-schedule__scene {
   z-index: 0;
+}
+
+.ys-weather-ambient-enter-active,
+.ys-weather-ambient-leave-active {
+  transition: opacity 900ms ease;
+}
+
+.ys-weather-ambient-enter-from,
+.ys-weather-ambient-leave-to {
+  opacity: 0;
 }
 
 .ys-schedule > :not(.ys-schedule__scene, .ys-schedule__bg) {

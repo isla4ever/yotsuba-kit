@@ -132,7 +132,7 @@ describe('ysSchedule', () => {
     expect(wrapper.find('.ys-course-card__weeks').exists()).toBe(false)
   })
 
-  it('keeps weather glyphs while making weather backgrounds and card effects exclusive', async () => {
+  it('defaults course weather to background-only and keeps glyphs opt-in', async () => {
     const wrapper = mount(YsSchedule, {
       props: {
         courses,
@@ -148,12 +148,16 @@ describe('ysSchedule', () => {
     })
     expect(wrapper.find('.ys-course-card').attributes('data-weather')).toBe('heavy-rain')
     expect(wrapper.find('.ys-course-card__weather-bg').exists()).toBe(true)
-    expect(wrapper.find('.ys-weather-glyph').exists()).toBe(true)
+    expect(wrapper.find('.ys-course-card .ys-weather-glyph').exists()).toBe(false)
+    expect(wrapper.find('.ys-schedule__day-weather .ys-weather-glyph').exists()).toBe(true)
+
+    await wrapper.setProps({ weatherCard: { enabled: true, glyph: true, background: true } })
+    expect(wrapper.find('.ys-course-card .ys-weather-glyph').exists()).toBe(true)
 
     await wrapper.setProps({ cardEffect: 'glow' })
     expect(wrapper.attributes('data-ys-effect')).toBe('glow')
     expect(wrapper.find('.ys-course-card__weather-bg').exists()).toBe(false)
-    expect(wrapper.find('.ys-weather-glyph').exists()).toBe(true)
+    expect(wrapper.find('.ys-course-card .ys-weather-glyph').exists()).toBe(true)
   })
 
   it('pauses card effects while transitioning', async () => {
@@ -235,6 +239,33 @@ describe('ysSchedule', () => {
     expect(overlay.classes()).toContain('ys-sheet__overlay--right')
     await wrapper.find('.ys-sheet__tool').trigger('click')
     expect(overlay.classes()).toContain('ys-sheet__overlay--bottom')
+  })
+
+  it('closes the active builtin sheet before opening another one', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        reduceMotion: true,
+        sheets: { contained: true },
+      },
+    })
+
+    await wrapper.find('.ys-course-card').trigger('click')
+    await nextTick()
+    expect(wrapper.findAll('.ys-sheet__overlay')).toHaveLength(1)
+    expect(wrapper.text()).toContain('课程详情')
+
+    ;(wrapper.vm as unknown as { openDayPlanner: (dateKey: string) => void }).openDayPlanner('2026-07-30')
+    await nextTick()
+    vi.advanceTimersByTime(700)
+    await nextTick()
+
+    expect(wrapper.findAll('.ys-sheet__overlay')).toHaveLength(1)
+    expect(wrapper.text()).toContain('2026-07-30 · 日计划')
+    expect(wrapper.text()).not.toContain('课程详情')
+    vi.useRealTimers()
   })
 
   it('bubbles the locally selected detail layout to the host', async () => {

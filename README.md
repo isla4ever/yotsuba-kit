@@ -43,7 +43,7 @@ Flutter 对应包是 [`yotsuba_schedule_kit`](https://pub.dev/packages/yotsuba_s
 
 - `wave / slide / fade / cube / drop / zoom / none` 七种换周模式和自定义 `TransitionSpec`
 - 六套课程配色、三档信息密度；课程卡默认实时天气，微光 / 辉光 / 极光 / 呼吸与天气层自动互斥
-- 晴、多云、阴、雾、小雨、中雨、大雨、雷阵雨、雪均有独立动态图标、课程卡动画和页面场景
+- 晴、多云、阴、雾、小雨、中雨、大雨、雷阵雨、雪均有独立动态图标、局部微动态课程卡材质和低频页面氛围
 - 减少动态效果、触摸换周、无空白帧过渡和浅深色主题令牌
 
 ### 详情、弹层与 Today
@@ -91,7 +91,7 @@ const courses = ref<Course[]>([
     :courses="courses"
     :term-start="new Date(2026, 8, 7)"
     card-effect="none"
-    :weather-card="{ enabled: true, glyph: true, background: true }"
+    :weather-card="{ enabled: true, background: true }"
     weather-scene
     style="height: 720px"
   />
