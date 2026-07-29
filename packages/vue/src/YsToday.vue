@@ -72,13 +72,13 @@ const props = withDefaults(defineProps<{
   overrides: () => [],
   courseTimes: 'standard',
   widgets: () => [
-    { id: 'next-course' },
-    { id: 'today-timeline' },
-    { id: 'readiness' },
-    { id: 'plans' },
-    { id: 'course-tasks' },
-    { id: 'week-glance' },
-    { id: 'weather' },
+    { id: 'next-course', size: '2x1' },
+    { id: 'weather', size: '2x2' },
+    { id: 'today-timeline', size: '2x1' },
+    { id: 'readiness', size: '1x1' },
+    { id: 'course-tasks', size: '1x1' },
+    { id: 'plans', size: '1x1' },
+    { id: 'week-glance', size: '1x1' },
   ],
   theme: 'light',
   weather: null,
@@ -296,7 +296,9 @@ const resizeCorners: TodayResizeCorner[] = ['top-left', 'top-right', 'bottom-lef
 const layoutAnimations = new Map<string, Animation>()
 
 function defaultWidgetSize(id: string): TodayWidgetSize {
-  return ['week-glance', 'weather'].includes(id) ? '1x1' : '2x1'
+  if (id === 'weather') return '2x2'
+  if (['readiness', 'course-tasks', 'plans', 'week-glance'].includes(id)) return '1x1'
+  return '2x1'
 }
 
 function normalizeWidgets(widgets: TodayWidgetConfig[]) {

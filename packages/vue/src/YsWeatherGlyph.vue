@@ -39,6 +39,12 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
 
 <style>
 .ys-weather-glyph {
+  --ys-weather-sun: #f3b33d;
+  --ys-weather-cloud: #899db4;
+  --ys-weather-cloud-back: #b3c0ce;
+  --ys-weather-precip: #4d8fdc;
+  --ys-weather-accent: #f5c84b;
+
   position: relative;
   display: inline-block;
   flex: 0 0 auto;
@@ -52,6 +58,56 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
   vertical-align: middle;
 }
 
+.ys-weather-glyph.is-clear {
+  --ys-weather-sun: #f4ad32;
+}
+
+.ys-weather-glyph.is-cloudy {
+  --ys-weather-sun: #f2b23d;
+  --ys-weather-cloud: #839bb5;
+  --ys-weather-cloud-back: #c1ccd8;
+}
+
+.ys-weather-glyph.is-overcast {
+  --ys-weather-cloud: #74889f;
+  --ys-weather-cloud-back: #aab8c7;
+}
+
+.ys-weather-glyph.is-fog {
+  --ys-weather-cloud: #91a0af;
+  --ys-weather-precip: #aebbc8;
+}
+
+.ys-weather-glyph.is-drizzle {
+  --ys-weather-cloud: #7891aa;
+  --ys-weather-precip: #62a3e7;
+}
+
+.ys-weather-glyph.is-rain {
+  --ys-weather-cloud: #657e9a;
+  --ys-weather-precip: #4b91df;
+}
+
+.ys-weather-glyph.is-heavy-rain {
+  --ys-weather-cloud: #526c8a;
+  --ys-weather-precip: #327fd4;
+}
+
+.ys-weather-glyph.is-storm {
+  --ys-weather-cloud: #626c87;
+  --ys-weather-precip: #4e88d2;
+  --ys-weather-accent: #f4c542;
+}
+
+.ys-weather-glyph.is-snow {
+  --ys-weather-cloud: #8198ad;
+  --ys-weather-precip: #77bce5;
+}
+
+.ys-weather-glyph.is-neutral {
+  --ys-weather-cloud: #8b98a7;
+}
+
 .ys-weather-glyph > i {
   position: absolute;
   display: block;
@@ -60,6 +116,7 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
 }
 
 .ys-weather-glyph__rays {
+  color: var(--ys-weather-sun);
   top: 0.11em;
   left: 0.11em;
   width: 0.78em;
@@ -72,6 +129,7 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
 }
 
 .ys-weather-glyph__sun {
+  color: var(--ys-weather-sun);
   top: 0.08em;
   left: 0.08em;
   width: 0.48em;
@@ -83,6 +141,7 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
 }
 
 .ys-weather-glyph__cloud-back {
+  color: var(--ys-weather-cloud-back);
   right: 0.13em;
   bottom: 0.38em;
   width: 0.54em;
@@ -94,6 +153,7 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
 }
 
 .ys-weather-glyph__cloud {
+  color: var(--ys-weather-cloud);
   right: 0.05em;
   bottom: 0.18em;
   width: 0.7em;
@@ -116,6 +176,7 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
 .ys-weather-glyph__cloud::after { right: 0.1em; width: 0.42em; height: 0.42em; }
 
 .ys-weather-glyph__fall {
+  color: var(--ys-weather-precip);
   right: 0.13em;
   bottom: -0.08em;
   width: 0.48em;
@@ -130,6 +191,7 @@ const style = computed(() => ({ fontSize: `${Math.max(10, props.size)}px` }))
 }
 
 .ys-weather-glyph__accent {
+  color: var(--ys-weather-accent);
   right: 0.27em;
   bottom: -0.02em;
   width: 0.19em;

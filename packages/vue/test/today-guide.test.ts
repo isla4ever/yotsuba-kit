@@ -17,6 +17,24 @@ const courses: Course[] = [
 ]
 
 describe('ysToday', () => {
+  it('uses one weather hero with balanced wide and compact cards by default', () => {
+    const wrapper = mount(YsToday, {
+      props: { courses, termStart, now: monday0910 },
+    })
+    expect(wrapper.findAll('.ys-today__widget').map(widget => [
+      widget.attributes('data-widget'),
+      widget.attributes('data-size'),
+    ])).toEqual([
+      ['next-course', '2x1'],
+      ['weather', '2x2'],
+      ['today-timeline', '2x1'],
+      ['readiness', '1x1'],
+      ['course-tasks', '1x1'],
+      ['plans', '1x1'],
+      ['week-glance', '1x1'],
+    ])
+  })
+
   it('shows ongoing course, timeline and stats for today', () => {
     const wrapper = mount(YsToday, {
       props: { courses, termStart, now: monday0910 },
@@ -104,7 +122,7 @@ describe('ysToday', () => {
     await resize.trigger('pointerup', { clientX: 90, clientY: 90, pointerId: 1 })
     expect(wrapper.emitted('update:widgets')?.at(-1)?.[0]).toMatchObject([
       { id: 'next-course', size: '2x2' },
-      { id: 'weather', size: '1x1' },
+      { id: 'weather', size: '2x2' },
     ])
     expect(wrapper.emitted('widgetResize')?.at(-1)).toEqual(['next-course', '2x2', 'bottom-right'])
 
@@ -126,7 +144,7 @@ describe('ysToday', () => {
     ;(wrapper.vm as unknown as { layoutReset: () => void }).layoutReset()
     expect(wrapper.emitted('layoutChange')?.at(-1)?.[0]).toMatchObject([
       { id: 'next-course', size: '2x1' },
-      { id: 'weather', size: '1x1' },
+      { id: 'weather', size: '2x2' },
     ])
     wrapper.unmount()
     vi.useRealTimers()

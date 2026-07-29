@@ -184,6 +184,10 @@ describe('today readiness & plans widgets', () => {
         termStart,
         now: monday0730,
         dayPlans: { '2026-07-20': [{ id: 'p1', text: '预习', done: false }] },
+        widgets: [
+          { id: 'readiness', size: '2x1' },
+          { id: 'plans', size: '2x1' },
+        ],
       },
     })
     expect(wrapper.text()).toContain('记得带')
