@@ -106,10 +106,13 @@ const t = computed(() => props.lang === 'zh'
     })
 
 const demoUrl = 'https://iyotsuba.top/schedule?preview=website&source=docs'
+const demoOrigin = new URL(demoUrl).origin
 const copied = ref(false)
 const demoFocused = ref(false)
 const demoLoaded = ref(false)
 const focusedDemoLoaded = ref(false)
+const demoFrame = ref<HTMLIFrameElement | null>(null)
+const focusedDemoFrame = ref<HTMLIFrameElement | null>(null)
 const focusTrigger = ref<HTMLButtonElement | null>(null)
 const focusDialog = ref<HTMLElement | null>(null)
 const pathsSection = ref<HTMLElement | null>(null)
@@ -119,6 +122,9 @@ const capabilitiesVisible = ref(false)
 const guideHref = computed(() => withBase(props.lang === 'zh' ? '/guide/getting-started' : '/en/guide/getting-started'))
 const frameworksHref = computed(() => withBase(props.lang === 'zh' ? '/guide/frameworks' : '/en/guide/getting-started'))
 let revealObserver: IntersectionObserver | null = null
+const activeGuideSources = new Set<MessageEventSource>()
+let guideScrollLock: { left: number, top: number } | null = null
+let correctingGuideScroll = false
 
 function docHref(path: string) {
   return withBase(path)
@@ -139,7 +145,56 @@ function openFocus() {
 }
 
 function closeFocus() {
+  releaseGuideSource(focusedDemoFrame.value?.contentWindow ?? null)
   demoFocused.value = false
+}
+
+function releaseGuideSource(source: MessageEventSource | null) {
+  if (source) {
+    activeGuideSources.delete(source)
+  }
+  if (!activeGuideSources.size) {
+    guideScrollLock = null
+  }
+}
+
+function restoreGuideScroll() {
+  if (!guideScrollLock || correctingGuideScroll) {
+    return
+  }
+  if (Math.abs(window.scrollX - guideScrollLock.left) < 0.5 && Math.abs(window.scrollY - guideScrollLock.top) < 0.5) {
+    return
+  }
+  correctingGuideScroll = true
+  const previousScrollBehavior = document.documentElement.style.scrollBehavior
+  document.documentElement.style.scrollBehavior = 'auto'
+  window.scrollTo(guideScrollLock.left, guideScrollLock.top)
+  document.documentElement.style.scrollBehavior = previousScrollBehavior
+  window.requestAnimationFrame(() => {
+    correctingGuideScroll = false
+  })
+}
+
+function handleDemoGuideMessage(event: MessageEvent) {
+  const isKnownFrame = event.source === demoFrame.value?.contentWindow
+    || event.source === focusedDemoFrame.value?.contentWindow
+  if (event.origin !== demoOrigin || !event.source || !isKnownFrame || !event.data || typeof event.data !== 'object') {
+    return
+  }
+  const data = event.data as Record<string, unknown>
+  if (data.source !== 'yotsuba-schedule-demo' || data.type !== 'guide') {
+    return
+  }
+  if (data.phase === 'step') {
+    if (!activeGuideSources.size) {
+      guideScrollLock = { left: window.scrollX, top: window.scrollY }
+    }
+    activeGuideSources.add(event.source)
+    restoreGuideScroll()
+  }
+  else if (data.phase === 'finish') {
+    releaseGuideSource(event.source)
+  }
 }
 
 function handleFocusKeydown(event: KeyboardEvent) {
@@ -178,6 +233,8 @@ watch(demoFocused, async (focused) => {
 })
 
 onMounted(() => {
+  window.addEventListener('message', handleDemoGuideMessage)
+  window.addEventListener('scroll', restoreGuideScroll, { passive: true })
   if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     pathsVisible.value = true
     capabilitiesVisible.value = true
@@ -210,6 +267,10 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.body.classList.remove('kit-demo-focus-open')
   revealObserver?.disconnect()
+  activeGuideSources.clear()
+  guideScrollLock = null
+  window.removeEventListener('message', handleDemoGuideMessage)
+  window.removeEventListener('scroll', restoreGuideScroll)
 })
 </script>
 
@@ -273,7 +334,7 @@ onBeforeUnmount(() => {
                     <strong>Yotsuba</strong>
                     <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
                   </div>
-                  <iframe :src="demoUrl" :title="t.demoLabel" loading="eager" referrerpolicy="strict-origin-when-cross-origin" @load="demoLoaded = true" />
+                  <iframe ref="demoFrame" :src="demoUrl" :title="t.demoLabel" loading="eager" referrerpolicy="strict-origin-when-cross-origin" @load="demoLoaded = true" />
                 </div>
               </div>
             </div>
@@ -371,7 +432,7 @@ onBeforeUnmount(() => {
                 <strong>Yotsuba</strong>
                 <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
               </div>
-              <iframe :src="demoUrl" :title="t.demoLabel" referrerpolicy="strict-origin-when-cross-origin" @load="focusedDemoLoaded = true" />
+              <iframe ref="focusedDemoFrame" :src="demoUrl" :title="t.demoLabel" referrerpolicy="strict-origin-when-cross-origin" @load="focusedDemoLoaded = true" />
             </div>
           </div>
         </section>
