@@ -511,6 +511,9 @@ onBeforeUnmount(() => {
 :global(.demo-focus-enter-active), :global(.demo-focus-leave-active) { transition: opacity 180ms ease; }
 :global(.demo-focus-enter-from), :global(.demo-focus-leave-to) { opacity: 0; }
 
+@media (width > 960px) {
+  .hero__demo { transform: translateY(18px); }
+}
 @media (width <= 960px) {
   .hero__inner { grid-template-columns: minmax(0, 1fr); gap: 36px; max-width: 720px; }
   .hero__copy { max-width: 650px; padding-bottom: 0; }
