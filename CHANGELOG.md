@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.2
+
+- Made wave enter and leave opacity curves complementary so weather-enabled cards no longer brighten or flicker during week changes.
+- Reused visually stable course-card DOM across weeks and excluded those cards from the leaving layer, preventing duplicate weather artwork and duplicate clear-weather suns.
+- Kept weather animation phases continuous when cards are recreated and included time-slot weather in transition stability checks.
+- Refined the guide spotlight to follow the focused element's actual visual bounds and corner radii with an even four-pixel focus gap.
+
 ## 0.7.1
 
 - Fixed overlap-course week transitions so inactive cards stay beneath active and makeup cards on every animation frame.

@@ -247,28 +247,13 @@ const carryItems = computed(() => courseCarryItems(props.course))
 .ys-course-card[data-weather='clear'] .ys-course-card__weather-bg {
   opacity: min(1, calc(var(--ys-card-weather-intensity, 0.66) + 0.16));
   background:
-    radial-gradient(96% 78% at 102% 0%, rgb(255 247 216 / 92%) 0 7%, rgb(255 72 55 / 76%) 22%, rgb(255 139 52 / 38%) 48%, transparent 76%),
-    linear-gradient(145deg, transparent 36%, rgb(255 66 51 / 22%));
+    radial-gradient(94% 76% at 104% -4%, rgb(255 130 88 / 42%) 0 20%, rgb(255 72 55 / 22%) 46%, transparent 76%),
+    linear-gradient(145deg, transparent 38%, rgb(255 66 51 / 18%));
 }
 
-.ys-course-card[data-weather='clear'] .ys-course-card__weather-bg::before {
-  top: -52%;
-  right: -46%;
-  width: 122%;
-  aspect-ratio: 1;
-  background: repeating-conic-gradient(from 4deg, rgb(255 233 156 / 38%) 0 6deg, transparent 9deg 35deg);
-  border-radius: 50%;
-  -webkit-mask: radial-gradient(circle, transparent 0 20%, #000 24% 70%, transparent 74%);
-  mask: radial-gradient(circle, transparent 0 20%, #000 24% 70%, transparent 74%);
-}
-
+.ys-course-card[data-weather='clear'] .ys-course-card__weather-bg::before,
 .ys-course-card[data-weather='clear'] .ys-course-card__weather-bg::after {
-  top: -15%;
-  right: -14%;
-  width: 72%;
-  aspect-ratio: 1;
-  background: radial-gradient(circle, rgb(255 250 220 / 92%) 0 9%, rgb(255 72 53 / 62%) 30%, rgb(255 148 55 / 24%) 52%, transparent 72%);
-  filter: blur(2.5px);
+  display: none;
 }
 
 .ys-course-card[data-weather='cloudy'] .ys-course-card__weather-bg,
@@ -324,26 +309,6 @@ const carryItems = computed(() => courseCarryItems(props.course))
   background:
     radial-gradient(82% 62% at 106% -4%, rgb(250 252 253 / 54%) 0 12%, rgb(198 211 220 / 26%) 42%, transparent 74%),
     linear-gradient(155deg, transparent 42%, rgb(143 161 173 / 12%));
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .ys-course-card[data-weather='clear'] .ys-course-card__weather-bg::before {
-    animation: ys-card-weather-sun-rays 32s linear infinite;
-  }
-
-  .ys-course-card[data-weather='clear'] .ys-course-card__weather-bg::after {
-    animation: ys-card-weather-halo 8s ease-in-out infinite;
-  }
-
-}
-
-@keyframes ys-card-weather-sun-rays {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes ys-card-weather-halo {
-  0%, 100% { opacity: 0.72; transform: scale(0.96); }
-  50% { opacity: 1; transform: scale(1.05); }
 }
 
 .ys-course-card__weather {

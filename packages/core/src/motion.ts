@@ -10,8 +10,8 @@ export const waveTransition: TransitionSpec = {
   mode: 'per-cell',
   totalMs: 500,
   enterMs: 260,
-  leaveMs: 200,
-  leaveLagMs: 60,
+  leaveMs: 260,
+  leaveLagMs: 0,
   stableSkip: true,
   delayFor(cell: TransitionCell, ctx: TransitionContext): number {
     const columnOrder = ctx.direction === 1
@@ -22,7 +22,7 @@ export const waveTransition: TransitionSpec = {
     return Math.min(delay, 210)
   },
   enter: { opacity: 0, translateY: 4, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' },
-  leave: { opacity: 0, easing: 'cubic-bezier(0.4, 0, 0.6, 1)' },
+  leave: { opacity: 0, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' },
 }
 
 /**

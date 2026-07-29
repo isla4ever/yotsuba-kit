@@ -5,13 +5,13 @@
 如果项目使用 React、原生 HTML 或 Flutter，请先前往 [选择接入方式](/guide/frameworks)。
 
 ::: info 版本说明
-本页与在线演示均对应 `0.7.1`。Web 四包需要保持同一 minor 版本，避免 Core 与框架适配层协议不一致。
+本页与在线演示均对应 `0.7.2`。Web 四包需要保持同一 minor 版本，避免 Core 与框架适配层协议不一致。
 :::
 
 ## 1. 安装
 
 ```bash
-pnpm add @iyotsuba/schedule-vue@0.7.1
+pnpm add @iyotsuba/schedule-vue@0.7.2
 ```
 
 ## 2. 准备课程数据

@@ -24,7 +24,18 @@ const state = reactive({
   awaitingAction: false,
 })
 
-const hole = ref<{ top: number, left: number, width: number, height: number } | null>(null)
+interface GuideHole {
+  top: number
+  left: number
+  width: number
+  height: number
+  borderRadius: string
+}
+
+const HOLE_PADDING = 4
+const HOLE_RADIUS_FALLBACK = 8
+const VIEWPORT_EDGE_INSET = 1
+const hole = ref<GuideHole | null>(null)
 const hinting = ref(false)
 let unsubscribeMachine: (() => void) | null = null
 let machine = createMachine()
@@ -72,6 +83,62 @@ function resolveTarget(step: GuideStep): HTMLElement | null {
     ?? (scope === document ? null : document.querySelector<HTMLElement>(step.target))
 }
 
+function radiusInPixels(value: string, rect: DOMRect): number {
+  const token = value.trim().split(/\s+/)[0] ?? ''
+  const parsed = Number.parseFloat(token)
+  if (!Number.isFinite(parsed)) {
+    return 0
+  }
+  if (token.endsWith('%')) {
+    return Math.min(rect.width, rect.height) * parsed / 100
+  }
+  return parsed
+}
+
+function cornerRadii(element: HTMLElement, rect: DOMRect): number[] {
+  const styles = window.getComputedStyle(element)
+  return [
+    styles.borderTopLeftRadius,
+    styles.borderTopRightRadius,
+    styles.borderBottomRightRadius,
+    styles.borderBottomLeftRadius,
+  ].map(value => radiusInPixels(value, rect))
+}
+
+function focusGeometry(element: HTMLElement): { rect: DOMRect, radii: number[] } {
+  const rect = element.getBoundingClientRect()
+  const radii = cornerRadii(element, rect)
+  if (radii.every(value => value <= 0)) {
+    for (const child of Array.from(element.children)) {
+      if (!(child instanceof HTMLElement)) {
+        continue
+      }
+      const childRect = child.getBoundingClientRect()
+      const contained = childRect.left >= rect.left - 1
+        && childRect.right <= rect.right + 1
+        && childRect.top >= rect.top - 1
+        && childRect.bottom <= rect.bottom + 1
+      const fillsTarget = childRect.width >= rect.width * 0.72
+        && childRect.height >= rect.height * 0.72
+      const childRadii = cornerRadii(child, childRect)
+      if (contained && fillsTarget && childRadii.some(value => value > 0)) {
+        return { rect: childRect, radii: childRadii }
+      }
+    }
+  }
+  return { rect, radii }
+}
+
+function targetBorderRadius(sourceRadii: number[], holeWidth: number, holeHeight: number): string {
+  const maxRadius = Math.min(holeWidth, holeHeight) / 2
+  const expansion = HOLE_PADDING
+  const values = sourceRadii.map((targetRadius) => {
+    const radius = targetRadius > 0 ? targetRadius + expansion : HOLE_RADIUS_FALLBACK
+    return Math.round(Math.min(maxRadius, radius) * 10) / 10
+  })
+  return values.map(value => `${value}px`).join(' ')
+}
+
 function measure() {
   if (!state.step) {
     hole.value = null
@@ -82,19 +149,23 @@ function measure() {
     hole.value = null
     return
   }
-  const rect = targetEl.getBoundingClientRect()
-  const pad = 9
+  const geometry = focusGeometry(targetEl)
+  const rect = geometry.rect
+  const pad = HOLE_PADDING
   const viewportW = typeof window !== 'undefined' ? window.innerWidth : rect.right + pad
   const viewportH = typeof window !== 'undefined' ? window.innerHeight : rect.bottom + pad
-  const top = Math.max(8, rect.top - pad)
-  const left = Math.max(8, rect.left - pad)
-  const right = Math.min(viewportW - 8, rect.right + pad)
-  const bottom = Math.min(viewportH - 8, rect.bottom + pad)
+  const top = Math.max(VIEWPORT_EDGE_INSET, rect.top - pad)
+  const left = Math.max(VIEWPORT_EDGE_INSET, rect.left - pad)
+  const right = Math.min(viewportW - VIEWPORT_EDGE_INSET, rect.right + pad)
+  const bottom = Math.min(viewportH - VIEWPORT_EDGE_INSET, rect.bottom + pad)
+  const width = Math.max(18, right - left)
+  const height = Math.max(18, bottom - top)
   hole.value = {
     top,
     left,
-    width: Math.max(18, right - left),
-    height: Math.max(18, bottom - top),
+    width,
+    height,
+    borderRadius: targetBorderRadius(geometry.radii, width, height),
   }
 }
 
@@ -259,7 +330,7 @@ const cardStyle = computed(() => {
           <div
             class="ys-guide__ring"
             :class="{ 'is-hinting': hinting, 'is-swipe': state.step.expect?.startsWith('swipe') }"
-            :style="{ top: `${hole.top}px`, left: `${hole.left}px`, width: `${hole.width}px`, height: `${hole.height}px` }"
+            :style="{ top: `${hole.top}px`, left: `${hole.left}px`, width: `${hole.width}px`, height: `${hole.height}px`, borderRadius: hole.borderRadius }"
           >
             <i v-if="hinting && state.step.expect === 'swipe-left'" class="ys-guide__swipe-hint" aria-hidden="true" />
           </div>
@@ -306,14 +377,14 @@ const cardStyle = computed(() => {
   position: fixed;
   inset: 0;
   z-index: 1200;
+  overflow: hidden;
   pointer-events: none;
 }
 
 .ys-guide__mask {
   position: absolute;
   pointer-events: auto;
-  background: rgb(16 21 29 / 66%);
-  backdrop-filter: blur(1.5px);
+  background: transparent;
   transition: top 380ms cubic-bezier(0.22, 1, 0.36, 1), left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1), height 380ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -322,8 +393,11 @@ const cardStyle = computed(() => {
   pointer-events: none;
   border: 1px solid rgb(255 255 255 / 86%);
   border-radius: 10px;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ys-accent, #3d76dd) 72%, transparent), 0 0 26px color-mix(in srgb, var(--ys-accent, #3d76dd) 28%, transparent);
-  transition: top 380ms cubic-bezier(0.22, 1, 0.36, 1), left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1), height 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ys-accent, #3d76dd) 72%, transparent),
+    0 0 26px color-mix(in srgb, var(--ys-accent, #3d76dd) 28%, transparent),
+    0 0 0 100vmax rgb(16 21 29 / 66%);
+  transition: top 380ms cubic-bezier(0.22, 1, 0.36, 1), left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1), height 380ms cubic-bezier(0.22, 1, 0.36, 1), border-radius 380ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ys-guide__ring.is-hinting {
@@ -458,8 +532,18 @@ const cardStyle = computed(() => {
 }
 
 @keyframes ys-guide-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ys-accent, #3d76dd) 72%, transparent), 0 0 22px color-mix(in srgb, var(--ys-accent, #3d76dd) 22%, transparent); }
-  50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--ys-accent, #3d76dd) 18%, transparent), 0 0 34px color-mix(in srgb, var(--ys-accent, #3d76dd) 34%, transparent); }
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--ys-accent, #3d76dd) 72%, transparent),
+      0 0 22px color-mix(in srgb, var(--ys-accent, #3d76dd) 22%, transparent),
+      0 0 0 100vmax rgb(16 21 29 / 66%);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9px color-mix(in srgb, var(--ys-accent, #3d76dd) 18%, transparent),
+      0 0 34px color-mix(in srgb, var(--ys-accent, #3d76dd) 34%, transparent),
+      0 0 0 100vmax rgb(16 21 29 / 66%);
+  }
 }
 
 @keyframes ys-guide-swipe {

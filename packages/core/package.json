@@ -1,6 +1,6 @@
 {
   "name": "@iyotsuba/schedule-core",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Framework-free schedule engine: Chinese academic-term semantics (odd/even weeks, makeup days, overlaps), transition timelines, theme tokens, weather & guide protocols.",
   "type": "module",
   "license": "MIT",
@@ -42,7 +42,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/isla4ever/yotsuba-kit"
+    "url": "git+https://github.com/isla4ever/yotsuba-kit.git"
   },
   "publishConfig": {
     "access": "public"

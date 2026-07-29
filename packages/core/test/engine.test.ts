@@ -155,6 +155,12 @@ describe('transitions', () => {
     expect(waveTransition.delayFor({ weekday: 1, startSection: 1 }, back)).toBe(0)
   })
 
+  it('keeps wave enter and leave fades complementary', () => {
+    expect(waveTransition.leaveLagMs).toBe(0)
+    expect(waveTransition.leaveMs).toBe(waveTransition.enterMs)
+    expect(waveTransition.leave.easing).toBe(waveTransition.enter.easing)
+  })
+
   it('resolves builtin names and validates custom specs', () => {
     expect(resolveTransition('slide').name).toBe('slide')
     expect(resolveTransition('slide').mode).toBe('page')

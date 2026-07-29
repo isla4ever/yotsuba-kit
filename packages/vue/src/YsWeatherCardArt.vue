@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { WeatherKind } from '@iyotsuba/schedule-core'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { weatherAnimationPhase } from './weather-animation'
 
 const props = defineProps<{
   kind: WeatherKind
@@ -12,6 +13,11 @@ const isRain = computed(() => ['drizzle', 'rain', 'heavy-rain', 'storm'].include
 const isFog = computed(() => props.kind === 'fog')
 const isSnow = computed(() => props.kind === 'snow')
 const isVisible = computed(() => isClear.value || isCloud.value || isRain.value || isFog.value || isSnow.value)
+const animationPhase = ref('0ms')
+
+onMounted(() => {
+  animationPhase.value = weatherAnimationPhase()
+})
 </script>
 
 <template>
@@ -23,6 +29,7 @@ const isVisible = computed(() => isClear.value || isCloud.value || isRain.value 
     preserveAspectRatio="xMidYMid meet"
     focusable="false"
     aria-hidden="true"
+    :style="{ '--ys-weather-phase': animationPhase }"
   >
     <template v-if="isClear">
       <g class="ys-weather-art__clear-sun">
@@ -286,32 +293,37 @@ const isVisible = computed(() => isClear.value || isCloud.value || isRain.value 
 @media (prefers-reduced-motion: no-preference) {
   .ys-weather-art__clear-sun {
     animation: ys-weather-art-clear-breathe 6.8s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__sun-halo {
     animation: ys-weather-art-halo 7s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__cloud--back {
     animation: ys-weather-art-cloud-back 6.4s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__cloud--front,
   .ys-weather-art__rain-cloud {
     animation: ys-weather-art-cloud-front 5.2s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__drop {
+    --ys-weather-offset: calc(var(--fx-seed, 0) * -0.08s);
     animation: ys-weather-art-rain-fall 1.45s ease-in infinite;
-    animation-delay: calc(var(--fx-seed, 0) * -0.08s);
+    animation-delay: calc(var(--ys-weather-phase, 0ms) + var(--ys-weather-offset, 0s));
   }
 
-  .ys-weather-art__drop--2 { animation-delay: -0.9s; }
-  .ys-weather-art__drop--3 { animation-delay: -0.35s; }
-  .ys-weather-art__drop--4 { animation-delay: -1.16s; }
-  .ys-weather-art__drop--5 { animation-delay: -0.62s; }
-  .ys-weather-art__drop--6 { animation-delay: -1.31s; }
-  .ys-weather-art__drop--7 { animation-delay: -0.18s; }
+  .ys-weather-art__drop--2 { --ys-weather-offset: -0.9s; }
+  .ys-weather-art__drop--3 { --ys-weather-offset: -0.35s; }
+  .ys-weather-art__drop--4 { --ys-weather-offset: -1.16s; }
+  .ys-weather-art__drop--5 { --ys-weather-offset: -0.62s; }
+  .ys-weather-art__drop--6 { --ys-weather-offset: -1.31s; }
+  .ys-weather-art__drop--7 { --ys-weather-offset: -0.18s; }
 
   .ys-weather-art.is-drizzle .ys-weather-art__drop { animation-duration: 2.15s; }
   .ys-weather-art.is-heavy-rain .ys-weather-art__drop { animation-duration: 1.05s; }
@@ -319,30 +331,37 @@ const isVisible = computed(() => isClear.value || isCloud.value || isRain.value 
 
   .ys-weather-art__lightning {
     animation: ys-weather-art-lightning 6.8s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__fog-line--1 {
     animation: ys-weather-art-fog-right 5.8s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__fog-line--2 {
     animation: ys-weather-art-fog-left 6.8s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__fog-line--3 {
-    animation: ys-weather-art-fog-right 7.6s ease-in-out -2s infinite;
+    animation: ys-weather-art-fog-right 7.6s ease-in-out infinite;
+    animation-delay: calc(var(--ys-weather-phase, 0ms) - 2s);
   }
 
   .ys-weather-art__snow-cloud {
     animation: ys-weather-art-cloud-back 6.4s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__snowflake--main {
     animation: ys-weather-art-snow-main 7.5s ease-in-out infinite;
+    animation-delay: var(--ys-weather-phase, 0ms);
   }
 
   .ys-weather-art__snowflake--small {
-    animation: ys-weather-art-snow-small 5.8s ease-in-out -2.4s infinite;
+    animation: ys-weather-art-snow-small 5.8s ease-in-out infinite;
+    animation-delay: calc(var(--ys-weather-phase, 0ms) - 2.4s);
   }
 }
 

@@ -7,11 +7,11 @@
 ## 安装
 
 ```bash
-flutter pub add yotsuba_schedule_kit:^0.7.1
+flutter pub add yotsuba_schedule_kit:^0.7.2
 ```
 
 ::: info 版本说明
-pub.dev 当前稳定版为 `0.7.1`，与 Web 包共享课程、小时级天气和 Today 信息层级的产品语义。
+pub.dev 当前稳定版为 `0.7.2`，与 Web 包共享课程、小时级天气和 Today 信息层级的产品语义。
 :::
 
 ## 完整课表

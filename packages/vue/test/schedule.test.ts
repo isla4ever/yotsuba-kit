@@ -1,4 +1,4 @@
-import type { Course } from '@iyotsuba/schedule-core'
+import type { Course, WeatherSnapshot } from '@iyotsuba/schedule-core'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -8,6 +8,14 @@ const courses: Course[] = [
   { id: 'stable', name: '高等数学', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20 },
   { id: 'week1', name: '体育', weekday: 4, startSection: 1, endSection: 2, startWeek: 1, endWeek: 1 },
 ]
+
+const stableWeather: WeatherSnapshot = {
+  daily: [
+    { date: '2026-07-27', kind: 'clear', highC: 30, lowC: 24 },
+    { date: '2026-08-03', kind: 'clear', highC: 30, lowC: 24 },
+  ],
+  updatedAt: 0,
+}
 
 describe('ysSchedule', () => {
   it('renders courses, inactive badge and top bar', () => {
@@ -40,6 +48,59 @@ describe('ysSchedule', () => {
     vi.advanceTimersByTime(600)
     await nextTick()
     expect(wrapper.findAll('.ys-schedule__layer')).toHaveLength(1)
+    vi.useRealTimers()
+  })
+
+  it('reuses stable course cards and does not duplicate their weather art', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses: [courses[0]!],
+        week: 1,
+        termStart: new Date(2026, 6, 27),
+        weather: stableWeather,
+        reduceMotion: false,
+        transition: 'wave',
+      },
+    })
+    const originalCard = wrapper.find('.ys-schedule__layer--current [data-course-id="stable"] .ys-course-card').element
+
+    await wrapper.setProps({ week: 2 })
+    await nextTick()
+
+    expect(wrapper.find('.ys-schedule__layer--current [data-course-id="stable"] .ys-course-card').element).toBe(originalCard)
+    expect(wrapper.find('.ys-schedule__layer--leaving [data-course-id="stable"]').exists()).toBe(false)
+    expect(wrapper.findAll('.ys-weather-art')).toHaveLength(1)
+    vi.advanceTimersByTime(600)
+    vi.useRealTimers()
+  })
+
+  it('animates a course when its time-slot weather changes between weeks', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses: [courses[0]!],
+        week: 1,
+        termStart: new Date(2026, 6, 27),
+        weather: {
+          ...stableWeather,
+          daily: [
+            stableWeather.daily[0]!,
+            { date: '2026-08-03', kind: 'rain', highC: 26, lowC: 22 },
+          ],
+        },
+        reduceMotion: false,
+        transition: 'wave',
+      },
+    })
+
+    await wrapper.setProps({ week: 2 })
+    await nextTick()
+
+    expect(wrapper.find('.ys-schedule__layer--leaving [data-course-id="stable"]').exists()).toBe(true)
+    expect(wrapper.find('.ys-schedule__layer--current [data-course-id="stable"]').attributes('style')).toContain('ys-cell-in')
+    expect(wrapper.find('.ys-schedule__layer--current .ys-weather-art.is-rain').exists()).toBe(true)
+    vi.advanceTimersByTime(600)
     vi.useRealTimers()
   })
 
@@ -234,6 +295,7 @@ describe('ysSchedule', () => {
     expect(wrapper.find('.ys-course-card').attributes('data-weather')).toBe('heavy-rain')
     expect(wrapper.find('.ys-course-card__weather-bg').exists()).toBe(true)
     expect(wrapper.find('.ys-course-card__weather-bg .ys-weather-art.is-heavy-rain').exists()).toBe(true)
+    expect(wrapper.find('.ys-course-card__weather-bg .ys-weather-art').attributes('style')).toContain('--ys-weather-phase')
     expect(wrapper.find('.ys-course-card .ys-weather-glyph').exists()).toBe(false)
     expect(wrapper.find('.ys-schedule__day-weather .ys-weather-glyph').exists()).toBe(true)
 

@@ -5,11 +5,11 @@
 ## 安装
 
 ```bash
-pnpm add @iyotsuba/schedule-vue@0.7.1
+pnpm add @iyotsuba/schedule-vue@0.7.2
 ```
 
 ::: info 版本说明
-当前稳定版为 `0.7.1`。若项目同时直接依赖 `@iyotsuba/schedule-core`，请保持相同版本线。
+当前稳定版为 `0.7.2`。若项目同时直接依赖 `@iyotsuba/schedule-core`，请保持相同版本线。
 :::
 
 ## 最小受控接入

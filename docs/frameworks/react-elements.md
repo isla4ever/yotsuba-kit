@@ -3,13 +3,13 @@
 React 项目使用 `@iyotsuba/schedule-react` 获得类型化 Props、事件回调和引用方法。原生 HTML、uni-app H5、Ionic 等 DOM 环境可以直接使用 `@iyotsuba/schedule-elements` 注册的 `<ys-schedule>` 与 `<ys-today>`。
 
 ::: info 版本说明
-React、Elements 与 Core 当前稳定版均为 `0.7.1`。多个包同时使用时应保持同一版本线。
+React、Elements 与 Core 当前稳定版均为 `0.7.2`。多个包同时使用时应保持同一版本线。
 :::
 
 ## React 接入
 
 ```bash
-pnpm add @iyotsuba/schedule-react@0.7.1
+pnpm add @iyotsuba/schedule-react@0.7.2
 ```
 
 ```tsx
@@ -45,7 +45,7 @@ React 通过 `week` 与 `onUpdateWeek` 组成受控周次。其他事件使用 `
 ## 原生 HTML / Elements
 
 ```bash
-pnpm add @iyotsuba/schedule-elements@0.7.1
+pnpm add @iyotsuba/schedule-elements@0.7.2
 ```
 
 ```ts

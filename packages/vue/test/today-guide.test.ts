@@ -285,6 +285,58 @@ describe('guide integration', () => {
     wrapper.unmount()
   })
 
+  it('matches the spotlight cutout radius to the focused target', async () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        termStart,
+        reduceMotion: true,
+        guide: { mode: 'spotlight' as const, steps: defaultScheduleGuideSteps.slice(0, 1) },
+      },
+      attachTo: document.body,
+    })
+    const target = wrapper.find('[data-ys="schedule-overview"]').element as HTMLElement
+    target.getBoundingClientRect = vi.fn(() => ({
+      x: 20,
+      y: 80,
+      top: 80,
+      left: 20,
+      right: 320,
+      bottom: 400,
+      width: 300,
+      height: 320,
+      toJSON: () => ({}),
+    }))
+    const visualChild = target.children[0] as HTMLElement
+    visualChild.style.borderTopLeftRadius = '2px'
+    visualChild.style.borderTopRightRadius = '6px'
+    visualChild.style.borderBottomRightRadius = '10px'
+    visualChild.style.borderBottomLeftRadius = '14px'
+    visualChild.getBoundingClientRect = vi.fn(() => ({
+      x: 24,
+      y: 84,
+      top: 84,
+      left: 24,
+      right: 316,
+      bottom: 396,
+      width: 292,
+      height: 312,
+      toJSON: () => ({}),
+    }))
+
+    ;(wrapper.vm as unknown as { startGuide: () => void }).startGuide()
+    await vi.waitFor(() => {
+      const ring = document.querySelector<HTMLElement>('.ys-guide__ring')
+      expect(ring?.style.left).toBe('20px')
+      expect(ring?.style.top).toBe('80px')
+      expect(ring?.style.width).toBe('300px')
+      expect(ring?.style.height).toBe('320px')
+      expect(ring?.style.borderRadius).toBe('6px 10px 14px 18px')
+    })
+    wrapper.unmount()
+  })
+
   it('auto-starts Today once and still allows an explicit replay', async () => {
     const storageKey = 'ys-test-today-guide-once'
     localStorage.removeItem(storageKey)

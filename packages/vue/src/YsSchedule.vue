@@ -403,8 +403,23 @@ const waveActive = ref(false)
 let waveTimer: ReturnType<typeof setTimeout> | null = null
 let stableSignatures = new Set<string>()
 
-function cellSignature(course: DisplayCourse): string {
-  return [course.displayId, course.weekday, course.startSection, course.endSection, course.active].join('|')
+function cellSignature(course: DisplayCourse, week = props.week): string {
+  const weatherCardEnabled = resolvedWeatherCard.value !== false
+    && resolvedWeatherCard.value.enabled !== false
+  const weather = weatherCardEnabled ? weatherForCourse(course, week) : undefined
+  return [
+    course.displayId,
+    course.weekday,
+    course.startSection,
+    course.endSection,
+    course.active,
+    weather?.kind ?? '',
+    weather ? weatherTextFor(course, week) ?? '' : '',
+  ].join('|')
+}
+
+function badgeSignature(group: WeekModel['overlapGroups'][number]): string {
+  return `badge|${group.weekday}|${group.startSection}|${group.endSection}|${group.courses.length}`
 }
 
 function topSignatures(model: WeekModel): Set<string> {
@@ -426,11 +441,11 @@ function topSignatures(model: WeekModel): Set<string> {
   }
   for (const course of model.courses) {
     if (!covered.has(course.displayId)) {
-      signatures.add(cellSignature(course))
+      signatures.add(cellSignature(course, model.week))
     }
   }
   for (const group of model.overlapGroups) {
-    signatures.add(`badge|${group.weekday}|${group.startSection}|${group.endSection}|${group.courses.length}`)
+    signatures.add(badgeSignature(group))
   }
   return signatures
 }
@@ -573,7 +588,7 @@ function enterStyle(course: DisplayCourse, model: WeekModel) {
       visibility: 'hidden' as const,
     }
   }
-  if (stableSignatures.has(cellSignature(course))) {
+  if (stableSignatures.has(cellSignature(course, model.week))) {
     return position
   }
   return {
@@ -593,7 +608,7 @@ function leaveStyle(course: DisplayCourse, model: WeekModel) {
   if (coveredIds.value.has(`${model.week}:${course.displayId}`)) {
     return { ...position, opacity: 0, visibility: 'hidden' as const }
   }
-  if (stableSignatures.has(cellSignature(course))) {
+  if (stableSignatures.has(cellSignature(course, model.week))) {
     return position
   }
   return {
@@ -613,7 +628,7 @@ function badgeStyle(group: WeekModel['overlapGroups'][number], layer: 'enter' | 
   if (!waveActive.value || spec.value.mode !== 'per-cell') {
     return position
   }
-  const signature = `badge|${group.weekday}|${group.startSection}|${group.endSection}|${group.courses.length}`
+  const signature = badgeSignature(group)
   if (stableSignatures.has(signature)) {
     return position
   }
@@ -681,6 +696,20 @@ function slotPosition(course: DisplayCourse) {
     ...gridPosition(course),
     zIndex: course.makeup ? 3 : course.active ? 2 : 0,
   }
+}
+
+function leavingCourses(model: WeekModel): DisplayCourse[] {
+  if (spec.value.mode !== 'per-cell') {
+    return model.courses
+  }
+  return model.courses.filter(course => !stableSignatures.has(cellSignature(course, model.week)))
+}
+
+function leavingOverlapGroups(model: WeekModel): WeekModel['overlapGroups'] {
+  if (spec.value.mode !== 'per-cell') {
+    return model.overlapGroups
+  }
+  return model.overlapGroups.filter(group => !stableSignatures.has(badgeSignature(group)))
 }
 
 /* ------------------------------ 手势 ------------------------------ */
@@ -1152,7 +1181,7 @@ onBeforeUnmount(() => {
           aria-hidden="true"
         >
           <div
-            v-for="course in leavingModel.courses"
+            v-for="course in leavingCourses(leavingModel)"
             :key="course.displayId"
             class="ys-schedule__card-slot"
             :class="{
@@ -1178,7 +1207,7 @@ onBeforeUnmount(() => {
             </slot>
           </div>
           <div
-            v-for="group in leavingModel.overlapGroups"
+            v-for="group in leavingOverlapGroups(leavingModel)"
             :key="group.id"
             class="ys-schedule__badge"
             :style="badgeStyle(group, 'leave')"
@@ -1188,7 +1217,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          :key="`enter-${currentModel.week}`"
+          key="current"
           class="ys-schedule__layer ys-schedule__layer--current"
           :style="[{ gridTemplateRows: rowTemplate }, layerStyle('enter')]"
         >
