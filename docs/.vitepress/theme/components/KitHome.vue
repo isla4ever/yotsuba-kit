@@ -12,7 +12,7 @@ import {
   Workflow,
 } from '@lucide/vue'
 import { withBase } from 'vitepress'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ReactCountUp from './ReactCountUp.vue'
 
 const props = withDefaults(defineProps<{ lang?: 'zh' | 'en' }>(), { lang: 'zh' })
@@ -112,8 +112,13 @@ const demoLoaded = ref(false)
 const focusedDemoLoaded = ref(false)
 const focusTrigger = ref<HTMLButtonElement | null>(null)
 const focusDialog = ref<HTMLElement | null>(null)
+const pathsSection = ref<HTMLElement | null>(null)
+const capabilitiesSection = ref<HTMLElement | null>(null)
+const pathsVisible = ref(false)
+const capabilitiesVisible = ref(false)
 const guideHref = computed(() => withBase(props.lang === 'zh' ? '/guide/getting-started' : '/en/guide/getting-started'))
 const frameworksHref = computed(() => withBase(props.lang === 'zh' ? '/guide/frameworks' : '/en/guide/getting-started'))
+let revealObserver: IntersectionObserver | null = null
 
 function docHref(path: string) {
   return withBase(path)
@@ -172,7 +177,40 @@ watch(demoFocused, async (focused) => {
   }
 })
 
-onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
+onMounted(() => {
+  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    pathsVisible.value = true
+    capabilitiesVisible.value = true
+    return
+  }
+
+  revealObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) {
+        continue
+      }
+      if (entry.target === pathsSection.value) {
+        pathsVisible.value = true
+      }
+      if (entry.target === capabilitiesSection.value) {
+        capabilitiesVisible.value = true
+      }
+      revealObserver?.unobserve(entry.target)
+    }
+  }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' })
+
+  if (pathsSection.value) {
+    revealObserver.observe(pathsSection.value)
+  }
+  if (capabilitiesSection.value) {
+    revealObserver.observe(capabilitiesSection.value)
+  }
+})
+
+onBeforeUnmount(() => {
+  document.body.classList.remove('kit-demo-focus-open')
+  revealObserver?.disconnect()
+})
 </script>
 
 <template>
@@ -220,11 +258,19 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
               <div class="phone__viewport">
                 <div class="demo-embed" :class="{ 'is-ready': demoLoaded }" :aria-busy="!demoLoaded">
                   <div class="demo-embed__loading" role="status" :aria-label="t.demoLoading">
-                    <div class="demo-embed__loading-brand"><i aria-hidden="true" /><span>Yotsuba</span></div>
-                    <div class="demo-embed__loading-weather" aria-hidden="true" />
-                    <div class="demo-embed__loading-grid" aria-hidden="true">
-                      <i v-for="index in 18" :key="index" />
+                    <div class="demo-weather-loader" aria-hidden="true">
+                      <div class="demo-weather-loader__cloud demo-weather-loader__front">
+                        <span class="demo-weather-loader__left-front" />
+                        <span class="demo-weather-loader__right-front" />
+                      </div>
+                      <span class="demo-weather-loader__sun demo-weather-loader__sunshine" />
+                      <span class="demo-weather-loader__sun" />
+                      <div class="demo-weather-loader__cloud demo-weather-loader__back">
+                        <span class="demo-weather-loader__left-back" />
+                        <span class="demo-weather-loader__right-back" />
+                      </div>
                     </div>
+                    <strong>Yotsuba</strong>
                     <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
                   </div>
                   <iframe :src="demoUrl" :title="t.demoLabel" loading="eager" referrerpolicy="strict-origin-when-cross-origin" @load="demoLoaded = true" />
@@ -236,7 +282,7 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
       </div>
     </section>
 
-    <section class="paths" aria-labelledby="paths-title">
+    <section ref="pathsSection" class="paths reveal-section" :class="{ 'is-visible': pathsVisible }" aria-labelledby="paths-title">
       <div class="paths__inner">
         <header class="section-intro">
           <p>{{ t.pathKicker }}</p>
@@ -260,7 +306,7 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
       </div>
     </section>
 
-    <section class="capabilities" aria-labelledby="capabilities-title">
+    <section ref="capabilitiesSection" class="capabilities reveal-section" :class="{ 'is-visible': capabilitiesVisible }" aria-labelledby="capabilities-title">
       <header class="capabilities__intro">
         <p>{{ t.capabilityKicker }}</p>
         <h2 id="capabilities-title">{{ t.capabilityTitle }}</h2>
@@ -310,11 +356,19 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
           <div class="demo-focus__surface" :aria-busy="!focusedDemoLoaded">
             <div class="demo-embed demo-embed--focus" :class="{ 'is-ready': focusedDemoLoaded }">
               <div class="demo-embed__loading" role="status" :aria-label="t.demoLoading">
-                <div class="demo-embed__loading-brand"><i aria-hidden="true" /><span>Yotsuba</span></div>
-                <div class="demo-embed__loading-weather" aria-hidden="true" />
-                <div class="demo-embed__loading-grid" aria-hidden="true">
-                  <i v-for="index in 18" :key="index" />
+                <div class="demo-weather-loader" aria-hidden="true">
+                  <div class="demo-weather-loader__cloud demo-weather-loader__front">
+                    <span class="demo-weather-loader__left-front" />
+                    <span class="demo-weather-loader__right-front" />
+                  </div>
+                  <span class="demo-weather-loader__sun demo-weather-loader__sunshine" />
+                  <span class="demo-weather-loader__sun" />
+                  <div class="demo-weather-loader__cloud demo-weather-loader__back">
+                    <span class="demo-weather-loader__left-back" />
+                    <span class="demo-weather-loader__right-back" />
+                  </div>
                 </div>
+                <strong>Yotsuba</strong>
                 <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
               </div>
               <iframe :src="demoUrl" :title="t.demoLabel" referrerpolicy="strict-origin-when-cross-origin" @load="focusedDemoLoaded = true" />
@@ -355,7 +409,7 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
 .hero__stat + .hero__stat { padding-left: 11px; border-left: 1px solid #344044; }
 .hero__stat dt { margin: 0; font-size: 23px; font-weight: 760; font-variant-numeric: tabular-nums; color: #f5faf8; }
 .hero__stat dd { margin: 3px 0 0; font-size: 9px; line-height: 1.45; color: #98aaa5; }
-.hero__demo { width: 258px; justify-self: center; }
+.hero__demo { width: 258px; align-self: end; justify-self: center; }
 .hero__device-meta { display: flex; align-items: end; justify-content: space-between; width: 258px; padding: 0 2px 8px; color: #b5c5c0; }
 .hero__device-meta > span { display: grid; grid-template-columns: 7px auto; align-items: center; font-size: 10px; font-weight: 680; }
 .hero__device-meta > span i, .demo-focus__bar span i { width: 6px; height: 6px; background: #72cbb8; border-radius: 50%; box-shadow: 0 0 0 3px rgb(114 203 184 / 12%); }
@@ -371,17 +425,48 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
 .demo-embed { position: relative; width: 100%; height: 100%; overflow: hidden; background: #f2f6f8; }
 .demo-embed iframe { display: block; width: 100%; height: 100%; opacity: 0; background: #f7f9fc; border: 0; transform: scale(0.992); transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1); }
 .demo-embed.is-ready iframe { opacity: 1; transform: none; }
-.demo-embed__loading { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; padding: 44px 28px 26px; color: #46605c; background: linear-gradient(145deg, #f3f8f7 0%, #eaf2f1 54%, #f7f8f4 100%); transition: opacity 300ms ease, visibility 0s linear 300ms; }
+.demo-embed__loading { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #46605c; text-align: center; background: linear-gradient(145deg, #f3f8f7 0%, #eaf2f1 54%, #f7f8f4 100%); transition: opacity 300ms ease, visibility 0s linear 300ms; }
 .demo-embed.is-ready .demo-embed__loading { visibility: hidden; opacity: 0; pointer-events: none; }
-.demo-embed__loading-brand { display: flex; gap: 9px; align-items: center; font-size: 18px; font-weight: 780; color: #19332e; }
-.demo-embed__loading-brand i { width: 7px; height: 30px; background: #4f9f8e; border-radius: 3px; box-shadow: 0 0 22px rgb(79 159 142 / 28%); }
-.demo-embed__loading-weather { width: 100%; height: 76px; margin-top: 30px; background: linear-gradient(100deg, rgb(255 255 255 / 64%) 15%, rgb(255 255 255 / 94%) 32%, rgb(255 255 255 / 64%) 49%) 0 0 / 220% 100%, radial-gradient(circle at 82% 24%, rgb(239 165 95 / 32%), transparent 34%), #deebe9; border: 1px solid rgb(78 117 111 / 10%); border-radius: 8px; animation: demo-loading-sheen 1.8s linear infinite; }
-.demo-embed__loading-grid { display: grid; flex: 1; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-.demo-embed__loading-grid i { min-height: 30px; background: linear-gradient(100deg, rgb(255 255 255 / 48%) 18%, rgb(255 255 255 / 82%) 36%, rgb(255 255 255 / 48%) 54%) 0 0 / 220% 100%, rgb(196 214 211 / 58%); border-radius: 5px; animation: demo-loading-sheen 1.8s linear infinite; }
-.demo-embed__loading-grid i:nth-child(3n + 2) { animation-delay: -600ms; }
-.demo-embed__loading-grid i:nth-child(3n) { animation-delay: -1.2s; }
-.demo-embed__loading p { margin: 22px 0 0; font-size: 12px; font-weight: 650; text-align: center; }
-@keyframes demo-loading-sheen { to { background-position: -220% 0, 0 0; } }
+/* Weather loader adapted from Uiverse.io by zanina-yassine. */
+.demo-weather-loader { position: relative; display: flex; width: 250px; height: 210px; align-items: center; justify-content: center; }
+.demo-weather-loader__cloud { position: absolute; width: 250px; }
+.demo-weather-loader__front { top: 70px; left: 18px; z-index: 11; animation: demo-loader-clouds 8s ease-in-out infinite; }
+.demo-weather-loader__back { top: 92px; left: 98px; z-index: 12; animation: demo-loader-clouds 12s ease-in-out infinite; }
+.demo-weather-loader__left-front,
+.demo-weather-loader__right-front,
+.demo-weather-loader__left-back,
+.demo-weather-loader__right-back { display: inline-block; background: #4c9beb; box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 10px 28px rgb(76 155 235 / 18%); }
+.demo-weather-loader__left-front { z-index: 5; width: 65px; height: 65px; border-radius: 50% 50% 0 50%; }
+.demo-weather-loader__right-front { z-index: 5; width: 45px; height: 45px; margin-left: -25px; border-radius: 50% 50% 50% 0; }
+.demo-weather-loader__left-back { z-index: 5; width: 30px; height: 30px; border-radius: 50% 50% 0 50%; }
+.demo-weather-loader__right-back { z-index: 5; width: 50px; height: 50px; margin-left: -20px; border-radius: 50% 50% 50% 0; }
+.demo-weather-loader__sun { position: absolute; display: inline-block; width: 120px; height: 120px; background: linear-gradient(to right, #fcbb04, #fffc00); border-radius: 50%; box-shadow: 0 16px 46px rgb(252 187 4 / 24%); }
+.demo-weather-loader__sunshine { animation: demo-loader-sunshine 2s ease-out infinite; }
+.demo-embed__loading > strong { margin-top: -4px; font-size: 18px; font-weight: 780; color: #19332e; }
+.demo-embed__loading p { margin: 5px 0 0; font-size: 12px; font-weight: 650; }
+@keyframes demo-loader-sunshine {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes demo-loader-clouds {
+  0%, 100% { transform: translateX(15px); }
+  50% { transform: translateX(0); }
+}
+.reveal-section .section-intro,
+.reveal-section .pathway,
+.reveal-section .capabilities__intro,
+.reveal-section .capability { opacity: 0; transform: translateY(20px); transition: opacity 680ms cubic-bezier(0.22, 1, 0.36, 1), transform 760ms cubic-bezier(0.22, 1, 0.36, 1); }
+.reveal-section.is-visible .section-intro,
+.reveal-section.is-visible .pathway,
+.reveal-section.is-visible .capabilities__intro,
+.reveal-section.is-visible .capability { opacity: 1; transform: none; }
+.reveal-section.is-visible .pathway:nth-child(1) { transition-delay: 70ms; }
+.reveal-section.is-visible .pathway:nth-child(2) { transition-delay: 130ms; }
+.reveal-section.is-visible .pathway:nth-child(3) { transition-delay: 190ms; }
+.reveal-section.is-visible .capability:nth-child(1) { transition-delay: 70ms; }
+.reveal-section.is-visible .capability:nth-child(2) { transition-delay: 130ms; }
+.reveal-section.is-visible .capability:nth-child(3) { transition-delay: 190ms; }
+.reveal-section.is-visible .capability:nth-child(4) { transition-delay: 250ms; }
 .paths { padding: 62px 28px 68px; color: #192023; background: #fff; border-bottom: 1px solid #d6d7d2; }
 .paths__inner { max-width: 1160px; margin: 0 auto; }
 .section-intro { display: grid; grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr); gap: 44px; align-items: start; margin-bottom: 28px; }
@@ -464,7 +549,8 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
   .hero__device-actions b { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero__action, .hero__device-actions a, .hero__device-actions button, .pathway > a :deep(svg), .capability__link :deep(svg), .capabilities__intro a :deep(svg), .demo-embed iframe, .demo-embed__loading { transition: none; }
-  .demo-embed__loading-weather, .demo-embed__loading-grid i { animation: none; }
+  .hero__action, .hero__device-actions a, .hero__device-actions button, .pathway > a :deep(svg), .capability__link :deep(svg), .capabilities__intro a :deep(svg), .demo-embed iframe, .demo-embed__loading, .reveal-section .section-intro, .reveal-section .pathway, .reveal-section .capabilities__intro, .reveal-section .capability { transition: none; }
+  .demo-weather-loader__front, .demo-weather-loader__back, .demo-weather-loader__sunshine { animation: none; }
+  .reveal-section .section-intro, .reveal-section .pathway, .reveal-section .capabilities__intro, .reveal-section .capability { opacity: 1; transform: none; }
 }
 </style>
