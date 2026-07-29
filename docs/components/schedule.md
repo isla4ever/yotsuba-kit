@@ -2,7 +2,7 @@
 
 `<YsSchedule>` 用于构建完整课表页面，已经组合周次栏、日期栏、课表网格、天气场景、课程详情、编辑表单、日计划、背景和新手引导。所有业务数据由宿主通过配置项传入，组件通过事件报告用户操作。
 
-首次接入请先完成 [5 分钟接入](/guide/getting-started)。本页适合继续配置完整功能；需要精确查询时，可直接前往[事件](/api/events)、[方法](/api/methods)或[插槽](/api/slots)。
+首次接入请先完成 [5 分钟接入](/guide/getting-started)。本页集中说明课表组件的配置项、事件、方法和插槽，不需要在接入过程中切换页面。
 
 ::: info 0.7.0
 本页对应 `0.7.0` 稳定 API，包含小时级课程天气、全局天气场景、三档信息密度和重新进入引导等能力。
@@ -85,7 +85,111 @@ const courses = ref<Course[]>([])
 | `detail` | `ScheduleDetailConfig` | — | Hero、布局、字段、操作、空状态文案和局部调整入口 |
 | `guide` | `GuideConfig \| false` | `false` | tips / spotlight / walkthrough 引导 |
 
-完整事件见[事件](/api/events)，公开实例方法见[方法](/api/methods)，视图替换点见[插槽](/api/slots)。
+## 事件
+
+事件只报告用户意图和受控数据变化。宿主收到事件后更新 `courses`、`week`、`dayPlans` 或背景等状态，组件不会自行写入 store、网络接口或系统能力。
+
+| 事件 | 参数 | 触发时机 |
+| --- | --- | --- |
+| `update:week` | `(week: number)` | `v-model:week` 回写 |
+| `week-change` | `(week: number, previous: number)` | 当前教学周改变 |
+| `course-tap` | `(course: DisplayCourse, stack: DisplayCourse[])` | 点击课程；`stack` 包含同一位置的重叠课程 |
+| `day-tap` | `(weekday: number, date: Date \| null)` | 点击日期表头 |
+| `swipe` | `(direction: 1 \| -1)` | 手势翻周；`1` 为下一周，`-1` 为上一周 |
+| `week-picker-open` | — | 请求打开周选择器，适合宿主接管界面 |
+| `transition-start` / `transition-end` | `(spec: TransitionSpec)` | 换周过渡开始或结束 |
+| `guide-step` | `(step: GuideStep, index: number)` | 引导进入新步骤 |
+| `guide-finish` | — | 引导完成或被跳过 |
+| `course-add` | `(course: Course)` | 内置表单提交新增课程 |
+| `course-update` | `(course: Course, previousId: string)` | 内置表单提交课程修改 |
+| `course-remove` | `(course: DisplayCourse)` | 用户确认删除课程 |
+| `cell-select` | `(weekday: number, startSection: number, endSection: number)` | 编辑模式选中空白节次 |
+| `course-form-request` | `(prefill: Partial<Course>)` | 请求宿主打开自定义课程表单 |
+| `plan-add` | `(dateKey: string, text: string)` | 新增日计划 |
+| `plan-toggle` / `plan-remove` | `(dateKey: string, id: string)` | 切换或删除日计划 |
+| `background-change` | `(dataUrl: string \| null)` | 应用或移除自定义背景 |
+| `course-share` | `(course: DisplayCourse)` | 详情页请求宿主执行分享 |
+| `detail-layout-change` | `(layout: DetailLayout)` | 用户切换详情信息密度 |
+
+```vue
+<YsSchedule
+  v-model:week="week"
+  :courses="courses"
+  @course-tap="(course, stack) => trackCourseOpen(course, stack.length)"
+  @course-add="course => courses.push(course)"
+  @plan-toggle="(dateKey, id) => togglePlan(dateKey, id)"
+  @course-share="shareCourse"
+/>
+```
+
+Vue 使用表中的 kebab-case 名称。React 的 camelCase 回调与 Today 事件对照仍统一收录在 [事件 API](/api/events)。
+
+## 方法
+
+通过 Vue 模板引用可以执行翻周、打开详情或弹层等界面命令。方法只操作当前组件；业务数据仍通过受控 Props 更新。
+
+| 方法 | 说明 |
+| --- | --- |
+| `setWeek(week)` | 跳转到合法周次，并触发 `update:week` |
+| `getWeek()` | 返回当前显示的教学周 |
+| `next()` / `previous()` | 前后翻一周 |
+| `openCourse(id)` | 打开指定课程的内置详情 |
+| `openWeekPicker()` | 打开周选择器；宿主接管时发出 `week-picker-open` |
+| `openCourseForm(prefill?)` | 打开课程表单，可预填 `Partial<Course>` |
+| `openDayPlanner(date?)` | 打开指定日期的计划面板 |
+| `openBackgroundPicker()` | 打开背景上传与裁剪面板 |
+| `closeSheets()` | 关闭所有内置弹层 |
+| `startGuide()` | 从第一步启动当前配置的引导 |
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { YsSchedule } from '@iyotsuba/schedule-vue'
+
+const schedule = ref<InstanceType<typeof YsSchedule> | null>(null)
+</script>
+
+<template>
+  <button type="button" @click="schedule?.setWeek(8)">前往第 8 周</button>
+  <button type="button" @click="schedule?.openCourse('math-01')">查看高等数学</button>
+  <YsSchedule ref="schedule" :courses="courses" :term-start="termStart" />
+</template>
+```
+
+React 与 Custom Elements 通过元素引用调用同名方法，类型入口统一见 [方法 API](/api/methods)。
+
+## 插槽
+
+插槽用于替换局部结构，同时保留课表的周次、冲突、天气和弹层计算。只调整颜色、字体或间距时，优先使用主题变量。
+
+| 插槽 | 作用域 | 用途 |
+| --- | --- | --- |
+| `top-bar` | `{ week, totalWeeks, openWeekPicker }` | 完整替换顶部周次栏 |
+| `top-bar-tools` | — | 在内置顶部栏右侧加入宿主操作 |
+| `day` | `{ weekday, label, date, weather }` | 替换单个日期与天气表头 |
+| `course` | `{ course, active, color }` | 替换课程卡内容 |
+| `detail-field` | `{ field, label, course, emptyText }` | 按字段替换详情内容 |
+| `detail-extra` | `{ course }` | 在详情字段后追加业务内容 |
+| `detail-actions` | `{ course, close }` | 替换详情底部动作区 |
+
+```vue
+<YsSchedule :courses="courses" :term-start="termStart">
+  <template #top-bar-tools>
+    <button type="button" @click="syncCalendar">同步日历</button>
+  </template>
+
+  <template #course="{ course, active, color }">
+    <CourseCard :course="course" :muted="!active" :color="color" />
+  </template>
+
+  <template #detail-actions="{ course, close }">
+    <button type="button" @click="shareCourse(course)">分享</button>
+    <button type="button" @click="close">关闭</button>
+  </template>
+</YsSchedule>
+```
+
+跨组件的 Today 自定义模块和全部作用域汇总仍保留在 [插槽 API](/api/slots)。
 
 ## 编辑模式
 

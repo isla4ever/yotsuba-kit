@@ -319,20 +319,18 @@ onBeforeUnmount(() => {
               <div class="phone__viewport">
                 <div class="demo-embed" :class="{ 'is-ready': demoLoaded }" :aria-busy="!demoLoaded">
                   <div class="demo-embed__loading" role="status" :aria-label="t.demoLoading">
-                    <div class="demo-weather-loader" aria-hidden="true">
-                      <div class="demo-weather-loader__cloud demo-weather-loader__front">
-                        <span class="demo-weather-loader__left-front" />
-                        <span class="demo-weather-loader__right-front" />
+                    <div class="container" aria-hidden="true">
+                      <div class="cloud front">
+                        <span class="left-front"></span>
+                        <span class="right-front"></span>
                       </div>
-                      <span class="demo-weather-loader__sun demo-weather-loader__sunshine" />
-                      <span class="demo-weather-loader__sun" />
-                      <div class="demo-weather-loader__cloud demo-weather-loader__back">
-                        <span class="demo-weather-loader__left-back" />
-                        <span class="demo-weather-loader__right-back" />
+                      <span class="sun sunshine"></span>
+                      <span class="sun"></span>
+                      <div class="cloud back">
+                        <span class="left-back"></span>
+                        <span class="right-back"></span>
                       </div>
                     </div>
-                    <strong>Yotsuba</strong>
-                    <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
                   </div>
                   <iframe ref="demoFrame" :src="demoUrl" :title="t.demoLabel" loading="eager" referrerpolicy="strict-origin-when-cross-origin" @load="demoLoaded = true" />
                 </div>
@@ -417,20 +415,18 @@ onBeforeUnmount(() => {
           <div class="demo-focus__surface" :aria-busy="!focusedDemoLoaded">
             <div class="demo-embed demo-embed--focus" :class="{ 'is-ready': focusedDemoLoaded }">
               <div class="demo-embed__loading" role="status" :aria-label="t.demoLoading">
-                <div class="demo-weather-loader" aria-hidden="true">
-                  <div class="demo-weather-loader__cloud demo-weather-loader__front">
-                    <span class="demo-weather-loader__left-front" />
-                    <span class="demo-weather-loader__right-front" />
+                <div class="container" aria-hidden="true">
+                  <div class="cloud front">
+                    <span class="left-front"></span>
+                    <span class="right-front"></span>
                   </div>
-                  <span class="demo-weather-loader__sun demo-weather-loader__sunshine" />
-                  <span class="demo-weather-loader__sun" />
-                  <div class="demo-weather-loader__cloud demo-weather-loader__back">
-                    <span class="demo-weather-loader__left-back" />
-                    <span class="demo-weather-loader__right-back" />
+                  <span class="sun sunshine"></span>
+                  <span class="sun"></span>
+                  <div class="cloud back">
+                    <span class="left-back"></span>
+                    <span class="right-back"></span>
                   </div>
                 </div>
-                <strong>Yotsuba</strong>
-                <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
               </div>
               <iframe ref="focusedDemoFrame" :src="demoUrl" :title="t.demoLabel" referrerpolicy="strict-origin-when-cross-origin" @load="focusedDemoLoaded = true" />
             </div>
@@ -488,30 +484,113 @@ onBeforeUnmount(() => {
 .demo-embed.is-ready iframe { opacity: 1; transform: none; }
 .demo-embed__loading { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #46605c; text-align: center; background: linear-gradient(145deg, #f3f8f7 0%, #eaf2f1 54%, #f7f8f4 100%); transition: opacity 300ms ease, visibility 0s linear 300ms; }
 .demo-embed.is-ready .demo-embed__loading { visibility: hidden; opacity: 0; pointer-events: none; }
-/* Weather loader adapted from Uiverse.io by zanina-yassine. */
-.demo-weather-loader { position: relative; display: flex; width: 250px; height: 210px; align-items: center; justify-content: center; }
-.demo-weather-loader__cloud { position: absolute; width: 250px; }
-.demo-weather-loader__front { top: 70px; left: 18px; z-index: 11; animation: demo-loader-clouds 8s ease-in-out infinite; }
-.demo-weather-loader__back { top: 92px; left: 98px; z-index: 12; animation: demo-loader-clouds 12s ease-in-out infinite; }
-.demo-weather-loader__left-front,
-.demo-weather-loader__right-front,
-.demo-weather-loader__left-back,
-.demo-weather-loader__right-back { display: inline-block; background: #4c9beb; box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 10px 28px rgb(76 155 235 / 18%); }
-.demo-weather-loader__left-front { z-index: 5; width: 65px; height: 65px; border-radius: 50% 50% 0 50%; }
-.demo-weather-loader__right-front { z-index: 5; width: 45px; height: 45px; margin-left: -25px; border-radius: 50% 50% 50% 0; }
-.demo-weather-loader__left-back { z-index: 5; width: 30px; height: 30px; border-radius: 50% 50% 0 50%; }
-.demo-weather-loader__right-back { z-index: 5; width: 50px; height: 50px; margin-left: -20px; border-radius: 50% 50% 50% 0; }
-.demo-weather-loader__sun { position: absolute; display: inline-block; width: 120px; height: 120px; background: linear-gradient(to right, #fcbb04, #fffc00); border-radius: 50%; box-shadow: 0 16px 46px rgb(252 187 4 / 24%); }
-.demo-weather-loader__sunshine { animation: demo-loader-sunshine 2s ease-out infinite; }
-.demo-embed__loading > strong { margin-top: -4px; font-size: 18px; font-weight: 780; color: #19332e; }
-.demo-embed__loading p { margin: 5px 0 0; font-size: 12px; font-weight: 650; }
-@keyframes demo-loader-sunshine {
-  0% { opacity: 0.6; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.4); }
+.container {
+  width: 250px;
+  height: 250px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-@keyframes demo-loader-clouds {
-  0%, 100% { transform: translateX(15px); }
-  50% { transform: translateX(0); }
+
+.cloud {
+  width: 250px;
+}
+
+.front {
+  padding-top: 45px;
+  margin-left: 25px;
+  display: inline;
+  position: absolute;
+  z-index: 11;
+  animation: clouds 8s infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.back {
+  margin-top: -30px;
+  margin-left: 150px;
+  z-index: 12;
+  animation: clouds 12s infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.right-front {
+  width: 45px;
+  height: 45px;
+  border-radius: 50% 50% 50% 0%;
+  background-color: #4c9beb;
+  display: inline-block;
+  margin-left: -25px;
+  z-index: 5;
+}
+
+.left-front {
+  width: 65px;
+  height: 65px;
+  border-radius: 50% 50% 0% 50%;
+  background-color: #4c9beb;
+  display: inline-block;
+  z-index: 5;
+}
+
+.right-back {
+  width: 50px;
+  height: 50px;
+  border-radius: 50% 50% 50% 0%;
+  background-color: #4c9beb;
+  display: inline-block;
+  margin-left: -20px;
+  z-index: 5;
+}
+
+.left-back {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 0% 50%;
+  background-color: #4c9beb;
+  display: inline-block;
+  z-index: 5;
+}
+
+.sun {
+  width: 120px;
+  height: 120px;
+  background: -webkit-linear-gradient(to right, #fcbb04, #fffc00);
+  background: linear-gradient(to right, #fcbb04, #fffc00);
+  border-radius: 60px;
+  display: inline;
+  position: absolute;
+}
+
+.sunshine {
+  animation: sunshines 2s infinite;
+}
+
+@keyframes sunshines {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes clouds {
+  0% {
+    transform: translateX(15px);
+  }
+
+  50% {
+    transform: translateX(0px);
+  }
+
+  100% {
+    transform: translateX(15px);
+  }
 }
 .reveal-section .section-intro,
 .reveal-section .pathway,
@@ -614,7 +693,7 @@ onBeforeUnmount(() => {
 }
 @media (prefers-reduced-motion: reduce) {
   .hero__action, .hero__device-actions a, .hero__device-actions button, .pathway > a :deep(svg), .capability__link :deep(svg), .capabilities__intro a :deep(svg), .demo-embed iframe, .demo-embed__loading, .reveal-section .section-intro, .reveal-section .pathway, .reveal-section .capabilities__intro, .reveal-section .capability { transition: none; }
-  .demo-weather-loader__front, .demo-weather-loader__back, .demo-weather-loader__sunshine { animation: none; }
+  .front, .back, .sunshine { animation: none; }
   .reveal-section .section-intro, .reveal-section .pathway, .reveal-section .capabilities__intro, .reveal-section .capability { opacity: 1; transform: none; }
 }
 </style>
