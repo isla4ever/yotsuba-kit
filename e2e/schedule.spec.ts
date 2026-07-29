@@ -63,6 +63,71 @@ test('wave transition never shows an empty grid frame', async ({ page }) => {
   await expect(page.locator('.ys-course-card:not(.is-muted)', { hasText: '线性代数' })).toBeVisible()
 })
 
+test('overlap transitions never paint an inactive course on top', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.ys-course-card', { hasText: '体育（单周）' }).waitFor()
+
+  await page.evaluate(() => {
+    const state = window as unknown as {
+      __overlapSamples: Array<{ top: string | null, muted: boolean | null }>
+    }
+    state.__overlapSamples = []
+
+    const isPainted = (element: Element) => {
+      let current: Element | null = element
+      let opacity = 1
+      while (current && current instanceof HTMLElement) {
+        const style = getComputedStyle(current)
+        if (style.visibility === 'hidden' || style.display === 'none') return false
+        opacity *= Number(style.opacity || 1)
+        current = current.parentElement
+      }
+      return opacity > 0.02
+    }
+
+    window.addEventListener('click', (event) => {
+      if (!(event.target as Element).closest('.ys-week-picker__item')) return
+      const target = Array.from(document.querySelectorAll('.ys-course-card'))
+        .find(card => card.textContent?.includes('体育（单周）'))
+      const rect = target?.getBoundingClientRect()
+      if (!rect) return
+      const x = rect.left + rect.width / 2
+      const y = rect.top + rect.height / 2
+      const startedAt = performance.now()
+      const sample = () => {
+        const top = document.elementsFromPoint(x, y)
+          .map(element => element.closest('.ys-course-card'))
+          .find((card, index, cards) => card && cards.indexOf(card) === index && isPainted(card))
+        state.__overlapSamples.push({
+          top: top?.querySelector('strong')?.textContent ?? null,
+          muted: top?.classList.contains('is-muted') ?? null,
+        })
+        if (performance.now() - startedAt < 760) requestAnimationFrame(sample)
+      }
+      requestAnimationFrame(sample)
+    }, { capture: true })
+  })
+
+  const pickWeek = async (week: number) => {
+    await page.locator('.ys-topbar__week').click()
+    await page.locator('.ys-week-picker__item', { hasText: new RegExp(`^${week}$`) }).click()
+    await page.waitForTimeout(800)
+  }
+
+  await pickWeek(2)
+  await pickWeek(1)
+
+  const samples = await page.evaluate(() =>
+    (window as unknown as {
+      __overlapSamples: Array<{ top: string | null, muted: boolean | null }>
+    }).__overlapSamples,
+  )
+  expect(samples.length).toBeGreaterThan(60)
+  expect(samples.some(sample => sample.top === '体育（单周）')).toBe(true)
+  expect(samples.some(sample => sample.top === '线性代数（双周）')).toBe(true)
+  expect(samples.filter(sample => sample.top !== null && sample.muted)).toEqual([])
+})
+
 test('builtin course detail opens from a card tap', async ({ page }) => {
   await page.goto('/')
   await page.locator('.ys-course-card', { hasText: '高等数学' }).click()

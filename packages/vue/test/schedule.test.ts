@@ -43,6 +43,46 @@ describe('ysSchedule', () => {
     vi.useRealTimers()
   })
 
+  it('never promotes an inactive overlap while the active course changes weeks', async () => {
+    vi.useFakeTimers()
+    const overlapping: Course[] = [
+      { id: 'odd', name: '体育（单周）', weekday: 4, startSection: 1, endSection: 2, startWeek: 1, endWeek: 16, parity: 'odd' },
+      { id: 'even', name: '线性代数（双周）', weekday: 4, startSection: 1, endSection: 2, startWeek: 1, endWeek: 16, parity: 'even' },
+    ]
+    const wrapper = mount(YsSchedule, {
+      props: { courses: overlapping, week: 1, reduceMotion: false, transition: 'wave' },
+    })
+
+    const assertTransitionLayers = () => {
+      const layers = ['.ys-schedule__layer--leaving', '.ys-schedule__layer--current']
+      for (const layer of layers) {
+        const slots = wrapper.findAll(`${layer} .ys-schedule__card-slot`)
+        const active = slots.find(slot => slot.attributes('data-course-active') === 'true')
+        const inactive = slots.find(slot => slot.attributes('data-course-active') === 'false')
+        expect(active?.attributes('style')).toContain('z-index: 2')
+        expect(inactive?.attributes('style')).toContain('z-index: 0')
+        expect(inactive?.attributes('style')).toContain('opacity: 0')
+        expect(inactive?.attributes('style')).toContain('visibility: hidden')
+      }
+    }
+
+    await wrapper.setProps({ week: 2 })
+    await nextTick()
+    assertTransitionLayers()
+    vi.advanceTimersByTime(600)
+    await nextTick()
+    const settledInactive = wrapper.find('.ys-schedule__layer--current .ys-schedule__card-slot.is-inactive')
+    expect(settledInactive.attributes('style')).toContain('z-index: 0')
+    expect(settledInactive.attributes('style')).not.toContain('visibility: hidden')
+
+    await wrapper.setProps({ week: 1 })
+    await nextTick()
+    assertTransitionLayers()
+    vi.advanceTimersByTime(600)
+    await nextTick()
+    vi.useRealTimers()
+  })
+
   it('slides the whole page for the slide transition', async () => {
     vi.useFakeTimers()
     const wrapper = mount(YsSchedule, {

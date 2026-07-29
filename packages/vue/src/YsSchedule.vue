@@ -546,7 +546,7 @@ function delayMs(course: Pick<DisplayCourse, 'weekday' | 'startSection'>): numbe
 }
 
 function enterStyle(course: DisplayCourse, model: WeekModel) {
-  const position = gridPosition(course)
+  const position = slotPosition(course)
   if (!waveActive.value) {
     return position
   }
@@ -569,8 +569,8 @@ function enterStyle(course: DisplayCourse, model: WeekModel) {
   if (coveredIds.value.has(`${model.week}:${course.displayId}`)) {
     return {
       ...position,
-      animation: `ys-fade-in 60ms linear both`,
-      animationDelay: `${delayMs(course) + spec.value.enterMs + 20}ms`,
+      opacity: 0,
+      visibility: 'hidden' as const,
     }
   }
   if (stableSignatures.has(cellSignature(course))) {
@@ -586,12 +586,12 @@ function enterStyle(course: DisplayCourse, model: WeekModel) {
 }
 
 function leaveStyle(course: DisplayCourse, model: WeekModel) {
-  const position = gridPosition(course)
+  const position = slotPosition(course)
   if (spec.value.mode !== 'per-cell') {
     return position
   }
   if (coveredIds.value.has(`${model.week}:${course.displayId}`)) {
-    return { ...position, animation: `ys-fade-out 1ms linear both`, animationDelay: `${delayMs(course)}ms` }
+    return { ...position, opacity: 0, visibility: 'hidden' as const }
   }
   if (stableSignatures.has(cellSignature(course))) {
     return position
@@ -673,6 +673,13 @@ function gridPosition(course: Pick<DisplayCourse, 'weekday' | 'startSection' | '
   return {
     gridColumn: `${course.weekday} / ${course.weekday + 1}`,
     gridRow: `${sectionToGridLine(course.startSection)} / ${sectionToGridLine(course.endSection) + 1}`,
+  }
+}
+
+function slotPosition(course: DisplayCourse) {
+  return {
+    ...gridPosition(course),
+    zIndex: course.makeup ? 3 : course.active ? 2 : 0,
   }
 }
 
@@ -1148,6 +1155,13 @@ onBeforeUnmount(() => {
             v-for="course in leavingModel.courses"
             :key="course.displayId"
             class="ys-schedule__card-slot"
+            :class="{
+              'is-active': course.active && !course.makeup,
+              'is-inactive': !course.active,
+              'is-makeup': Boolean(course.makeup),
+            }"
+            :data-course-id="course.displayId"
+            :data-course-active="String(course.active)"
             :style="leaveStyle(course, leavingModel)"
           >
             <slot name="course" :course="course" :active="course.active" :color="colorFor(course.name, course.color)">
@@ -1182,7 +1196,14 @@ onBeforeUnmount(() => {
             v-for="(course, courseIndex) in currentModel.courses"
             :key="course.displayId"
             class="ys-schedule__card-slot"
+            :class="{
+              'is-active': course.active && !course.makeup,
+              'is-inactive': !course.active,
+              'is-makeup': Boolean(course.makeup),
+            }"
             :data-ys="courseIndex === currentModel.courses.length - 1 ? 'course-card' : undefined"
+            :data-course-id="course.displayId"
+            :data-course-active="String(course.active)"
             :style="enterStyle(course, currentModel)"
           >
             <slot name="course" :course="course" :active="course.active" :color="colorFor(course.name, course.color)">
@@ -1536,9 +1557,7 @@ onBeforeUnmount(() => {
 .ys-schedule__layer--current > .ys-schedule__card-slot { pointer-events: auto; }
 
 .ys-schedule__card-slot {
-  /* grid item 上的 z-index 建立堆叠上下文，保证整卡（背景+文字）按 DOM 序原子绘制，
-     否则前一张被盖卡的文字会按 CSS 绘制序浮到后一张卡的背景之上 */
-  z-index: 0;
+  /* 每个卡槽独立合成，层级由课程状态显式给出，避免动画帧依赖 DOM 绘制顺序。 */
   container: ys-course-slot / size;
   min-width: 0;
   min-height: 0;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+- Fixed overlap-course week transitions so inactive cards stay beneath active and makeup cards on every animation frame.
+- Kept covered inactive cards hidden for the full transition and restored them only after the active card has settled, removing the single-frame flash without changing the accepted timetable presentation.
+- Added bidirectional browser frame sampling and Vue regression coverage for odd/even overlap groups.
+
 ## 0.7.0
 
 - Added hourly weather snapshots and nearest-course-time matching so courses on the same day can render different weather and temperatures.

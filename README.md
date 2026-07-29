@@ -15,7 +15,7 @@ Yotsuba Kit 是面向中国高校课表与课程日程产品的跨框架开源�
 | **Flutter 示例源码** | [yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter/tree/main/packages/yotsuba_schedule_kit/example) | 查看 Flutter 组件公开 API 的完整用法 |
 | **版本状态** | [发布与兼容性](https://isla4ever.github.io/yotsuba-kit/guide/release-status.html) | 核对 NPM、pub.dev 和跨框架版本线 |
 
-当前稳定版为 `0.7.0`，项目采用 [MIT License](LICENSE)。
+当前稳定版为 `0.7.1`，项目采用 [MIT License](LICENSE)。
 
 ## 如何选择
 
@@ -82,7 +82,7 @@ Flutter 对应包是 [`yotsuba_schedule_kit`](https://pub.dev/packages/yotsuba_s
 ### Vue
 
 ```bash
-pnpm add @iyotsuba/schedule-vue@0.7.0
+pnpm add @iyotsuba/schedule-vue@0.7.1
 ```
 
 ```vue
@@ -123,7 +123,7 @@ const courses = ref<Course[]>([
 ### React
 
 ```bash
-pnpm add @iyotsuba/schedule-react@0.7.0
+pnpm add @iyotsuba/schedule-react@0.7.1
 ```
 
 ```tsx
