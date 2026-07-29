@@ -5,13 +5,13 @@
 如果项目使用 React、原生 HTML 或 Flutter，请先前往 [选择接入方式](/guide/frameworks)。
 
 ::: info 版本说明
-NPM 当前稳定版为 `0.5.0`。官网同时展示正在验证的 `0.6.0` 候选 API；生产项目请先安装稳定版，并在升级前查看[版本状态](/guide/release-status)。
+本页与在线演示均对应 `0.7.0`。Web 四包需要保持同一 minor 版本，避免 Core 与框架适配层协议不一致。
 :::
 
 ## 1. 安装
 
 ```bash
-pnpm add @iyotsuba/schedule-vue@0.5.0
+pnpm add @iyotsuba/schedule-vue@0.7.0
 ```
 
 ## 2. 准备课程数据

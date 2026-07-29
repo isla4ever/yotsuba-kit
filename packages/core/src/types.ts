@@ -245,9 +245,20 @@ export interface DailyWeather {
   label?: string
 }
 
+/** 小时级天气点；用于同一天不同课程时段的卡片与详情天气。 */
+export interface HourlyWeather {
+  /** 当地时间 ISO 8601，例如 `2026-07-28T14:00`。 */
+  time: string
+  kind: WeatherKind
+  temperatureC?: number
+  label?: string
+}
+
 export interface WeatherSnapshot {
   current?: { kind: WeatherKind, temperatureC?: number, label?: string }
   daily: DailyWeather[]
+  /** 可选；缺省时课程天气自动回退到 daily。 */
+  hourly?: HourlyWeather[]
   updatedAt: number
 }
 

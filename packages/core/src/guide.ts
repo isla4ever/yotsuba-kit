@@ -10,7 +10,8 @@ export interface GuideState {
 
 export interface GuideMachine {
   state: () => GuideState
-  start: () => void
+  /** 默认尊重 storageKey；force 用于用户主动点击“再次查看”。 */
+  start: (options?: { force?: boolean }) => void
   next: () => void
   previous: () => void
   skip: () => void
@@ -58,8 +59,8 @@ export function createGuideMachine(
 
   return {
     state,
-    start() {
-      if (config.storageKey && storage?.getItem(config.storageKey)) {
+    start(options = {}) {
+      if (!options.force && config.storageKey && storage?.getItem(config.storageKey)) {
         return
       }
       if (!config.steps.length) {

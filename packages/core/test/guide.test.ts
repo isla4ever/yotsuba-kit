@@ -56,4 +56,20 @@ describe('guide machine', () => {
     machine.start()
     expect(machine.state().active).toBe(false)
   })
+
+  it('can be replayed explicitly after the first-run marker exists', () => {
+    const memory = new Map([['done', '1']])
+    const storage = {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => void memory.set(key, value),
+    }
+    const machine = createGuideMachine({ mode: 'spotlight', steps, storageKey: 'done' }, { storage })
+
+    machine.start()
+    expect(machine.state().active).toBe(false)
+
+    machine.start({ force: true })
+    expect(machine.state().active).toBe(true)
+    expect(machine.state().step?.id).toBe('a')
+  })
 })

@@ -1,21 +1,28 @@
 # 版本状态
 
-官网以稳定版使用文档为基础，同时展示下一版本的候选 API。候选版本来自当前 `main` 分支源码，不等同于已经发布到 NPM 或 pub.dev 的安装包。
+官网、在线演示与跨端包当前使用 `0.7.0` 能力线。Web 四包互相引用时需要保持同一版本；Flutter 保持相同的产品语义，但使用独立的 Dart API。
 
-| 分发包 | 注册表稳定版 | 主分支候选版本 | 状态说明 |
-| --- | --- | --- | --- |
-| `@iyotsuba/schedule-core` | `0.5.0` | `0.6.0` | 候选版增加课程资料、任务和统一视觉协议 |
-| `@iyotsuba/schedule-vue` | `0.5.0` | `0.6.0` | 官网在线演示使用候选版能力 |
-| `@iyotsuba/schedule-elements` | `0.5.0` | `0.6.0` | 将与 Core、Vue 同步发布 |
-| `@iyotsuba/schedule-react` | `0.3.1` | `0.6.0` | 发布前需要完成独立消费者验证 |
-| `yotsuba_schedule_kit` | `0.5.0` | `0.6.0` | 发布前需要完成 pub.dev 检查 |
+| 分发包 | 稳定版 | 主要职责 |
+| --- | --- | --- |
+| `@iyotsuba/schedule-core` | `0.7.0` | 学期引擎、课程模型、小时天气、主题、动效与引导协议 |
+| `@iyotsuba/schedule-vue` | `0.7.0` | Vue 课表、Today、详情、弹层、天气视觉与引导界面 |
+| `@iyotsuba/schedule-elements` | `0.7.0` | 原生 DOM / H5 自定义元素分发 |
+| `@iyotsuba/schedule-react` | `0.7.0` | React 类型绑定、事件回调和实例引用 |
+| `yotsuba_schedule_kit` | `0.7.0` | Flutter 原生课表、Today、弹层与天气视觉 |
 
 ## 如何选择版本
 
-- 新的生产项目：安装“注册表稳定版”，并以对应 CHANGELOG 为功能边界。
-- 评估下一版本：使用 `main` 分支源码、官网演示和候选 API 文档，不要将其视为已发布包。
-- 升级已有项目：等待正式版本发布后，再同时升级相互依赖的 Core、Vue、Elements 或 React 包。
+- Vue 项目通常只安装 `@iyotsuba/schedule-vue@0.7.0`，由包管理器解析兼容的 Core。
+- React 项目安装 `@iyotsuba/schedule-react@0.7.0`；原生 H5 使用 `@iyotsuba/schedule-elements@0.7.0`。
+- 直接组合多个 Web 包时，不要混用 `0.6.x` 与 `0.7.x`。
+- Flutter 项目安装 `yotsuba_schedule_kit:^0.7.0`，按 Dart 类型迁移，不与 NPM 包共享二进制依赖。
 
-## 发布门槛
+## 0.7.0 验收边界
 
-Web 包需要通过构建、单元测试、端到端测试、消费者示例和 NPM dry-run；Flutter 包需要通过静态分析、测试、示例构建和 `dart pub publish --dry-run`。完成验证并获得发布授权后，官网安装命令、CHANGELOG 与本页会同步更新。
+- 课程卡根据课程开始时间匹配小时级天气，同日课程不再被迫使用同一种天气。
+- 非本周课程保持失色，周末课程仍有天气材质，长课程名与教室信息受行数约束。
+- 应用级天气场景只渲染一份，并贯穿课表、Today 与导航表面。
+- Web 包必须通过类型检查、单元测试、构建和 registry-only 消费验证。
+- Flutter 包必须通过静态分析、测试、示例构建和 `dart pub publish --dry-run`。
+
+具体行为变化见根目录 [CHANGELOG](https://github.com/isla4ever/yotsuba-kit/blob/main/CHANGELOG.md)。

@@ -9,6 +9,8 @@ import type {
   DayOverride,
   DayPlanMap,
   DisplayCourse,
+  GuideConfig,
+  GuideStep,
   ThemeTokens,
   WeatherKind,
   WeatherSnapshot,
@@ -25,6 +27,7 @@ import {
   weekOf,
 } from '@iyotsuba/schedule-core'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import YsGuide from './YsGuide.vue'
 import YsWeatherGlyph from './YsWeatherGlyph.vue'
 import YsWeatherScene from './YsWeatherScene.vue'
 
@@ -57,6 +60,8 @@ const props = withDefaults(defineProps<{
   arrangeable?: boolean
   /** Today 天气动态背景，默认开启。 */
   weatherScene?: boolean
+  /** 模块引导；autoStart 仅在 storageKey 未完成时首次播放。 */
+  guide?: GuideConfig | false
   reduceMotion?: boolean
   /** 统一空状态文案，也可按内置 widget id 覆盖。 */
   emptyText?: string
@@ -81,6 +86,7 @@ const props = withDefaults(defineProps<{
   dayPlans: () => ({}),
   arrangeable: true,
   weatherScene: true,
+  guide: false,
   reduceMotion: false,
   emptyText: undefined,
   emptyTexts: () => ({}),
@@ -94,6 +100,8 @@ const emit = defineEmits<{
   layoutEditing: [editing: boolean]
   widgetMove: [id: string, from: number, to: number]
   widgetResize: [id: string, size: TodayWidgetSize, corner: TodayResizeCorner]
+  guideStep: [step: GuideStep, index: number]
+  guideFinish: []
 }>()
 
 const tokens = computed<ThemeTokens>(() => {
@@ -207,6 +215,51 @@ const todayWeather = computed(() =>
   props.weather?.daily.find(item => item.date === formatDateKey(now.value)) ?? null,
 )
 
+const todayHourlyWeather = computed(() => {
+  const dateKey = formatDateKey(now.value)
+  return (props.weather?.hourly ?? [])
+    .filter(item => item.time.slice(0, 10) === dateKey)
+    .slice()
+    .sort((a, b) => a.time.localeCompare(b.time))
+})
+
+function widgetVariant(size: TodayWidgetSize): 'compact' | 'tall' | 'wide' | 'large' {
+  const { columns, rows } = sizeGrid(size)
+  if (columns === 1 && rows === 1) return 'compact'
+  if (columns === 1) return 'tall'
+  if (rows === 1) return 'wide'
+  return 'large'
+}
+
+function itemLimit(size: TodayWidgetSize): number {
+  const variant = widgetVariant(size)
+  return variant === 'compact' ? 1 : variant === 'wide' ? 2 : variant === 'tall' ? 4 : 6
+}
+
+function weatherPoints(size: TodayWidgetSize) {
+  const limit = widgetVariant(size) === 'large' ? 6 : widgetVariant(size) === 'tall' ? 4 : 4
+  return todayHourlyWeather.value.slice(0, limit)
+}
+
+function weatherTimeLabel(time: string): string {
+  const parsed = new Date(time)
+  if (!Number.isNaN(parsed.getTime())) {
+    return `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`
+  }
+  return time.slice(11, 16)
+}
+
+function weatherTemperatureHeight(temperature?: number): number {
+  const values = todayHourlyWeather.value
+    .map(item => item.temperatureC)
+    .filter((value): value is number => value != null)
+  if (temperature == null || !values.length) return 32
+  const low = Math.min(...values)
+  const high = Math.max(...values)
+  if (high === low) return 58
+  return 28 + (temperature - low) / (high - low) * 52
+}
+
 /** 今日携带物品汇总（按课程） */
 const readiness = computed(() =>
   todayCourses.value
@@ -257,6 +310,20 @@ watch(() => props.widgets, (widgets) => {
 }, { immediate: true, deep: true })
 
 const visibleWidgets = computed(() => localWidgets.value.filter(item => item.enabled !== false))
+
+const GUIDE_WIDGET_ANCHORS: Record<string, string> = {
+  'next-course': 'today-next-course',
+  'weather': 'today-weather',
+  'today-timeline': 'today-timeline',
+  'readiness': 'today-readiness',
+  'course-tasks': 'today-tasks',
+  'plans': 'today-plans',
+  'week-glance': 'today-week-glance',
+}
+
+function guideAnchorFor(id: string): string | undefined {
+  return GUIDE_WIDGET_ANCHORS[id]
+}
 
 function sizeGrid(size: TodayWidgetSize): { columns: 1 | 2, rows: 1 | 2 } {
   if (size === 'compact' || size === '1x1') return { columns: 1, rows: 1 }
@@ -491,6 +558,15 @@ function resetLayout() {
   publishLayout()
 }
 
+const guideRef = ref<InstanceType<typeof YsGuide> | null>(null)
+
+function startGuide() {
+  if (arranging.value) {
+    setArranging(false)
+  }
+  guideRef.value?.start()
+}
+
 function toggleWidget(id: string, enabled: boolean) {
   localWidgets.value = localWidgets.value.map(widget => widget.id === id ? { ...widget, enabled } : widget)
   publishLayout()
@@ -510,6 +586,7 @@ defineExpose({
   resizeWidget,
   toggleWidget,
   layoutReset: resetLayout,
+  startGuide,
 })
 
 const dateLabel = computed(() => {
@@ -541,23 +618,42 @@ const todayStyle = computed(() => ({
       :dark="theme === 'dark'"
       :intensity="0.42"
     />
-    <header class="ys-today__head">
+    <header class="ys-today__head" data-ys="today-head">
       <div class="ys-today__head-copy">
         <strong>{{ title }}</strong>
         <span>{{ dateLabel }}</span>
       </div>
-      <button
-        v-if="arrangeable"
-        type="button"
-        class="ys-today__arrange-toggle"
-        :class="{ 'is-active': arranging }"
-        :aria-label="arranging ? '完成今日布局调整' : '调整今日布局'"
-        :aria-pressed="arranging"
-        :title="arranging ? '完成布局调整' : '调整今日布局'"
-        @click="toggleArranging"
-      >
-        <i aria-hidden="true" />
-      </button>
+      <div class="ys-today__head-actions">
+        <button
+          v-if="guide"
+          type="button"
+          class="ys-today__guide-toggle"
+          aria-label="查看今日引导"
+          title="查看今日引导"
+          @click="startGuide"
+        >
+          <span aria-hidden="true">?</span>
+        </button>
+        <button
+          v-if="arrangeable"
+          type="button"
+          class="ys-today__arrange-toggle"
+          :class="{ 'is-active': arranging }"
+          data-ys="today-arrange"
+          :aria-label="arranging ? '完成今日布局调整' : '调整今日布局'"
+          :aria-pressed="arranging"
+          :title="arranging ? '完成布局调整' : '调整今日布局'"
+          @click="toggleArranging"
+        >
+          <svg v-if="arranging" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m5 12 4 4L19 6" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+          </svg>
+        </button>
+      </div>
     </header>
 
     <div class="ys-today__grid">
@@ -574,6 +670,7 @@ const todayStyle = computed(() => ({
           },
         ]"
         :data-widget="widget.id"
+        :data-ys="guideAnchorFor(widget.id)"
         :data-size="resolvedSize(widget)"
         :aria-label="arranging
           ? activeWidget === widget.id
@@ -588,7 +685,11 @@ const todayStyle = computed(() => ({
         @click="handleWidgetClick(widget.id)"
       >
         <Transition name="ys-today-content" mode="out-in">
-          <div :key="`${widget.id}-${resolvedSize(widget)}`" class="ys-today__widget-content">
+          <div
+            :key="`${widget.id}-${resolvedSize(widget)}`"
+            class="ys-today__widget-content"
+            :class="`is-${widgetVariant(resolvedSize(widget))}`"
+          >
             <slot
               :name="`widget-${widget.id}`"
               :week="week"
@@ -614,11 +715,23 @@ const todayStyle = computed(() => ({
                 @click.stop="emit('courseTap', (ongoing ?? upcoming)!.course)"
               >
                 <strong>{{ (ongoing ?? upcoming)!.course.name }}</strong>
-                <span>{{ (ongoing ?? upcoming)!.start }} - {{ (ongoing ?? upcoming)!.end }}</span>
-                <span v-if="(ongoing ?? upcoming)!.course.location">@{{ (ongoing ?? upcoming)!.course.location }}</span>
-                <em v-if="!ongoing">{{ nextCountdown }}</em>
-                <em v-else>进行中</em>
+                <span class="ys-today__next-meta">{{ (ongoing ?? upcoming)!.start }} - {{ (ongoing ?? upcoming)!.end }}<template v-if="(ongoing ?? upcoming)!.course.location"> · {{ (ongoing ?? upcoming)!.course.location }}</template></span>
+                <em>{{ ongoing ? '进行中' : nextCountdown }}</em>
               </button>
+              <ul
+                v-if="['tall', 'large'].includes(widgetVariant(resolvedSize(widget)))"
+                class="ys-today__course-preview"
+              >
+                <li
+                  v-for="item in todayCourses.filter(course => course.state !== 'done').slice(0, widgetVariant(resolvedSize(widget)) === 'large' ? 4 : 3)"
+                  :key="item.course.displayId"
+                >
+                  <time>{{ item.start }}</time>
+                  <i :style="{ background: colorFor(item.course.name, item.course.color) }" />
+                  <span>{{ item.course.name }}</span>
+                  <small>{{ item.course.location || `${item.course.startSection}-${item.course.endSection}节` }}</small>
+                </li>
+              </ul>
             </template>
             <p v-else class="ys-today__empty">{{ emptyFor('next-course', '今天没有更多课程了') }}</p>
           </template>
@@ -626,9 +739,14 @@ const todayStyle = computed(() => ({
           <!-- 内置：今日时间线 -->
           <template v-else-if="widget.id === 'today-timeline'">
             <h3 class="ys-today__widget-title">今日课程 · {{ todayCourses.length }} 节</h3>
-            <ul v-if="todayCourses.length" class="ys-today__timeline">
+            <div v-if="todayCourses.length && widgetVariant(resolvedSize(widget)) === 'compact'" class="ys-today__compact-summary">
+              <b>{{ doneCount }}/{{ todayCourses.length }}</b>
+              <span>已完成</span>
+              <small>{{ (ongoing ?? upcoming)?.course.name || '今日课程已结束' }}</small>
+            </div>
+            <ul v-else-if="todayCourses.length" class="ys-today__timeline">
               <li
-                v-for="item in todayCourses"
+                v-for="item in todayCourses.slice(0, itemLimit(resolvedSize(widget)))"
                 :key="item.course.displayId"
                 :class="`is-${item.state}`"
                 @click.stop="emit('courseTap', item.course)"
@@ -646,9 +764,14 @@ const todayStyle = computed(() => ({
 
           <!-- 内置：记得带 -->
           <template v-else-if="widget.id === 'readiness'">
-            <h3 class="ys-today__widget-title">记得带 🎒</h3>
-            <ul v-if="readiness.length" class="ys-today__readiness">
-              <li v-for="item in readiness" :key="item.course.displayId">
+            <h3 class="ys-today__widget-title">记得带</h3>
+            <div v-if="readiness.length && widgetVariant(resolvedSize(widget)) === 'compact'" class="ys-today__compact-summary">
+              <b>{{ readiness.reduce((total, item) => total + item.materials.length, 0) }}</b>
+              <span>件物品</span>
+              <small>{{ readiness[0]?.materials.map(material => material.name).join('、') }}</small>
+            </div>
+            <ul v-else-if="readiness.length" class="ys-today__readiness">
+              <li v-for="item in readiness.slice(0, itemLimit(resolvedSize(widget)))" :key="item.course.displayId">
                 <i class="ys-today__dot" :style="{ background: colorFor(item.course.name, item.course.color) }" />
                 <span class="ys-today__name">{{ item.course.name }}</span>
                 <span class="ys-today__materials">{{ item.materials.map(material => material.name).join('、') }}</span>
@@ -660,8 +783,13 @@ const todayStyle = computed(() => ({
           <!-- 内置：今日计划 -->
           <template v-else-if="widget.id === 'plans'">
             <h3 class="ys-today__widget-title">今日计划 · 剩 {{ todayPlans.filter(p => !p.done).length }} 项</h3>
-            <ul v-if="todayPlans.length" class="ys-today__plans">
-              <li v-for="plan in todayPlans" :key="plan.id" :class="{ 'is-done': plan.done }">
+            <div v-if="todayPlans.length && widgetVariant(resolvedSize(widget)) === 'compact'" class="ys-today__compact-summary is-progress">
+              <b>{{ todayPlans.filter(plan => plan.done).length }}/{{ todayPlans.length }}</b>
+              <span>已完成</span>
+              <i><span :style="{ width: `${todayPlans.filter(plan => plan.done).length / todayPlans.length * 100}%` }" /></i>
+            </div>
+            <ul v-else-if="todayPlans.length" class="ys-today__plans">
+              <li v-for="plan in todayPlans.slice(0, itemLimit(resolvedSize(widget)))" :key="plan.id" :class="{ 'is-done': plan.done }">
                 <i>{{ plan.done ? '✓' : '○' }}</i>{{ plan.text }}
               </li>
             </ul>
@@ -671,8 +799,13 @@ const todayStyle = computed(() => ({
           <!-- 内置：课程任务 -->
           <template v-else-if="widget.id === 'course-tasks'">
             <h3 class="ys-today__widget-title">课程任务 · 剩 {{ courseTasks.filter(item => !item.task.done).length }} 项</h3>
-            <ul v-if="courseTasks.length" class="ys-today__course-tasks">
-              <li v-for="item in courseTasks" :key="`${item.course.displayId}-${item.task.id}`" :class="{ 'is-done': item.task.done }">
+            <div v-if="courseTasks.length && widgetVariant(resolvedSize(widget)) === 'compact'" class="ys-today__compact-summary">
+              <b>{{ courseTasks.filter(item => !item.task.done).length }}</b>
+              <span>项待完成</span>
+              <small>{{ courseTasks.find(item => !item.task.done)?.task.title || '全部完成' }}</small>
+            </div>
+            <ul v-else-if="courseTasks.length" class="ys-today__course-tasks">
+              <li v-for="item in courseTasks.slice(0, itemLimit(resolvedSize(widget)))" :key="`${item.course.displayId}-${item.task.id}`" :class="{ 'is-done': item.task.done }">
                 <i class="ys-today__dot" :style="{ background: colorFor(item.course.name, item.course.color) }" />
                 <span class="ys-today__name">{{ item.task.title }}</span>
                 <small>{{ item.course.name }}</small>
@@ -708,14 +841,63 @@ const todayStyle = computed(() => ({
 
           <!-- 内置：天气 -->
           <template v-else-if="widget.id === 'weather'">
-            <h3 class="ys-today__widget-title">天气</h3>
             <div v-if="todayWeather || weather?.current" class="ys-today__weather">
-              <YsWeatherGlyph :kind="todayWeather?.kind ?? weather?.current?.kind ?? 'neutral'" :size="26" />
-              <b>{{ weather?.current?.temperatureC != null ? `${Math.round(weather!.current!.temperatureC!)}°` : '' }}</b>
-              <span>{{ WEATHER_LABELS[(todayWeather?.kind ?? weather?.current?.kind ?? 'neutral')] }}</span>
-              <span v-if="todayWeather?.highC != null">
-                {{ Math.round(todayWeather!.lowC ?? 0) }}~{{ Math.round(todayWeather!.highC!) }}°
-              </span>
+              <div class="ys-today__weather-head">
+                <h3 class="ys-today__widget-title">今日天气</h3>
+                <span v-if="todayWeather?.highC != null" class="ys-today__weather-range">
+                  {{ Math.round(todayWeather!.lowC ?? 0) }}~{{ Math.round(todayWeather!.highC!) }}°
+                </span>
+              </div>
+              <div class="ys-today__weather-current">
+                <YsWeatherGlyph
+                  :kind="todayWeather?.kind ?? weather?.current?.kind ?? 'neutral'"
+                  :size="widgetVariant(resolvedSize(widget)) === 'large' ? 48 : widgetVariant(resolvedSize(widget)) === 'compact' ? 27 : 36"
+                />
+                <div>
+                  <b>{{ weather?.current?.temperatureC != null ? `${Math.round(weather!.current!.temperatureC!)}°` : '--°' }}</b>
+                  <span>{{ WEATHER_LABELS[(todayWeather?.kind ?? weather?.current?.kind ?? 'neutral')] }}</span>
+                </div>
+              </div>
+              <div
+                v-if="widgetVariant(resolvedSize(widget)) === 'wide' && weatherPoints(resolvedSize(widget)).length"
+                class="ys-today__weather-strip"
+                role="img"
+                aria-label="今日分时温度趋势"
+              >
+                <div v-for="point in weatherPoints(resolvedSize(widget))" :key="point.time">
+                  <time>{{ weatherTimeLabel(point.time) }}</time>
+                  <i><span :style="{ height: `${weatherTemperatureHeight(point.temperatureC)}%` }" /></i>
+                  <b>{{ point.temperatureC == null ? '--' : `${Math.round(point.temperatureC)}°` }}</b>
+                </div>
+              </div>
+              <ul
+                v-else-if="widgetVariant(resolvedSize(widget)) === 'tall' && weatherPoints(resolvedSize(widget)).length"
+                class="ys-today__weather-hours"
+              >
+                <li v-for="point in weatherPoints(resolvedSize(widget))" :key="point.time">
+                  <time>{{ weatherTimeLabel(point.time) }}</time>
+                  <YsWeatherGlyph :kind="point.kind" :size="18" />
+                  <span>{{ WEATHER_LABELS[point.kind] }}</span>
+                  <b>{{ point.temperatureC == null ? '--' : `${Math.round(point.temperatureC)}°` }}</b>
+                </li>
+              </ul>
+              <div
+                v-else-if="widgetVariant(resolvedSize(widget)) === 'large' && weatherPoints(resolvedSize(widget)).length"
+                class="ys-today__weather-panel"
+              >
+                <div class="ys-today__weather-panel-head">
+                  <span>逐时变化</span>
+                  <small>{{ weatherPoints(resolvedSize(widget)).length }} 个时段</small>
+                </div>
+                <div class="ys-today__weather-forecast" role="img" aria-label="今日逐时天气与温度">
+                  <div v-for="point in weatherPoints(resolvedSize(widget))" :key="point.time">
+                    <time>{{ weatherTimeLabel(point.time) }}</time>
+                    <i><span :style="{ height: `${weatherTemperatureHeight(point.temperatureC)}%` }" /></i>
+                    <YsWeatherGlyph :kind="point.kind" :size="17" />
+                    <b>{{ point.temperatureC == null ? '--' : `${Math.round(point.temperatureC)}°` }}</b>
+                  </div>
+                </div>
+              </div>
             </div>
             <p v-else class="ys-today__empty">{{ emptyFor('weather', '暂无天气信息') }}</p>
           </template>
@@ -741,6 +923,15 @@ const todayStyle = computed(() => ({
         </template>
       </section>
     </div>
+    <YsGuide
+      v-if="guide"
+      ref="guideRef"
+      :config="guide"
+      :root="todayRoot"
+      :vars="cssVars"
+      @step="(step, index) => emit('guideStep', step, index)"
+      @finish="emit('guideFinish')"
+    />
   </div>
 </template>
 
@@ -778,37 +969,59 @@ const todayStyle = computed(() => ({
 .ys-today__head strong { font-size: 20px; font-weight: 780; }
 .ys-today__head span { font-size: 11px; color: var(--ys-text-3); }
 
+.ys-today__head-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.ys-today__guide-toggle,
 .ys-today__arrange-toggle {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
+  display: inline-flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   padding: 0;
   color: var(--ys-text-3);
   cursor: pointer;
   background: var(--ys-surface-1);
   border: 1px solid var(--ys-border);
-  border-radius: 7px;
+  border-radius: 8px;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
-.ys-today__arrange-toggle > i {
+.ys-today__guide-toggle > span {
   display: grid;
-  width: 13px;
-  height: 13px;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 2px;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1;
+  border: 1.7px solid currentcolor;
+  border-radius: 50%;
 }
 
-.ys-today__arrange-toggle > i::before,
-.ys-today__arrange-toggle > i::after {
-  content: '';
-  background: currentcolor;
-  border-radius: 1px;
-  box-shadow: 7px 0 0 currentcolor;
+.ys-today__arrange-toggle > svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .ys-today__arrange-toggle.is-active { color: var(--ys-accent); background: var(--ys-accent-soft); border-color: var(--ys-accent); }
+.ys-today__guide-toggle:hover,
+.ys-today__arrange-toggle:hover { color: var(--ys-text-1); border-color: color-mix(in srgb, var(--ys-accent) 40%, var(--ys-border)); }
+.ys-today__guide-toggle:active,
+.ys-today__arrange-toggle:active { transform: scale(0.94); }
+.ys-today__guide-toggle:focus-visible,
 .ys-today__arrange-toggle:focus-visible { outline: 3px solid var(--ys-focus-ring); outline-offset: 2px; }
 
 .ys-today__grid {
@@ -831,14 +1044,14 @@ const todayStyle = computed(() => ({
 }
 
 .ys-today__widget.is-size-compact,
-.ys-today__widget.is-size-1x1 { grid-column: span 1; grid-row: span 1; min-height: 112px; padding: 9px 10px; }
+.ys-today__widget.is-size-1x1 { grid-column: span 1; grid-row: span 1; height: 112px; padding: 9px 10px; }
 .ys-today__widget.is-size-standard,
-.ys-today__widget.is-size-2x1 { grid-column: span 2; grid-row: span 1; min-height: 112px; }
-.ys-today__widget.is-size-1x2 { grid-column: span 1; grid-row: span 2; min-height: 236px; }
+.ys-today__widget.is-size-2x1 { grid-column: span 2; grid-row: span 1; height: 112px; }
+.ys-today__widget.is-size-1x2 { grid-column: span 1; grid-row: span 2; height: 236px; }
 .ys-today__widget.is-size-large,
-.ys-today__widget.is-size-2x2 { grid-column: span 2; grid-row: span 2; min-height: 236px; padding: 16px; }
+.ys-today__widget.is-size-2x2 { grid-column: span 2; grid-row: span 2; height: 236px; padding: 16px; }
 
-.ys-today__widget-content { min-width: 0; height: 100%; }
+.ys-today__widget-content { min-width: 0; height: 100%; overflow: hidden; }
 
 .ys-today-content-enter-active,
 .ys-today-content-leave-active { transition: opacity 120ms ease, transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1); }
@@ -909,13 +1122,21 @@ const todayStyle = computed(() => ({
 .ys-today__readiness,
 .ys-today__plans,
 .ys-today__course-tasks {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 7px;
   padding: 0;
   margin: 0;
   list-style: none;
 }
+
+.ys-today__widget-content.is-wide .ys-today__readiness,
+.ys-today__widget-content.is-wide .ys-today__plans,
+.ys-today__widget-content.is-wide .ys-today__course-tasks,
+.ys-today__widget-content.is-wide .ys-today__timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.ys-today__widget-content.is-large .ys-today__readiness,
+.ys-today__widget-content.is-large .ys-today__plans,
+.ys-today__widget-content.is-large .ys-today__course-tasks { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
 
 .ys-today__readiness li {
   display: flex;
@@ -923,6 +1144,37 @@ const todayStyle = computed(() => ({
   align-items: center;
   font-size: 12px;
 }
+
+.ys-today__compact-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1px 7px;
+  align-items: end;
+  padding-top: 2px;
+}
+
+.ys-today__compact-summary > b { font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+.ys-today__compact-summary > span { padding-bottom: 1px; font-size: 10px; color: var(--ys-text-3); }
+.ys-today__compact-summary > small {
+  grid-column: 1 / -1;
+  margin-top: 5px;
+  overflow: hidden;
+  font-size: 10px;
+  color: var(--ys-text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ys-today__compact-summary.is-progress > i {
+  grid-column: 1 / -1;
+  height: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ys-accent) 10%, var(--ys-border));
+  border-radius: 2px;
+}
+
+.ys-today__compact-summary.is-progress > i > span { display: block; height: 100%; background: var(--ys-accent); border-radius: inherit; }
 
 .ys-today__materials {
   margin-left: auto;
@@ -980,7 +1232,9 @@ const todayStyle = computed(() => ({
 .ys-today__next span { font-size: 11px; opacity: 0.88; }
 
 .ys-today__next em {
-  margin-top: 3px;
+  position: absolute;
+  top: 9px;
+  right: 9px;
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
@@ -989,9 +1243,38 @@ const todayStyle = computed(() => ({
   border-radius: 4px;
 }
 
+.ys-today__next { position: relative; min-height: 68px; }
+.ys-today__widget-content.is-wide .ys-today__next { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; padding-right: 84px; }
+.ys-today__widget-content.is-wide .ys-today__next strong,
+.ys-today__widget-content.is-wide .ys-today__next-meta { grid-column: 1; }
+.ys-today__widget-content.is-tall .ys-today__next,
+.ys-today__widget-content.is-large .ys-today__next { min-height: 76px; }
+
+.ys-today__course-preview {
+  display: grid;
+  gap: 0;
+  padding: 8px 0 0;
+  margin: 0;
+  list-style: none;
+}
+
+.ys-today__course-preview li {
+  display: grid;
+  grid-template-columns: 34px 5px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 30px;
+  font-size: 11px;
+}
+
+.ys-today__course-preview time { font-size: 10px; color: var(--ys-text-3); font-variant-numeric: tabular-nums; }
+.ys-today__course-preview i { width: 4px; height: 18px; border-radius: 2px; }
+.ys-today__course-preview span { overflow: hidden; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.ys-today__course-preview small { display: none; color: var(--ys-text-3); }
+.ys-today__widget-content.is-large .ys-today__course-preview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 18px; }
+
 .ys-today__timeline {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 7px;
   padding: 0;
   margin: 0;
@@ -1116,14 +1399,61 @@ const todayStyle = computed(() => ({
 .ys-today__widget.is-size-1x2 .ys-today__stats div:last-child { grid-column: span 2; }
 .ys-today__widget.is-size-1x2 .ys-today__week-chart { height: 88px; margin-top: 16px; gap: 3px; }
 
-.ys-today__weather {
-  display: flex;
+.ys-today__weather { height: 100%; }
+
+.ys-today__weather-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ys-today__weather-head .ys-today__widget-title { margin-bottom: 0; }
+.ys-today__weather-range { font-size: 10px; color: var(--ys-text-3); font-variant-numeric: tabular-nums; }
+
+.ys-today__weather-current { display: flex; gap: 9px; align-items: center; min-width: 0; }
+.ys-today__weather-current > div { display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; min-width: 0; }
+.ys-today__weather-current b { font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+.ys-today__weather-current span { font-size: 11px; color: var(--ys-text-2); }
+
+.ys-today__widget-content.is-compact .ys-today__weather-current { margin-top: 14px; }
+.ys-today__widget-content.is-wide .ys-today__weather { display: grid; grid-template-columns: 140px minmax(0, 1fr); grid-template-rows: 18px 1fr; column-gap: 18px; }
+.ys-today__widget-content.is-wide .ys-today__weather-head { grid-column: 1 / -1; }
+.ys-today__widget-content.is-wide .ys-today__weather-current { grid-column: 1; }
+.ys-today__widget-content.is-tall .ys-today__weather-current { margin-top: 13px; }
+.ys-today__widget-content.is-large .ys-today__weather { display: grid; grid-template-columns: 132px minmax(0, 1fr); grid-template-rows: 22px minmax(0, 1fr); column-gap: 20px; }
+.ys-today__widget-content.is-large .ys-today__weather-head { grid-column: 1 / -1; }
+.ys-today__widget-content.is-large .ys-today__weather-current { align-self: center; }
+.ys-today__widget-content.is-large .ys-today__weather-current > div { display: grid; gap: 4px; }
+.ys-today__widget-content.is-large .ys-today__weather-current b { font-size: 34px; }
+
+.ys-today__weather-strip {
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  align-items: baseline;
+  height: 66px;
+  align-self: end;
 }
 
-.ys-today__weather b { font-size: 20px; }
-.ys-today__weather span { font-size: 11px; color: var(--ys-text-2); }
+.ys-today__weather-strip > div,
+.ys-today__weather-forecast > div { display: grid; grid-template-rows: 13px minmax(0, 1fr) 14px; gap: 2px; min-width: 0; text-align: center; }
+.ys-today__weather-strip time,
+.ys-today__weather-forecast time { font-size: 9px; color: var(--ys-text-3); font-variant-numeric: tabular-nums; }
+.ys-today__weather-strip i,
+.ys-today__weather-forecast i { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; background: color-mix(in srgb, var(--ys-today-weather) 8%, transparent); border-radius: 3px; }
+.ys-today__weather-strip i > span,
+.ys-today__weather-forecast i > span { width: 100%; min-height: 3px; background: color-mix(in srgb, var(--ys-today-weather) 74%, var(--ys-accent)); border-radius: 3px 3px 1px 1px; }
+.ys-today__weather-strip b,
+.ys-today__weather-forecast b { font-size: 9px; color: var(--ys-text-2); }
+
+.ys-today__weather-hours { display: grid; gap: 1px; padding: 12px 0 0; margin: 0; list-style: none; }
+.ys-today__weather-hours li { display: grid; grid-template-columns: 36px 22px minmax(0, 1fr) auto; gap: 6px; align-items: center; min-height: 30px; font-size: 10px; }
+.ys-today__weather-hours time { color: var(--ys-text-3); font-variant-numeric: tabular-nums; }
+.ys-today__weather-hours span { color: var(--ys-text-2); }
+.ys-today__weather-hours b { font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.ys-today__weather-panel { min-width: 0; }
+.ys-today__weather-panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px; }
+.ys-today__weather-panel-head span { font-size: 11px; font-weight: 700; color: var(--ys-text-2); }
+.ys-today__weather-panel-head small { font-size: 9px; color: var(--ys-text-3); }
+.ys-today__weather-forecast { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; height: 146px; }
+.ys-today__weather-forecast > div { grid-template-rows: 13px minmax(0, 1fr) 20px 14px; }
+.ys-today__weather-forecast .ys-weather-glyph { justify-self: center; }
 
 .ys-today__empty {
   margin: 2px 0 0;

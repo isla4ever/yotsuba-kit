@@ -4,8 +4,8 @@
 
 - 文档官网：[isla4ever.github.io/yotsuba-kit](https://isla4ever.github.io/yotsuba-kit/)
 - 开源协议：MIT
-- 当前主分支 API：`0.6.0`
-- 已发布版本与主分支存在差异，使用前请查看[版本与发布状态](https://isla4ever.github.io/yotsuba-kit/guide/release-status.html)
+- 当前稳定版：`0.7.0`
+- Web 四包与 Flutter 包保持同一版本线，安装前可查看[版本与发布状态](https://isla4ever.github.io/yotsuba-kit/guide/release-status.html)
 
 ## Yotsuba 项目关系
 
@@ -42,8 +42,9 @@ Flutter 对应包是 [`yotsuba_schedule_kit`](https://pub.dev/packages/yotsuba_s
 ### 视觉与交互
 
 - `wave / slide / fade / cube / drop / zoom / none` 七种换周模式和自定义 `TransitionSpec`
-- 六套课程配色、三档信息密度；课程卡默认实时天气，微光 / 辉光 / 极光 / 呼吸与天气层自动互斥
+- 六套课程配色、三档信息密度；课程卡按上课时间匹配小时级天气，微光 / 辉光 / 极光 / 呼吸与天气层自动互斥
 - 晴、多云、阴、雾、小雨、中雨、大雨、雷阵雨、雪均有独立动态图标、局部微动态课程卡材质和低频页面氛围
+- 全局天气场景贯穿课表、Today 与导航表面；非本周课程保持失色，不被天气色重新染色
 - 减少动态效果、触摸换周、无空白帧过渡和浅深色主题令牌
 
 ### 详情、弹层与 Today
@@ -60,7 +61,7 @@ Flutter 对应包是 [`yotsuba_schedule_kit`](https://pub.dev/packages/yotsuba_s
 ### Vue
 
 ```bash
-pnpm add @iyotsuba/schedule-vue
+pnpm add @iyotsuba/schedule-vue@0.7.0
 ```
 
 ```vue
@@ -101,7 +102,7 @@ const courses = ref<Course[]>([
 ### React
 
 ```bash
-pnpm add @iyotsuba/schedule-react
+pnpm add @iyotsuba/schedule-react@0.7.0
 ```
 
 ```tsx

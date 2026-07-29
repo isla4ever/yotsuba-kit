@@ -10,6 +10,7 @@ import type {
   DetailField,
   DetailHero,
   DetailLayout,
+  DailyWeather,
   DisplayCourse,
   GuideConfig,
   GuideStep,
@@ -150,7 +151,6 @@ const props = withDefaults(defineProps<{
   palette: undefined,
   cardEffect: 'none',
   weatherCard: () => ({ enabled: true, glyph: false, background: true, label: false, intensity: 0.66 }),
-  weekdayWeather: 'icon',
   weatherScene: true,
   sheets: undefined,
   detail: undefined,
@@ -240,11 +240,6 @@ function dayDate(weekday: number): Date | null {
   return props.termStart ? dateFor(props.termStart, props.week, weekday) : null
 }
 
-function isToday(weekday: number): boolean {
-  const date = dayDate(weekday)
-  return Boolean(date && formatDateKey(date) === formatDateKey(new Date()))
-}
-
 const weatherText = computed(() => {
   const current = props.weather?.current
   if (!current) {
@@ -266,22 +261,123 @@ const weatherLabels: Record<WeatherKind, string> = {
   neutral: '天气',
 }
 
-function weatherFor(weekday: number, week = props.week) {
+const resolvedWeekdayWeather = computed<WeekdayWeatherMode>(() =>
+  props.weekdayWeather
+  ?? (props.density === 'minimal' ? 'none' : props.density === 'rich' ? 'full' : 'icon'),
+)
+
+function timeMinutes(value: string | undefined): number | null {
+  const match = value?.match(/^(\d{1,2}):(\d{2})$/)
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null
+}
+
+type HourlyWeatherPoint = NonNullable<WeatherSnapshot['hourly']>[number]
+
+const weatherLookup = computed(() => {
+  const dailyByDate = new Map<string, DailyWeather>()
+  const hourlyByDate = new Map<string, Array<{ point: HourlyWeatherPoint, minutes: number }>>()
+
+  for (const item of props.weather?.daily ?? []) {
+    dailyByDate.set(item.date, item)
+  }
+  for (const point of props.weather?.hourly ?? []) {
+    const separator = point.time.indexOf('T')
+    const minutes = separator < 0 ? null : timeMinutes(point.time.slice(separator + 1, separator + 6))
+    if (separator < 0 || minutes == null) {
+      continue
+    }
+    const dateKey = point.time.slice(0, separator)
+    const points = hourlyByDate.get(dateKey)
+    if (points) {
+      points.push({ point, minutes })
+    }
+    else {
+      hourlyByDate.set(dateKey, [{ point, minutes }])
+    }
+  }
+
+  // The cache belongs to this lookup snapshot, so Vue invalidates it with weather or course-time changes.
+  void times.value
+  return { dailyByDate, hourlyByDate, courseCache: new Map<string, DailyWeather | undefined>() }
+})
+
+function weatherFor(weekday: number, week = props.week): DailyWeather | undefined {
   if (!props.termStart || !props.weather) {
     return undefined
   }
   const key = formatDateKey(dateFor(props.termStart, week, weekday))
-  return props.weather.daily.find(item => item.date === key)
+  return weatherLookup.value.dailyByDate.get(key)
 }
 
-function weatherTextFor(weekday: number, week = props.week): string | undefined {
-  const daily = weatherFor(weekday, week)
-  if (!daily) {
+/** 课程天气优先匹配同日期最接近开始节次的小时点，daily 仅作为兼容回退。 */
+function weatherForCourse(course: DisplayCourse, week = props.week): DailyWeather | undefined {
+  if (!props.termStart || !props.weather) {
     return undefined
   }
-  const range = daily.highC != null ? ` ${Math.round(daily.lowC ?? 0)}~${Math.round(daily.highC)}°` : ''
-  return `${daily.label ?? weatherLabels[daily.kind]}${range}`
+  const key = formatDateKey(dateFor(props.termStart, week, course.weekday))
+  const lookup = weatherLookup.value
+  const cacheKey = `${key}|${course.startSection}`
+  if (lookup.courseCache.has(cacheKey)) {
+    return lookup.courseCache.get(cacheKey)
+  }
+
+  const targetMinutes = timeMinutes(times.value[course.startSection - 1]?.start)
+  if (targetMinutes != null) {
+    let nearest: HourlyWeatherPoint | undefined
+    let nearestDistance = Number.POSITIVE_INFINITY
+    for (const { point, minutes } of lookup.hourlyByDate.get(key) ?? []) {
+      const distance = Math.abs(minutes - targetMinutes)
+      if (distance < nearestDistance) {
+        nearest = point
+        nearestDistance = distance
+      }
+    }
+    if (nearest) {
+      const result: DailyWeather = {
+        date: key,
+        kind: nearest.kind,
+        lowC: nearest.temperatureC,
+        highC: nearest.temperatureC,
+        label: nearest.label,
+      }
+      lookup.courseCache.set(cacheKey, result)
+      return result
+    }
+  }
+  const result = lookup.dailyByDate.get(key)
+  lookup.courseCache.set(cacheKey, result)
+  return result
 }
+
+function weatherTextFor(course: DisplayCourse, week = props.week): string | undefined {
+  const weather = weatherForCourse(course, week)
+  if (!weather) {
+    return undefined
+  }
+  const temperature = weather.highC == null
+    ? ''
+    : weather.lowC == null || weather.lowC === weather.highC
+      ? ` ${Math.round(weather.highC)}°`
+      : ` ${Math.round(weather.lowC)}~${Math.round(weather.highC)}°`
+  return `${weather.label ?? weatherLabels[weather.kind]}${temperature}`
+}
+
+const weekdaySummaries = computed(() => {
+  const todayKey = formatDateKey(new Date())
+  return Array.from({ length: props.visibleDays }, (_, index) => {
+    const weekday = index + 1
+    const date = dayDate(weekday)
+    const pendingCount = date ? pendingPlanCount(props.dayPlans, date) : 0
+    return {
+      weekday,
+      label: weekdayLabels.value[index],
+      date,
+      weather: weatherFor(weekday),
+      isToday: Boolean(date && formatDateKey(date) === todayKey),
+      pendingCount,
+    }
+  })
+})
 
 function stackFor(model: WeekModel, course: DisplayCourse): DisplayCourse[] {
   return model.overlapGroups.find(group =>
@@ -702,19 +798,30 @@ function handleCourseTap(course: DisplayCourse) {
   }
 }
 
-/** 详情里该课程"当日天气"文案 */
-const detailWeatherText = computed(() => {
+/** 详情标题卡使用课程开始时段天气，而不是页面当前天气或整日天气。 */
+const detailWeather = computed(() => {
   const course = detailStack.value[0]
-  if (!course || !props.termStart || !props.weather) {
-    return undefined
-  }
-  const key = formatDateKey(dateFor(props.termStart, props.week, course.weekday))
-  const daily = props.weather.daily.find(item => item.date === key)
+  return course ? weatherForCourse(course) : undefined
+})
+
+const detailWeatherText = computed(() => {
+  const daily = detailWeather.value
+  return daily ? daily.label ?? weatherLabels[daily.kind] : undefined
+})
+
+const detailWeatherTemperature = computed(() => {
+  const daily = detailWeather.value
   if (!daily) {
     return undefined
   }
-  const range = daily.highC != null ? ` ${Math.round(daily.lowC ?? 0)}~${Math.round(daily.highC)}°` : ''
-  return `${daily.label ?? weatherLabels[daily.kind]}${range}`
+  if (daily.lowC != null && daily.highC != null) {
+    if (daily.lowC === daily.highC) {
+      return `${Math.round(daily.highC)}°`
+    }
+    return `${Math.round(daily.lowC)}~${Math.round(daily.highC)}°`
+  }
+  const temperature = daily.highC ?? daily.lowC
+  return temperature == null ? undefined : `${Math.round(temperature)}°`
 })
 
 function openCourseForm(prefill: Partial<Course> | null = null) {
@@ -758,11 +865,6 @@ function handleDayTap(weekday: number) {
     plannerDateLabel.value = `${date.getMonth() + 1}月${date.getDate()}日 周${weekdayLabels.value[weekday - 1]}`
     plannerOpen.value = true
   }
-}
-
-function dayPendingCount(weekday: number): number {
-  const date = dayDate(weekday)
-  return date ? pendingPlanCount(props.dayPlans, date) : 0
 }
 
 function openDayPlanner(dateKey: string) {
@@ -909,6 +1011,7 @@ onBeforeUnmount(() => {
     ]"
     :data-ys-effect="!waveActive && cardEffect !== 'none' ? cardEffect : undefined"
     :data-weather="weatherScene ? weather?.current?.kind : undefined"
+    data-ys="schedule-overview"
     :style="cssVars"
   >
     <div v-if="backgroundStyle" class="ys-schedule__bg" :style="backgroundStyle" aria-hidden="true" />
@@ -950,33 +1053,33 @@ onBeforeUnmount(() => {
         <small v-if="termStart">日期</small>
       </div>
       <button
-        v-for="weekday in visibleDays"
-        :key="weekday"
+        v-for="day in weekdaySummaries"
+        :key="day.weekday"
         type="button"
         class="ys-schedule__day"
-        :class="{ 'is-today': isToday(weekday) }"
-        @click="handleDayTap(weekday)"
+        :class="{ 'is-today': day.isToday }"
+        @click="handleDayTap(day.weekday)"
       >
         <slot
           name="day"
-          :weekday="weekday"
-          :label="weekdayLabels[weekday - 1]"
-          :date="dayDate(weekday)"
-          :weather="weatherFor(weekday)"
+          :weekday="day.weekday"
+          :label="day.label"
+          :date="day.date"
+          :weather="day.weather"
         >
-          <span class="ys-schedule__day-label">{{ weekdayLabels[weekday - 1] }}</span>
+          <span class="ys-schedule__day-label">{{ day.label }}</span>
           <span v-if="termStart" class="ys-schedule__day-date">
-            {{ (dayDate(weekday)?.getMonth() ?? 0) + 1 }}/{{ dayDate(weekday)?.getDate() }}
+            {{ (day.date?.getMonth() ?? 0) + 1 }}/{{ day.date?.getDate() }}
           </span>
-          <span v-if="weekdayWeather !== 'none' && weatherFor(weekday)" class="ys-schedule__day-weather">
-            <YsWeatherGlyph :kind="weatherFor(weekday)!.kind" :size="11" />
-            <small v-if="weekdayWeather === 'full'">
-              {{ weatherFor(weekday)!.highC == null ? weatherLabels[weatherFor(weekday)!.kind] : `${Math.round(weatherFor(weekday)!.highC!)}°` }}
+          <span v-if="resolvedWeekdayWeather !== 'none' && day.weather" class="ys-schedule__day-weather">
+            <YsWeatherGlyph :kind="day.weather.kind" :size="11" />
+            <small v-if="resolvedWeekdayWeather === 'full'">
+              {{ day.weather.highC == null ? weatherLabels[day.weather.kind] : `${Math.round(day.weather.highC)}°` }}
             </small>
           </span>
-          <i v-if="isToday(weekday)" class="ys-schedule__day-dot" aria-hidden="true" />
-          <b v-if="dayPendingCount(weekday)" class="ys-schedule__day-count">
-            {{ dayPendingCount(weekday) > 9 ? '9+' : dayPendingCount(weekday) }}
+          <i v-if="day.isToday" class="ys-schedule__day-dot" aria-hidden="true" />
+          <b v-if="day.pendingCount" class="ys-schedule__day-count">
+            {{ day.pendingCount > 9 ? '9+' : day.pendingCount }}
           </b>
         </slot>
       </button>
@@ -991,7 +1094,7 @@ onBeforeUnmount(() => {
       @pointerup="onPointerEnd"
       @pointercancel="onPointerEnd"
     >
-      <div class="ys-schedule__rail" :style="{ gridTemplateRows: rowTemplate }">
+      <div class="ys-schedule__rail" data-ys="time-axis" :style="{ gridTemplateRows: rowTemplate }">
         <div
           v-for="row in rows"
           :key="row.key"
@@ -1052,8 +1155,8 @@ onBeforeUnmount(() => {
                 :course="course"
                 :color="colorFor(course.name, course.color)"
                 :density="density"
-                :weather-kind="weatherFor(course.weekday, leavingModel.week)?.kind"
-                :weather-text="weatherTextFor(course.weekday, leavingModel.week)"
+                :weather-kind="weatherForCourse(course, leavingModel.week)?.kind"
+                :weather-text="weatherTextFor(course, leavingModel.week)"
                 :weather-card="resolvedWeatherCard"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
@@ -1087,8 +1190,8 @@ onBeforeUnmount(() => {
                 :course="course"
                 :color="colorFor(course.name, course.color)"
                 :density="density"
-                :weather-kind="weatherFor(course.weekday, currentModel.week)?.kind"
-                :weather-text="weatherTextFor(course.weekday, currentModel.week)"
+                :weather-kind="weatherForCourse(course, currentModel.week)?.kind"
+                :weather-text="weatherTextFor(course, currentModel.week)"
                 :weather-card="resolvedWeatherCard"
                 :inactive-badge="locale?.inactiveBadge ?? '非本周'"
                 :makeup-badge="locale?.makeupBadge ?? '补班'"
@@ -1135,6 +1238,7 @@ onBeforeUnmount(() => {
       :color-for="colorFor"
       :editable="editable"
       :weather-text="detailWeatherText"
+      :weather-temperature="detailWeatherTemperature"
       :hero="detail?.hero ?? 'color'"
       :layout="detail?.layout ?? 'standard'"
       :fields="detail?.fields"
@@ -1142,7 +1246,7 @@ onBeforeUnmount(() => {
       :adjustable-layout="detail?.adjustable"
       :empty-text="detail?.emptyText"
       :empty-texts="detail?.emptyTexts"
-      :weather-kind="weather?.current?.kind"
+      :weather-kind="detailWeather?.kind"
       :vars="cssVars"
       @close="detailOpen = false"
       @edit="handleDetailEdit"
@@ -1301,6 +1405,12 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid var(--ys-border);
 }
 
+.ys-schedule.ys-density-minimal .ys-schedule__weekday-bar { height: 44px; }
+.ys-schedule.ys-density-rich .ys-schedule__weekday-bar { height: 62px; }
+
+.ys-schedule.ys-density-minimal .ys-schedule__day { gap: 1px; }
+.ys-schedule.ys-density-rich .ys-schedule__day { gap: 3px; }
+
 .ys-schedule__rail-head {
   display: flex;
   flex-direction: column;
@@ -1429,7 +1539,7 @@ onBeforeUnmount(() => {
   /* grid item 上的 z-index 建立堆叠上下文，保证整卡（背景+文字）按 DOM 序原子绘制，
      否则前一张被盖卡的文字会按 CSS 绘制序浮到后一张卡的背景之上 */
   z-index: 0;
-  container: ys-course-slot / inline-size;
+  container: ys-course-slot / size;
   min-width: 0;
   min-height: 0;
 }

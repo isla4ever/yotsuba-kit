@@ -2,7 +2,7 @@ import type { Course } from '@iyotsuba/schedule-core'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { h, nextTick } from 'vue'
-import { defaultScheduleGuideSteps } from '../src/guidePresets'
+import { defaultScheduleGuideSteps, defaultTodayGuideSteps } from '../src/guidePresets'
 import YsSchedule from '../src/YsSchedule.vue'
 import YsToday from '../src/YsToday.vue'
 
@@ -155,32 +155,91 @@ describe('ysToday', () => {
     expect(wrapper.find('.ys-today__weather-scene').exists()).toBe(true)
     expect(wrapper.find('.ys-weather-glyph').exists()).toBe(true)
   })
+
+  it('renders a distinct weather composition for every grid size', async () => {
+    const weather = {
+      current: { kind: 'clear' as const, temperatureC: 27, label: '晴' },
+      daily: [{ date: '2026-07-20', kind: 'clear' as const, lowC: 22, highC: 31 }],
+      hourly: [8, 10, 12, 14, 16, 18].map((hour, index) => ({
+        time: `2026-07-20T${hour}:00`,
+        kind: index % 2 ? 'cloudy' as const : 'clear' as const,
+        temperatureC: 24 + index,
+      })),
+      updatedAt: Date.now(),
+    }
+    const wrapper = mount(YsToday, {
+      props: {
+        courses,
+        termStart,
+        now: monday0910,
+        weather,
+        weatherScene: false,
+        widgets: [{ id: 'weather', size: '1x1' }],
+      },
+    })
+
+    expect(wrapper.find('.ys-today__widget-content.is-compact').exists()).toBe(true)
+    expect(wrapper.find('.ys-today__weather-strip').exists()).toBe(false)
+    expect(wrapper.find('.ys-today__weather-hours').exists()).toBe(false)
+
+    await wrapper.setProps({ widgets: [{ id: 'weather', size: '2x1' }] })
+    expect(wrapper.find('.ys-today__widget-content.is-wide').exists()).toBe(true)
+    expect(wrapper.findAll('.ys-today__weather-strip > div')).toHaveLength(4)
+
+    await wrapper.setProps({ widgets: [{ id: 'weather', size: '1x2' }] })
+    expect(wrapper.find('.ys-today__widget-content.is-tall').exists()).toBe(true)
+    expect(wrapper.findAll('.ys-today__weather-hours li')).toHaveLength(4)
+
+    await wrapper.setProps({ widgets: [{ id: 'weather', size: '2x2' }] })
+    expect(wrapper.find('.ys-today__widget-content.is-large').exists()).toBe(true)
+    expect(wrapper.findAll('.ys-today__weather-forecast > div')).toHaveLength(6)
+  })
+
+  it('uses clear edit and done states for the layout button', async () => {
+    const wrapper = mount(YsToday, {
+      props: { courses, termStart, now: monday0910, widgets: [{ id: 'weather', size: '1x1' }] },
+    })
+    const button = wrapper.find('.ys-today__arrange-toggle')
+    expect(button.attributes('aria-label')).toBe('调整今日布局')
+    expect(button.attributes('aria-pressed')).toBe('false')
+    expect(button.findAll('svg')).toHaveLength(1)
+
+    await button.trigger('click')
+    expect(button.attributes('aria-label')).toBe('完成今日布局调整')
+    expect(button.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('.ys-today').classes()).toContain('is-arranging')
+
+    await button.trigger('click')
+    expect(button.attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('.ys-today').classes()).not.toContain('is-arranging')
+  })
 })
 
 describe('guide integration', () => {
   it('starts a walkthrough and advances on the real swipe action', async () => {
+    const swipeSteps = defaultScheduleGuideSteps.slice(4, 6)
     const wrapper = mount(YsSchedule, {
       props: {
         courses,
         week: 1,
         termStart,
         reduceMotion: true,
-        guide: { mode: 'walkthrough' as const, steps: defaultScheduleGuideSteps },
+        guide: { mode: 'walkthrough' as const, steps: swipeSteps },
       },
       attachTo: document.body,
     })
     const vm = wrapper.vm as unknown as { startGuide: () => void }
     vm.startGuide()
     await nextTick()
-    expect(document.body.textContent).toContain('滑动换周')
-    expect(document.body.textContent).toContain('1 / 3')
+    expect(document.body.textContent).toContain('轻扫切换周次')
+    expect(document.body.textContent).toContain('1 / 2')
     expect(wrapper.emitted('guideStep')).toBeTruthy()
 
     // 桥接真实滑动动作 → 前进到第 2 步
     const guide = wrapper.findComponent({ name: 'YsGuide' })
     ;(guide.vm as unknown as { notify: (a: string) => void }).notify('swipe-left')
     await nextTick()
-    expect(document.body.textContent).toContain('查看课程详情')
+    expect(document.body.textContent).toContain('课程与分时天气')
     wrapper.unmount()
   })
 
@@ -201,10 +260,41 @@ describe('guide integration', () => {
       Array.from(document.querySelectorAll('.ys-guide__btn--primary')).at(-1) as HTMLButtonElement
     nextBtn().click()
     await nextTick()
-    expect(document.body.textContent).toContain('查看课程详情')
+    expect(document.body.textContent).toContain('定位教学周')
     nextBtn().click()
     await nextTick()
     expect(wrapper.emitted('guideFinish')).toBeTruthy()
     wrapper.unmount()
+  })
+
+  it('auto-starts Today once and still allows an explicit replay', async () => {
+    const storageKey = 'ys-test-today-guide-once'
+    localStorage.removeItem(storageKey)
+    const guide = {
+      mode: 'spotlight' as const,
+      steps: defaultTodayGuideSteps.slice(0, 2),
+      storageKey,
+      autoStart: true,
+    }
+    const mountToday = () => mount(YsToday, {
+      props: { courses, termStart, now: monday0910, guide },
+      attachTo: document.body,
+    })
+
+    const first = mountToday()
+    await vi.waitFor(() => expect(document.body.textContent).toContain('欢迎来到今日'))
+    ;(first.findComponent({ name: 'YsGuide' }).vm as unknown as { skip: () => void }).skip()
+    await nextTick()
+    expect(localStorage.getItem(storageKey)).toBe('1')
+    first.unmount()
+
+    const second = mountToday()
+    await new Promise(resolve => setTimeout(resolve, 40))
+    expect(document.body.textContent).not.toContain('欢迎来到今日')
+    ;(second.vm as unknown as { startGuide: () => void }).startGuide()
+    await vi.waitFor(() => expect(document.body.textContent).toContain('欢迎来到今日'))
+    expect(second.find('[aria-label="查看今日引导"]').exists()).toBe(true)
+    second.unmount()
+    localStorage.removeItem(storageKey)
   })
 })

@@ -132,6 +132,51 @@ describe('ysSchedule', () => {
     expect(wrapper.find('.ys-course-card__weeks').exists()).toBe(false)
   })
 
+  it('gives minimal, normal and rich density distinct information tiers', async () => {
+    const tierCourse: Course = {
+      id: 'tier',
+      name: '交互设计',
+      teacher: '陈老师',
+      location: '创新楼B12',
+      weekday: 1,
+      startSection: 1,
+      endSection: 2,
+      startWeek: 1,
+      endWeek: 16,
+      materials: ['电脑'],
+    }
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses: [tierCourse],
+        week: 1,
+        termStart: new Date(2026, 6, 20),
+        density: 'minimal',
+        reduceMotion: true,
+        weather: {
+          daily: [{ date: '2026-07-20', kind: 'clear', highC: 28, lowC: 22 }],
+          updatedAt: Date.now(),
+        },
+      },
+    })
+
+    expect(wrapper.find('.ys-schedule__day-weather').exists()).toBe(false)
+    expect(wrapper.find('.ys-course-card__room').exists()).toBe(false)
+    expect(wrapper.find('.ys-course-card__weeks').exists()).toBe(false)
+    expect(wrapper.find('.ys-course-card__rich-meta').exists()).toBe(false)
+
+    await wrapper.setProps({ density: 'normal' })
+    expect(wrapper.find('.ys-schedule__day-weather').exists()).toBe(true)
+    expect(wrapper.find('.ys-schedule__day-weather small').exists()).toBe(false)
+    expect(wrapper.find('.ys-course-card__room').exists()).toBe(true)
+    expect(wrapper.find('.ys-course-card__weeks').exists()).toBe(true)
+    expect(wrapper.find('.ys-course-card__rich-meta').exists()).toBe(false)
+
+    await wrapper.setProps({ density: 'rich' })
+    expect(wrapper.find('.ys-schedule__day-weather small').text()).toBe('28°')
+    expect(wrapper.find('.ys-course-card__rich-meta .ys-course-card__teacher').text()).toBe('陈老师')
+    expect(wrapper.find('.ys-course-card__rich-meta .ys-course-card__gear').text()).toBe('带')
+  })
+
   it('defaults course weather to background-only and keeps glyphs opt-in', async () => {
     const wrapper = mount(YsSchedule, {
       props: {
@@ -148,6 +193,7 @@ describe('ysSchedule', () => {
     })
     expect(wrapper.find('.ys-course-card').attributes('data-weather')).toBe('heavy-rain')
     expect(wrapper.find('.ys-course-card__weather-bg').exists()).toBe(true)
+    expect(wrapper.find('.ys-course-card__weather-bg .ys-weather-art.is-heavy-rain').exists()).toBe(true)
     expect(wrapper.find('.ys-course-card .ys-weather-glyph').exists()).toBe(false)
     expect(wrapper.find('.ys-schedule__day-weather .ys-weather-glyph').exists()).toBe(true)
 
@@ -158,6 +204,139 @@ describe('ysSchedule', () => {
     expect(wrapper.attributes('data-ys-effect')).toBe('glow')
     expect(wrapper.find('.ys-course-card__weather-bg').exists()).toBe(false)
     expect(wrapper.find('.ys-course-card .ys-weather-glyph').exists()).toBe(true)
+  })
+
+  it('keeps inactive course weather visible only as a muted texture', () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 2,
+        termStart: new Date(2026, 6, 20),
+        reduceMotion: true,
+        weather: {
+          daily: [{ date: '2026-07-30', kind: 'clear', highC: 32 }],
+          updatedAt: Date.now(),
+        },
+      },
+    })
+
+    const inactiveCard = wrapper.findAll('.ys-course-card').find(card => card.text().includes('体育'))
+    expect(inactiveCard?.classes()).toContain('is-muted')
+    expect(inactiveCard?.attributes('data-weather')).toBe('clear')
+    expect(inactiveCard?.find('.ys-course-card__weather-bg').exists()).toBe(true)
+  })
+
+  it('maps courses on the same day to their nearest hourly weather', () => {
+    const sameDayCourses: Course[] = [
+      { id: 'morning', name: '晨间课程', weekday: 1, startSection: 1, endSection: 2, startWeek: 1, endWeek: 20 },
+      { id: 'afternoon', name: '午后课程', weekday: 1, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
+    ]
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses: sameDayCourses,
+        week: 1,
+        termStart: new Date(2026, 6, 20),
+        reduceMotion: true,
+        weather: {
+          daily: [{ date: '2026-07-20', kind: 'cloudy', lowC: 21, highC: 29 }],
+          hourly: [
+            { time: '2026-07-20T08:00', kind: 'clear', temperatureC: 24 },
+            { time: '2026-07-20T15:00', kind: 'snow', temperatureC: 2 },
+          ],
+          updatedAt: Date.now(),
+        },
+      },
+    })
+    const cards = wrapper.findAll('.ys-course-card')
+    expect(cards.map(card => card.attributes('data-weather'))).toEqual(['clear', 'snow'])
+  })
+
+  it('keeps Saturday and Sunday course cards connected to their weather', () => {
+    const weekendCourses: Course[] = [
+      { id: 'saturday', name: '周六课程', weekday: 6, startSection: 3, endSection: 4, startWeek: 1, endWeek: 20 },
+      { id: 'sunday', name: '周日课程', weekday: 7, startSection: 5, endSection: 6, startWeek: 1, endWeek: 20 },
+    ]
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses: weekendCourses,
+        week: 1,
+        termStart: new Date(2026, 6, 20),
+        reduceMotion: true,
+        weather: {
+          daily: [
+            { date: '2026-07-25', kind: 'cloudy', highC: 27 },
+            { date: '2026-07-26', kind: 'rain', highC: 24 },
+          ],
+          hourly: [
+            { time: '2026-07-25T10:00', kind: 'storm', temperatureC: 23 },
+            { time: '2026-07-26T14:30', kind: 'snow', temperatureC: 2 },
+          ],
+          updatedAt: Date.now(),
+        },
+      },
+    })
+
+    expect(wrapper.findAll('.ys-course-card').map(card => card.attributes('data-weather')))
+      .toEqual(['storm', 'snow'])
+  })
+
+  it('renders two phase-offset fall layers for weather glyphs', () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        termStart: new Date(2026, 6, 20),
+        reduceMotion: false,
+        weekdayWeather: 'icon',
+        weather: {
+          daily: [{ date: '2026-07-20', kind: 'rain', highC: 24 }],
+          updatedAt: Date.now(),
+        },
+      },
+    })
+
+    const glyph = wrapper.find('.ys-schedule__day-weather .ys-weather-glyph')
+    expect(glyph.findAll('.ys-weather-glyph__fall')).toHaveLength(2)
+    expect(glyph.find('.ys-weather-glyph__fall--primary').exists()).toBe(true)
+    expect(glyph.find('.ys-weather-glyph__fall--secondary').exists()).toBe(true)
+  })
+
+  it('renders distinct clear, cloud, fog, rain, and snow card artwork', async () => {
+    const weather = (kind: 'clear' | 'cloudy' | 'overcast' | 'fog' | 'rain' | 'snow') => ({
+      current: { kind },
+      daily: [{ date: '2026-07-20', kind }],
+      updatedAt: Date.now(),
+    })
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses,
+        week: 1,
+        termStart: new Date(2026, 6, 20),
+        reduceMotion: true,
+        weather: weather('rain'),
+      },
+    })
+
+    expect(wrapper.findAll('.ys-weather-art.is-rain .ys-weather-art__drop')).toHaveLength(7)
+    expect(wrapper.find('.ys-weather-art__drop--1').attributes('d')).toBe('m21 47.5-.9 8.2')
+
+    await wrapper.setProps({ weather: weather('clear') })
+    expect(wrapper.find('.ys-weather-art.is-clear .ys-weather-art__clear-core').exists()).toBe(true)
+    expect(wrapper.findAll('.ys-weather-art.is-clear .ys-weather-art__clear-rays path')).toHaveLength(1)
+
+    await wrapper.setProps({ weather: weather('snow') })
+    expect(wrapper.find('.ys-weather-art.is-snow .ys-weather-art__snowflake--main').exists()).toBe(true)
+    expect(wrapper.find('.ys-weather-art.is-snow .ys-weather-art__snow-cloud').exists()).toBe(true)
+
+    await wrapper.setProps({ weather: weather('fog') })
+    expect(wrapper.findAll('.ys-weather-art.is-fog .ys-weather-art__fog-line')).toHaveLength(3)
+
+    await wrapper.setProps({ weather: weather('cloudy') })
+    expect(wrapper.find('.ys-weather-art.is-cloudy .ys-weather-art__sun-halo').exists()).toBe(true)
+
+    await wrapper.setProps({ weather: weather('overcast') })
+    expect(wrapper.find('.ys-weather-art.is-overcast .ys-weather-art__sun-halo').exists()).toBe(false)
+    expect(wrapper.findAll('.ys-weather-art.is-overcast .ys-weather-art__cloud')).toHaveLength(2)
   })
 
   it('pauses card effects while transitioning', async () => {

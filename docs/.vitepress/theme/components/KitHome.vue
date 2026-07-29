@@ -25,12 +25,13 @@ const t = computed(() => props.lang === 'zh'
       sub: 'Yotsuba Schedule Kit 面向中国高校课表场景，提供可组合的学期引擎、跨端组件和受控交互。你负责业务数据与系统能力，组件负责稳定呈现。',
       start: '5 分钟开始',
       frameworks: '选择接入方式',
-      install: 'pnpm add @iyotsuba/schedule-vue@0.5.0',
+      install: 'pnpm add @iyotsuba/schedule-vue@0.7.0',
       copy: '复制',
       copied: '已复制',
-      release: '稳定版 0.5.0 · 官网同步展示 0.6.0 候选 API',
+      release: '稳定版 0.7.0 · Web 与 Flutter 同步天气、课程和 Today 能力',
       demoLabel: '可交互移动端示例',
       demoState: '独立演示数据 · iyotsuba.top',
+      demoLoading: '正在加载移动端示例',
       focus: '聚焦演示',
       closeFocus: '退出聚焦演示',
       openExternal: '在新窗口打开线上演示',
@@ -67,12 +68,13 @@ const t = computed(() => props.lang === 'zh'
       sub: 'Yotsuba Schedule Kit combines academic-term logic, cross-platform components and controlled interactions. Your app owns data and system capabilities; the kit owns reliable presentation.',
       start: 'Start in 5 minutes',
       frameworks: 'Choose a framework',
-      install: 'pnpm add @iyotsuba/schedule-vue@0.5.0',
+      install: 'pnpm add @iyotsuba/schedule-vue@0.7.0',
       copy: 'Copy',
       copied: 'Copied',
-      release: 'Stable 0.5.0 · This site also previews the 0.6.0 candidate API',
+      release: 'Stable 0.7.0 · Weather, course and Today capabilities aligned across Web and Flutter',
       demoLabel: 'Interactive mobile example',
       demoState: 'Isolated demo data · iyotsuba.top',
+      demoLoading: 'Loading the mobile example',
       focus: 'Focus demo',
       closeFocus: 'Exit focused demo',
       openExternal: 'Open the live demo in a new window',
@@ -106,6 +108,8 @@ const t = computed(() => props.lang === 'zh'
 const demoUrl = 'https://iyotsuba.top/schedule?preview=website&source=docs'
 const copied = ref(false)
 const demoFocused = ref(false)
+const demoLoaded = ref(false)
+const focusedDemoLoaded = ref(false)
 const focusTrigger = ref<HTMLButtonElement | null>(null)
 const focusDialog = ref<HTMLElement | null>(null)
 const guideHref = computed(() => withBase(props.lang === 'zh' ? '/guide/getting-started' : '/en/guide/getting-started'))
@@ -125,6 +129,7 @@ async function copyInstall() {
 }
 
 function openFocus() {
+  focusedDemoLoaded.value = false
   demoFocused.value = true
 }
 
@@ -213,7 +218,17 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
             <div class="phone__speaker" aria-hidden="true" />
             <div class="phone__screen">
               <div class="phone__viewport">
-                <iframe :src="demoUrl" :title="t.demoLabel" loading="eager" referrerpolicy="strict-origin-when-cross-origin" />
+                <div class="demo-embed" :class="{ 'is-ready': demoLoaded }" :aria-busy="!demoLoaded">
+                  <div class="demo-embed__loading" role="status" :aria-label="t.demoLoading">
+                    <div class="demo-embed__loading-brand"><i aria-hidden="true" /><span>Yotsuba</span></div>
+                    <div class="demo-embed__loading-weather" aria-hidden="true" />
+                    <div class="demo-embed__loading-grid" aria-hidden="true">
+                      <i v-for="index in 18" :key="index" />
+                    </div>
+                    <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
+                  </div>
+                  <iframe :src="demoUrl" :title="t.demoLabel" loading="eager" referrerpolicy="strict-origin-when-cross-origin" @load="demoLoaded = true" />
+                </div>
               </div>
             </div>
           </div>
@@ -292,8 +307,18 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
               <button type="button" :aria-label="t.closeFocus" :title="t.closeFocus" @click="closeFocus"><Minimize2 :size="20" aria-hidden="true" /></button>
             </div>
           </header>
-          <div class="demo-focus__surface">
-            <iframe :src="demoUrl" :title="t.demoLabel" referrerpolicy="strict-origin-when-cross-origin" />
+          <div class="demo-focus__surface" :aria-busy="!focusedDemoLoaded">
+            <div class="demo-embed demo-embed--focus" :class="{ 'is-ready': focusedDemoLoaded }">
+              <div class="demo-embed__loading" role="status" :aria-label="t.demoLoading">
+                <div class="demo-embed__loading-brand"><i aria-hidden="true" /><span>Yotsuba</span></div>
+                <div class="demo-embed__loading-weather" aria-hidden="true" />
+                <div class="demo-embed__loading-grid" aria-hidden="true">
+                  <i v-for="index in 18" :key="index" />
+                </div>
+                <p>{{ t.demoLoading }}<span aria-hidden="true">...</span></p>
+              </div>
+              <iframe :src="demoUrl" :title="t.demoLabel" referrerpolicy="strict-origin-when-cross-origin" @load="focusedDemoLoaded = true" />
+            </div>
           </div>
         </section>
       </Transition>
@@ -343,7 +368,20 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
 .phone__speaker { position: absolute; top: 4px; left: 50%; z-index: 3; width: 38px; height: 3px; background: #596467; border-radius: 3px; transform: translateX(-50%); }
 .phone__screen { width: 242px; aspect-ratio: 390 / 844; overflow: hidden; background: #f7f9fc; border-radius: 18px; clip-path: inset(0 round 18px); }
 .phone__viewport { width: 390px; height: 844px; transform: scale(0.62051); transform-origin: top left; }
-.phone iframe, .demo-focus iframe { display: block; width: 100%; height: 100%; background: #f7f9fc; border: 0; }
+.demo-embed { position: relative; width: 100%; height: 100%; overflow: hidden; background: #f2f6f8; }
+.demo-embed iframe { display: block; width: 100%; height: 100%; opacity: 0; background: #f7f9fc; border: 0; transform: scale(0.992); transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1); }
+.demo-embed.is-ready iframe { opacity: 1; transform: none; }
+.demo-embed__loading { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; padding: 44px 28px 26px; color: #46605c; background: linear-gradient(145deg, #f3f8f7 0%, #eaf2f1 54%, #f7f8f4 100%); transition: opacity 300ms ease, visibility 0s linear 300ms; }
+.demo-embed.is-ready .demo-embed__loading { visibility: hidden; opacity: 0; pointer-events: none; }
+.demo-embed__loading-brand { display: flex; gap: 9px; align-items: center; font-size: 18px; font-weight: 780; color: #19332e; }
+.demo-embed__loading-brand i { width: 7px; height: 30px; background: #4f9f8e; border-radius: 3px; box-shadow: 0 0 22px rgb(79 159 142 / 28%); }
+.demo-embed__loading-weather { width: 100%; height: 76px; margin-top: 30px; background: linear-gradient(100deg, rgb(255 255 255 / 64%) 15%, rgb(255 255 255 / 94%) 32%, rgb(255 255 255 / 64%) 49%) 0 0 / 220% 100%, radial-gradient(circle at 82% 24%, rgb(239 165 95 / 32%), transparent 34%), #deebe9; border: 1px solid rgb(78 117 111 / 10%); border-radius: 8px; animation: demo-loading-sheen 1.8s linear infinite; }
+.demo-embed__loading-grid { display: grid; flex: 1; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.demo-embed__loading-grid i { min-height: 30px; background: linear-gradient(100deg, rgb(255 255 255 / 48%) 18%, rgb(255 255 255 / 82%) 36%, rgb(255 255 255 / 48%) 54%) 0 0 / 220% 100%, rgb(196 214 211 / 58%); border-radius: 5px; animation: demo-loading-sheen 1.8s linear infinite; }
+.demo-embed__loading-grid i:nth-child(3n + 2) { animation-delay: -600ms; }
+.demo-embed__loading-grid i:nth-child(3n) { animation-delay: -1.2s; }
+.demo-embed__loading p { margin: 22px 0 0; font-size: 12px; font-weight: 650; text-align: center; }
+@keyframes demo-loading-sheen { to { background-position: -220% 0, 0 0; } }
 .paths { padding: 62px 28px 68px; color: #192023; background: #fff; border-bottom: 1px solid #d6d7d2; }
 .paths__inner { max-width: 1160px; margin: 0 auto; }
 .section-intro { display: grid; grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr); gap: 44px; align-items: start; margin-bottom: 28px; }
@@ -426,6 +464,7 @@ onBeforeUnmount(() => document.body.classList.remove('kit-demo-focus-open'))
   .hero__device-actions b { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero__action, .hero__device-actions a, .hero__device-actions button, .pathway > a :deep(svg), .capability__link :deep(svg), .capabilities__intro a :deep(svg) { transition: none; }
+  .hero__action, .hero__device-actions a, .hero__device-actions button, .pathway > a :deep(svg), .capability__link :deep(svg), .capabilities__intro a :deep(svg), .demo-embed iframe, .demo-embed__loading { transition: none; }
+  .demo-embed__loading-weather, .demo-embed__loading-grid i { animation: none; }
 }
 </style>

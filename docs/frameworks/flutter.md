@@ -7,11 +7,11 @@
 ## 安装
 
 ```bash
-flutter pub add yotsuba_schedule_kit
+flutter pub add yotsuba_schedule_kit:^0.7.0
 ```
 
 ::: info 版本说明
-pub.dev 当前稳定版为 `0.5.0`。官网同时展示工作区中的 `0.6.0` 候选 API，生产项目升级前请查看[版本状态](/guide/release-status)。
+pub.dev 当前稳定版为 `0.7.0`，与 Web 包共享课程、小时级天气和 Today 信息层级的产品语义。
 :::
 
 ## 完整课表
@@ -77,7 +77,7 @@ YsToday(
 
 ## 天气与权限
 
-传入 `YsWeatherSnapshot`，或实现 `YsWeatherProvider`。定位与网络请求仍由应用主动触发，因此可以自由选择系统定位、学校天气服务或本地缓存，也不会因导入组件包而自动申请权限。
+传入 `YsWeatherSnapshot`，或实现 `YsWeatherProvider`。`hourly` 存在时，课程卡和详情会按课程开始时间选择最近小时点；Today 天气模块也会根据 `1x1 / 1x2 / 2x1 / 2x2` 尺寸分别展示摘要、逐小时列表或温度趋势。定位与网络请求仍由应用主动触发，因此可以自由选择系统定位、学校天气服务或本地缓存，也不会因导入组件包而自动申请权限。
 
 ## 下一步
 

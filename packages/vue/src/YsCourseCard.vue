@@ -5,6 +5,7 @@
 import type { DisplayCourse, WeatherCardConfig, WeatherKind } from '@iyotsuba/schedule-core'
 import { courseCarryItems } from '@iyotsuba/schedule-core'
 import { computed } from 'vue'
+import YsWeatherCardArt from './YsWeatherCardArt.vue'
 import YsWeatherGlyph from './YsWeatherGlyph.vue'
 
 const props = withDefaults(defineProps<{
@@ -60,7 +61,9 @@ const carryItems = computed(() => courseCarryItems(props.course))
     :aria-label="`${course.name}，${course.location || '地点待定'}，第${course.startSection}到${course.endSection}节，${status || parityLabel}`"
     @click.stop="$emit('select', course)"
   >
-    <span v-if="hasWeather && weatherConfig.background" class="ys-course-card__weather-bg" aria-hidden="true" />
+    <span v-if="hasWeather && weatherConfig.background" class="ys-course-card__weather-bg" aria-hidden="true">
+      <YsWeatherCardArt :kind="weatherKind!" />
+    </span>
     <slot name="weather" :kind="weatherKind" :text="weatherText" :course="course">
       <span v-if="hasWeather && weatherConfig.glyph" class="ys-course-card__weather">
         <YsWeatherGlyph :kind="weatherKind!" :size="14" :label="weatherText" />
@@ -71,9 +74,11 @@ const carryItems = computed(() => courseCarryItems(props.course))
     <span class="ys-course-card__content">
       <strong>{{ course.name }}</strong>
       <span v-if="course.location && density !== 'minimal'" class="ys-course-card__room">@{{ course.location }}</span>
-      <span v-if="density === 'rich' && course.teacher" class="ys-course-card__teacher">{{ course.teacher }}</span>
+      <span v-if="density === 'rich' && (course.teacher || carryItems.length)" class="ys-course-card__rich-meta">
+        <span v-if="course.teacher" class="ys-course-card__teacher">{{ course.teacher }}</span>
+        <span v-if="carryItems.length" class="ys-course-card__gear" aria-label="有携带物品">带</span>
+      </span>
     </span>
-    <span v-if="density === 'rich' && carryItems.length" class="ys-course-card__gear" aria-label="有携带物品">带</span>
     <span v-if="density !== 'minimal'" class="ys-course-card__weeks">({{ course.startWeek }}-{{ course.endWeek }}周)</span>
   </button>
 </template>
@@ -137,6 +142,7 @@ const carryItems = computed(() => courseCarryItems(props.course))
   position: relative;
   z-index: 2;
   display: flex;
+  box-sizing: border-box;
   flex-direction: column;
   gap: 3px;
   align-items: center;
@@ -194,18 +200,18 @@ const carryItems = computed(() => courseCarryItems(props.course))
   z-index: 4;
   padding: 1px 2px 0;
   font-size: 8px;
-  max-height: 2.2em;
   line-height: 1.05;
   text-align: center;
-  white-space: normal;
-  word-break: break-all;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .ys-course-card__status {
   position: absolute;
   top: 3px;
   left: 50%;
+  z-index: 8;
   max-width: calc(100% - 4px);
   padding: 1px 2px;
   font-size: 7px;
@@ -239,69 +245,43 @@ const carryItems = computed(() => courseCarryItems(props.course))
 }
 
 .ys-course-card[data-weather='clear'] .ys-course-card__weather-bg {
+  opacity: min(1, calc(var(--ys-card-weather-intensity, 0.66) + 0.16));
   background:
-    radial-gradient(72% 58% at 104% -8%, rgb(255 247 202 / 72%) 0 10%, rgb(255 220 128 / 30%) 24%, transparent 68%),
-    linear-gradient(145deg, transparent 54%, rgb(255 198 76 / 10%));
+    radial-gradient(96% 78% at 102% 0%, rgb(255 247 216 / 92%) 0 7%, rgb(255 72 55 / 76%) 22%, rgb(255 139 52 / 38%) 48%, transparent 76%),
+    linear-gradient(145deg, transparent 36%, rgb(255 66 51 / 22%));
 }
 
 .ys-course-card[data-weather='clear'] .ys-course-card__weather-bg::before {
-  top: -42%;
-  right: -38%;
-  width: 94%;
+  top: -52%;
+  right: -46%;
+  width: 122%;
   aspect-ratio: 1;
-  background: repeating-conic-gradient(from 4deg, rgb(255 238 168 / 28%) 0 6deg, transparent 7deg 33deg);
+  background: repeating-conic-gradient(from 4deg, rgb(255 233 156 / 38%) 0 6deg, transparent 9deg 35deg);
   border-radius: 50%;
   -webkit-mask: radial-gradient(circle, transparent 0 20%, #000 24% 70%, transparent 74%);
   mask: radial-gradient(circle, transparent 0 20%, #000 24% 70%, transparent 74%);
 }
 
 .ys-course-card[data-weather='clear'] .ys-course-card__weather-bg::after {
-  top: -7%;
-  right: -7%;
-  width: 48%;
+  top: -15%;
+  right: -14%;
+  width: 72%;
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgb(255 255 238 / 58%) 0 9%, rgb(255 224 142 / 22%) 25%, transparent 68%);
-  filter: blur(1.5px);
+  background: radial-gradient(circle, rgb(255 250 220 / 92%) 0 9%, rgb(255 72 53 / 62%) 30%, rgb(255 148 55 / 24%) 52%, transparent 72%);
+  filter: blur(2.5px);
 }
 
 .ys-course-card[data-weather='cloudy'] .ys-course-card__weather-bg,
 .ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg {
   background:
-    radial-gradient(78% 46% at 108% 2%, rgb(239 247 252 / 50%), rgb(174 198 218 / 18%) 46%, transparent 72%);
+    radial-gradient(74% 58% at 104% -4%, rgb(255 255 255 / 66%) 0 12%, rgb(224 237 246 / 30%) 36%, transparent 72%),
+    linear-gradient(150deg, transparent 48%, rgb(167 192 211 / 12%));
 }
 
 .ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg {
   background:
-    radial-gradient(82% 48% at 108% 0%, rgb(207 219 231 / 38%), rgb(105 128 152 / 18%) 48%, transparent 74%);
-}
-
-.ys-course-card[data-weather='cloudy'] .ys-course-card__weather-bg::before,
-.ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg::before {
-  top: -16%;
-  right: -30%;
-  width: 106%;
-  height: 52%;
-  background:
-    radial-gradient(ellipse at 24% 70%, rgb(255 255 255 / 48%) 0 14%, transparent 34%),
-    radial-gradient(ellipse at 54% 48%, rgb(233 241 247 / 42%) 0 20%, transparent 44%),
-    radial-gradient(ellipse at 84% 72%, rgb(185 204 220 / 34%) 0 16%, transparent 38%);
-  filter: blur(4px);
-}
-
-.ys-course-card[data-weather='cloudy'] .ys-course-card__weather-bg::after,
-.ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg::after {
-  top: 9%;
-  right: -12%;
-  width: 52%;
-  height: 44%;
-  background: linear-gradient(154deg, rgb(255 255 255 / 22%), transparent 58%, rgb(59 82 106 / 14%));
-  border-radius: 50%;
-  filter: blur(7px);
-}
-
-.ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg::before,
-.ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg::after {
-  opacity: 0.62;
+    radial-gradient(78% 60% at 106% -6%, rgb(225 233 240 / 48%) 0 14%, rgb(127 151 172 / 26%) 44%, transparent 74%),
+    linear-gradient(152deg, transparent 44%, rgb(71 95 117 / 16%));
 }
 
 .ys-course-card[data-weather='rain'] .ys-course-card__weather-bg,
@@ -310,112 +290,40 @@ const carryItems = computed(() => courseCarryItems(props.course))
 .ys-course-card[data-weather='storm'] .ys-course-card__weather-bg {
   background:
     radial-gradient(78% 52% at 108% -4%, rgb(217 238 250 / 42%), rgb(64 107 147 / 18%) 48%, transparent 74%);
-  --ys-card-rain-opacity: 0.42;
-}
-
-.ys-course-card[data-weather='drizzle'] .ys-course-card__weather-bg {
-  --ys-card-rain-opacity: 0.24;
 }
 
 .ys-course-card[data-weather='heavy-rain'] .ys-course-card__weather-bg {
   background:
     radial-gradient(82% 54% at 108% -4%, rgb(190 219 239 / 40%), rgb(32 71 110 / 26%) 48%, transparent 75%);
-  --ys-card-rain-opacity: 0.58;
 }
 
 .ys-course-card[data-weather='storm'] .ys-course-card__weather-bg {
   background:
-    radial-gradient(84% 56% at 108% -5%, rgb(218 222 255 / 38%), rgb(62 63 118 / 28%) 48%, transparent 75%);
-  --ys-card-rain-opacity: 0.52;
-}
-
-.ys-course-card[data-weather='rain'] .ys-course-card__weather-bg::before,
-.ys-course-card[data-weather='heavy-rain'] .ys-course-card__weather-bg::before,
-.ys-course-card[data-weather='drizzle'] .ys-course-card__weather-bg::before,
-.ys-course-card[data-weather='storm'] .ys-course-card__weather-bg::before {
-  top: -8%;
-  right: -7%;
-  width: 58%;
-  height: 68%;
-  background:
-    linear-gradient(168deg, transparent 0 18%, rgb(233 246 255 / 74%) 42% 62%, transparent 84%) 18% 8% / 1.4px 19px no-repeat,
-    linear-gradient(168deg, transparent 0 18%, rgb(199 227 247 / 58%) 42% 62%, transparent 84%) 48% 42% / 1.2px 16px no-repeat,
-    linear-gradient(168deg, transparent 0 18%, rgb(225 242 254 / 68%) 42% 62%, transparent 84%) 76% 16% / 1.4px 21px no-repeat,
-    linear-gradient(168deg, transparent 0 18%, rgb(188 220 243 / 50%) 42% 62%, transparent 84%) 92% 58% / 1.1px 15px no-repeat;
-  opacity: var(--ys-card-rain-opacity);
-}
-
-.ys-course-card[data-weather='rain'] .ys-course-card__weather-bg::after,
-.ys-course-card[data-weather='heavy-rain'] .ys-course-card__weather-bg::after,
-.ys-course-card[data-weather='drizzle'] .ys-course-card__weather-bg::after {
-  top: -24%;
-  right: -30%;
-  width: 92%;
-  height: 54%;
-  background:
-    radial-gradient(ellipse at 38% 72%, rgb(226 240 249 / 30%) 0 18%, transparent 42%),
-    radial-gradient(ellipse at 72% 54%, rgb(111 149 181 / 24%) 0 24%, transparent 52%);
-  filter: blur(6px);
-}
-
-.ys-course-card[data-weather='storm'] .ys-course-card__weather-bg::after {
-  top: -18%;
-  right: -22%;
-  width: 86%;
-  height: 62%;
-  background:
-    linear-gradient(132deg, transparent 38%, rgb(229 231 255 / 34%) 42% 45%, transparent 49%) 64% 16% / 26% 72% no-repeat,
-    radial-gradient(circle at 62% 36%, rgb(171 177 236 / 32%), transparent 50%);
-  filter: blur(3px);
-  opacity: 0.72;
+    radial-gradient(84% 62% at 107% -5%, rgb(226 230 255 / 46%), rgb(69 72 127 / 30%) 48%, transparent 76%),
+    linear-gradient(150deg, transparent 42%, rgb(42 45 92 / 16%));
 }
 
 .ys-course-card[data-weather='snow'] .ys-course-card__weather-bg {
-  background: radial-gradient(78% 52% at 108% -5%, rgb(252 255 255 / 56%), rgb(170 215 237 / 22%) 48%, transparent 74%);
-}
-
-.ys-course-card[data-weather='snow'] .ys-course-card__weather-bg::before,
-.ys-course-card[data-weather='snow'] .ys-course-card__weather-bg::after {
-  top: -2%;
-  right: -8%;
-  width: 58%;
-  height: 58%;
+  opacity: min(1, calc(var(--ys-card-weather-intensity, 0.66) + 0.1));
   background:
-    radial-gradient(circle at 16% 22%, rgb(255 255 255 / 92%) 0 1.2px, transparent 1.8px),
-    radial-gradient(circle at 58% 12%, rgb(255 255 255 / 78%) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 78% 52%, rgb(255 255 255 / 88%) 0 1.3px, transparent 1.9px),
-    radial-gradient(circle at 34% 70%, rgb(230 247 255 / 72%) 0 1px, transparent 1.7px);
+    radial-gradient(90% 66% at 103% -2%, rgb(252 255 255 / 84%), rgb(147 207 238 / 38%) 48%, transparent 78%),
+    linear-gradient(148deg, transparent 42%, rgb(204 238 251 / 20%));
 }
 
 .ys-course-card[data-weather='snow'] .ys-course-card__weather-bg::after {
-  top: -20%;
-  right: -28%;
-  width: 86%;
-  height: 50%;
-  background: radial-gradient(ellipse, rgb(240 251 255 / 42%), transparent 68%);
-  filter: blur(6px);
-  opacity: 0.7;
+  top: -16%;
+  right: -24%;
+  width: 88%;
+  height: 62%;
+  background: radial-gradient(ellipse, rgb(240 251 255 / 46%), transparent 70%);
+  filter: blur(7px);
+  opacity: 0.76;
 }
 
 .ys-course-card[data-weather='fog'] .ys-course-card__weather-bg {
-  background: radial-gradient(84% 56% at 110% 4%, rgb(227 235 240 / 48%), rgb(135 153 168 / 16%) 50%, transparent 76%);
-}
-
-.ys-course-card[data-weather='fog'] .ys-course-card__weather-bg::before,
-.ys-course-card[data-weather='fog'] .ys-course-card__weather-bg::after {
-  top: 4%;
-  right: -22%;
-  width: 84%;
-  height: 28%;
-  background: radial-gradient(ellipse at 58% 50%, rgb(247 250 252 / 44%) 0 22%, rgb(205 217 225 / 17%) 46%, transparent 74%);
-  filter: blur(4px);
-}
-
-.ys-course-card[data-weather='fog'] .ys-course-card__weather-bg::after {
-  top: 27%;
-  right: -34%;
-  height: 24%;
-  opacity: 0.66;
+  background:
+    radial-gradient(82% 62% at 106% -4%, rgb(250 252 253 / 54%) 0 12%, rgb(198 211 220 / 26%) 42%, transparent 74%),
+    linear-gradient(155deg, transparent 42%, rgb(143 161 173 / 12%));
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -427,40 +335,6 @@ const carryItems = computed(() => courseCarryItems(props.course))
     animation: ys-card-weather-halo 8s ease-in-out infinite;
   }
 
-  .ys-course-card[data-weather='cloudy'] .ys-course-card__weather-bg::before,
-  .ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg::before {
-    animation: ys-card-weather-cloud 15s ease-in-out infinite alternate;
-  }
-
-  .ys-course-card[data-weather='cloudy'] .ys-course-card__weather-bg::after,
-  .ys-course-card[data-weather='overcast'] .ys-course-card__weather-bg::after,
-  .ys-course-card[data-weather='rain'] .ys-course-card__weather-bg::after,
-  .ys-course-card[data-weather='heavy-rain'] .ys-course-card__weather-bg::after,
-  .ys-course-card[data-weather='drizzle'] .ys-course-card__weather-bg::after {
-    animation: ys-card-weather-vapor 18s ease-in-out infinite alternate;
-  }
-
-  .ys-course-card[data-weather='rain'] .ys-course-card__weather-bg::before,
-  .ys-course-card[data-weather='heavy-rain'] .ys-course-card__weather-bg::before,
-  .ys-course-card[data-weather='drizzle'] .ys-course-card__weather-bg::before,
-  .ys-course-card[data-weather='storm'] .ys-course-card__weather-bg::before {
-    animation: ys-card-weather-rain 5.8s ease-in infinite;
-    animation-delay: calc(var(--fx-seed, 0) * -0.7s);
-  }
-
-  .ys-course-card[data-weather='storm'] .ys-course-card__weather-bg::after {
-    animation: ys-card-weather-storm-glint 7.5s ease-in-out infinite;
-  }
-
-  .ys-course-card[data-weather='snow'] .ys-course-card__weather-bg::before {
-    animation: ys-card-weather-snow 12s ease-in-out infinite alternate;
-    animation-delay: calc(var(--fx-seed, 0) * -0.9s);
-  }
-
-  .ys-course-card[data-weather='fog'] .ys-course-card__weather-bg::before,
-  .ys-course-card[data-weather='fog'] .ys-course-card__weather-bg::after {
-    animation: ys-card-weather-fog 20s ease-in-out infinite alternate;
-  }
 }
 
 @keyframes ys-card-weather-sun-rays {
@@ -470,33 +344,6 @@ const carryItems = computed(() => courseCarryItems(props.course))
 @keyframes ys-card-weather-halo {
   0%, 100% { opacity: 0.72; transform: scale(0.96); }
   50% { opacity: 1; transform: scale(1.05); }
-}
-
-@keyframes ys-card-weather-cloud {
-  to { transform: translate3d(-5%, 3%, 0); }
-}
-
-@keyframes ys-card-weather-vapor {
-  to { opacity: 0.78; transform: translate3d(-4%, 3%, 0) scale(1.04); }
-}
-
-@keyframes ys-card-weather-rain {
-  0% { opacity: 0.16; transform: translate3d(1px, -7px, 0); }
-  32% { opacity: var(--ys-card-rain-opacity); }
-  100% { opacity: 0.08; transform: translate3d(-2px, 10px, 0); }
-}
-
-@keyframes ys-card-weather-storm-glint {
-  0%, 100% { opacity: 0.42; transform: scale(0.97); }
-  50% { opacity: 0.78; transform: scale(1.03); }
-}
-
-@keyframes ys-card-weather-snow {
-  to { transform: translate3d(-3px, 6px, 0) rotate(4deg); }
-}
-
-@keyframes ys-card-weather-fog {
-  to { opacity: 0.82; transform: translate3d(-7%, 2%, 0) scale(1.04); }
 }
 
 .ys-course-card__weather {
@@ -520,7 +367,6 @@ const carryItems = computed(() => courseCarryItems(props.course))
 }
 
 .ys-course-card.has-status .ys-course-card__weather { top: auto; bottom: 4px; }
-.ys-course-card.has-status .ys-course-card__weeks { padding-left: 14px; }
 
 .ys-course-card.is-single-section {
   padding: 4px 4px 15px;
@@ -545,12 +391,42 @@ const carryItems = computed(() => courseCarryItems(props.course))
   font-size: 7px;
 }
 
+/* 低高度的课表格优先保留状态与周数，不再让底部标签反向挤压正文。 */
+@container ys-course-slot (max-height: 118px) {
+  .ys-course-card {
+    padding-top: 4px;
+    padding-bottom: 15px;
+  }
+
+  .ys-course-card.has-status .ys-course-card__content { padding-top: 8px; }
+  .ys-course-card__content { gap: 2px; }
+  .ys-course-card__room { -webkit-line-clamp: 1; }
+  .ys-course-card__weeks { bottom: 2px; font-size: 7px; }
+}
+
+@container ys-course-slot (max-width: 42px) {
+  .ys-course-card__status { max-width: calc(100% - 2px); font-size: 6px; }
+  .ys-course-card__weeks { padding-inline: 1px; font-size: 7px; }
+}
+
 .ys-course-card.is-muted {
   z-index: 2;
   color: var(--ys-text-2);
   background: var(--ys-surface-3);
   border-color: var(--ys-border-strong);
   box-shadow: none;
+}
+
+.ys-course-card.is-muted .ys-course-card__weather-bg {
+  opacity: calc(var(--ys-card-weather-intensity, 0.66) * 0.24);
+  filter: grayscale(1) saturate(0) contrast(0.72);
+  mix-blend-mode: luminosity;
+}
+
+.ys-course-card.is-muted .ys-course-card__weather {
+  color: var(--ys-text-3);
+  filter: grayscale(1) saturate(0);
+  opacity: 0.42;
 }
 
 .ys-course-card.is-muted .ys-course-card__status {
@@ -571,10 +447,21 @@ const carryItems = computed(() => courseCarryItems(props.course))
 
 /* ---------- 密度适配 ---------- */
 .ys-density-minimal .ys-course-card { padding: 4px; }
-.ys-density-minimal .ys-course-card strong { font-size: 11px; -webkit-line-clamp: 4; }
+.ys-density-minimal .ys-course-card strong { font-size: 11px; -webkit-line-clamp: 3; }
+
+.ys-course-card__rich-meta {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
 
 .ys-course-card__teacher {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   font-size: 9px;
   text-overflow: ellipsis;
@@ -583,21 +470,16 @@ const carryItems = computed(() => courseCarryItems(props.course))
 }
 
 .ys-course-card__gear {
-  position: absolute;
-  top: 2px;
-  right: 3px;
-  display: grid;
-  place-items: center;
+  flex: 0 0 auto;
+  padding: 1px 2px;
   width: 13px;
-  height: 13px;
   font-size: 7px;
   font-weight: 750;
   color: var(--ys-course-color);
   background: rgb(255 255 255 / 86%);
-  border-radius: 4px;
+  border-radius: 3px;
+  line-height: 1.2;
 }
-
-.ys-course-card.has-weather .ys-course-card__gear { top: 3px; }
 
 /* ---------- 卡片装饰特效（只作用本周卡,换周期间由宿主摘除属性,reduced-motion 关闭） ---------- */
 

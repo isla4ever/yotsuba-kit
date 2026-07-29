@@ -28,7 +28,7 @@ export {
   YsWeatherGlyph,
   YsWeekPicker,
 }
-export { defaultScheduleGuideSteps } from './guidePresets'
+export { defaultScheduleGuideSteps, defaultTodayGuideSteps } from './guidePresets'
 export type { TodayResizeCorner, TodayWidgetConfig, TodayWidgetSize } from './YsToday.vue'
 
 export function install(app: App): void {
@@ -57,12 +57,14 @@ export type {
   GuideConfig,
   GuideMode,
   GuideStep,
+  HourlyWeather,
   Reminder,
   SheetConfig,
   SheetKind,
   ThemeTokens,
   TransitionSpec,
   WeatherProvider,
+  WeatherKind,
   WeatherSnapshot,
   WeekModel,
 } from '@iyotsuba/schedule-core'

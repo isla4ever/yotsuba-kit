@@ -89,8 +89,9 @@ describe('editing flow', () => {
         termStart,
         reduceMotion: true,
         weather: {
-          current: { kind: 'storm', temperatureC: 27 },
+          current: { kind: 'clear', temperatureC: 27 },
           daily: [{ date: '2026-07-20', kind: 'storm', lowC: 23, highC: 31 }],
+          hourly: [{ time: '2026-07-20T08:00', kind: 'snow', temperatureC: 2, label: '阵雪' }],
           updatedAt: Date.now(),
         },
         detail: { hero: 'weather', layout: 'compact', adjustable: true },
@@ -103,7 +104,10 @@ describe('editing flow', () => {
     expect(detail().classList).toContain('is-layout-compact')
     expect(detail().classList).toContain('is-weather-linked')
     expect(detail().textContent).not.toContain('周次')
-    expect(detail().textContent).toContain('雷雨 23~31°')
+    expect(detail().textContent).toContain('阵雪')
+    expect(detail().textContent).toContain('2°')
+    expect(detail().querySelector('.ys-detail__hero-weather .ys-weather-glyph')?.classList).toContain('is-snow')
+    expect(detail().querySelector('.ys-detail__weather-row')).toBeNull()
 
     const layoutSwitch = document.querySelector('.ys-detail__layout-switch') as HTMLButtonElement
     layoutSwitch.click()
@@ -116,6 +120,32 @@ describe('editing flow', () => {
     expect(detail().classList).toContain('is-layout-full')
     expect(detail().textContent).toContain('课前完成习题')
     expect(detail().textContent).toContain('教材')
+    wrapper.unmount()
+  })
+
+  it('keeps inactive status in hero metadata and weather on the right', async () => {
+    const wrapper = mount(YsSchedule, {
+      props: {
+        courses: [{ ...courses[0]!, endWeek: 1 }],
+        week: 2,
+        termStart,
+        reduceMotion: true,
+        weather: {
+          current: { kind: 'clear', temperatureC: 27 },
+          daily: [{ date: '2026-07-27', kind: 'fog', lowC: 19, highC: 25 }],
+          updatedAt: Date.now(),
+        },
+      },
+      attachTo: document.body,
+    })
+    await wrapper.find('.ys-course-card').trigger('click')
+    await nextTick()
+    const hero = document.querySelector('.ys-detail__hero') as HTMLElement
+
+    expect(hero.querySelector('.ys-detail__hero-meta .ys-detail__badge')?.textContent).toBe('非本周')
+    expect(hero.querySelector(':scope > .ys-detail__badge')).toBeNull()
+    expect(hero.querySelector('.ys-detail__hero-weather .ys-weather-glyph')?.classList).toContain('is-fog')
+    expect(hero.textContent).toContain('19~25°')
     wrapper.unmount()
   })
 })

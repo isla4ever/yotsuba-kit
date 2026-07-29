@@ -1,4 +1,4 @@
-import type { DailyWeather, WeatherKind, WeatherProvider, WeatherSnapshot } from '../types'
+import type { DailyWeather, HourlyWeather, WeatherKind, WeatherProvider, WeatherSnapshot } from '../types'
 
 /**
  * open-meteo.com 参考实现（免费、无 key）。
@@ -41,6 +41,7 @@ export function createOpenMeteoProvider(options: OpenMeteoOptions): WeatherProvi
       url.searchParams.set('longitude', String(longitude))
       url.searchParams.set('current', 'temperature_2m,weather_code')
       url.searchParams.set('daily', 'weather_code,temperature_2m_max,temperature_2m_min')
+      url.searchParams.set('hourly', 'temperature_2m,weather_code')
       url.searchParams.set('timezone', 'auto')
       url.searchParams.set('forecast_days', '7')
 
@@ -51,6 +52,7 @@ export function createOpenMeteoProvider(options: OpenMeteoOptions): WeatherProvi
       const data = await response.json() as {
         current?: { temperature_2m?: number, weather_code?: number }
         daily?: { time?: string[], weather_code?: number[], temperature_2m_max?: number[], temperature_2m_min?: number[] }
+        hourly?: { time?: string[], weather_code?: number[], temperature_2m?: number[] }
       }
 
       const daily: DailyWeather[] = (data.daily?.time ?? []).map((date, index) => ({
@@ -59,12 +61,18 @@ export function createOpenMeteoProvider(options: OpenMeteoOptions): WeatherProvi
         highC: data.daily?.temperature_2m_max?.[index],
         lowC: data.daily?.temperature_2m_min?.[index],
       }))
+      const hourly: HourlyWeather[] = (data.hourly?.time ?? []).map((time, index) => ({
+        time,
+        kind: kindOf(data.hourly?.weather_code?.[index] ?? 0),
+        temperatureC: data.hourly?.temperature_2m?.[index],
+      }))
 
       cached = {
         current: data.current
           ? { kind: kindOf(data.current.weather_code ?? 0), temperatureC: data.current.temperature_2m }
           : undefined,
         daily,
+        hourly,
         updatedAt: Date.now(),
       }
       return cached

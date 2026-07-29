@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+- Added hourly weather snapshots and nearest-course-time matching so courses on the same day can render different weather and temperatures.
+- Refined clear, cloudy, overcast, fog, drizzle, rain, heavy rain, storm, and snow visuals with seamless low-cost motion, localized course-card materials, and a single global ambience scene.
+- Kept inactive courses desaturated, restored Saturday and Sunday weather materials, and constrained long course names, locations, and low-height cards without changing the accepted schedule layout.
+- Moved course-detail weather into the hero, aligned three schedule density levels, and gave every Today weather widget size a distinct information hierarchy.
+- Improved guide re-entry, sheet stacking, mask ownership, focus transitions, and unified fade-out timing across built-in overlays.
+- Preserved `materials: string[]` compatibility while keeping structured books, materials, tasks, hourly weather, and guide contracts available across the package surface.
+
 ## 0.6.0
 
 - Added structured course books, materials, and tasks while preserving legacy string materials.

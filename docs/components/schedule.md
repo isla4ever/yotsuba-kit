@@ -4,8 +4,8 @@
 
 首次接入请先完成 [5 分钟接入](/guide/getting-started)。本页适合继续配置完整功能；需要精确查询时，可直接前往[事件](/api/events)、[方法](/api/methods)或[插槽](/api/slots)。
 
-::: info 候选 API
-本页包含 `0.6.0` 候选 API。注册表当前稳定版仍为 `0.5.0`，生产安装请以[版本状态](/guide/release-status)为准。
+::: info 0.7.0
+本页对应 `0.7.0` 稳定 API，包含小时级课程天气、全局天气场景、三档信息密度和重新进入引导等能力。
 :::
 
 ## 最小接入
@@ -66,10 +66,10 @@ const courses = ref<Course[]>([])
 | `density` | `'minimal' \| 'normal' \| 'rich'` | `'normal'` | 课程信息密度 |
 | `palette` | `PaletteName \| string[]` | 内置 | 六套内置配色或自定义颜色数组 |
 | `cardEffect` | `'none' \| 'shimmer' \| 'glow' \| 'aurora' \| 'breathe'` | `'none'` | 显式光效会替换课程卡局部微动态天气材质，换周和 reduce-motion 时自动收敛 |
-| `weather` | `WeatherSnapshot \| null` | `null` | 由宿主提供的天气快照 |
+| `weather` | `WeatherSnapshot \| null` | `null` | 由宿主提供的当前、逐日与可选小时级天气快照 |
 | `weatherCard` | `WeatherCardConfig \| false` | 仅局部材质 | 控制课程卡局部微动态天气材质、可选图标、文案和强度 |
 | `weekdayWeather` | `'none' \| 'icon' \| 'full'` | `'icon'` | 星期栏天气信息层级 |
-| `weatherScene` | `boolean` | `true` | 是否显示由天气快照驱动的低频模糊氛围层 |
+| `weatherScene` | `boolean` | `true` | 是否显示由天气快照驱动的低频模糊氛围层；应用壳层只保留一份即可贯穿多个模块 |
 
 ### 内置界面与宿主接管
 
@@ -144,5 +144,9 @@ const courses = ref<Course[]>([])
   }"
 />
 ```
+
+`hourly` 存在时，课程卡和详情会按照课程开始节次对应的时间选择同一天最近的小时点；同一天早课与晚课可以呈现不同天气和温度。缺少小时数据时才回退到 `daily`。周六、周日与工作日使用同一套匹配规则。
+
+非本周课程始终保持失色状态，天气层不会重新为它着色。显式 `cardEffect` 会替换课程卡天气材质，避免两套光效叠加；页面级天气场景仍可保留。
 
 缺少信息时，详情会保留字段标签并显示 `emptyText`；可以通过 `emptyTexts` 按 `DetailField` 覆盖提示语。重叠课程从选择列表进入详情时，会在同一弹层内保持连续过渡。

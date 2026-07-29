@@ -61,7 +61,7 @@ function cyclePlacement() {
 
 <template>
   <Teleport to="body" :disabled="contained">
-    <Transition name="ys-sheet-fade" appear :duration="340">
+    <Transition name="ys-sheet" appear :duration="{ enter: 360, leave: 280 }">
       <div
         v-if="open"
         class="ys-sheet__overlay"
@@ -69,32 +69,30 @@ function cyclePlacement() {
         :style="vars"
         @click.self="emit('close')"
       >
-        <Transition :name="`ys-sheet-${placement}`" appear :duration="340">
-          <section class="ys-sheet" :class="[`ys-sheet--${placement}`, { 'is-glass': glass }]" role="dialog" aria-modal="true">
-            <header v-if="title || $slots.title || $slots['header-tools'] || adjustable" class="ys-sheet__head">
-              <slot name="title">
-                <h2>{{ title }}</h2>
-              </slot>
-              <div class="ys-sheet__tools">
-                <slot name="header-tools" />
-                <button
-                  v-if="adjustable"
-                  type="button"
-                  class="ys-sheet__tool"
-                  :aria-label="`切换弹层位置，当前${placementLabels[placement]}`"
-                  :title="`弹层位置：${placementLabels[placement]}`"
-                  @click="cyclePlacement"
-                >
-                  <i class="ys-sheet__placement-icon" :class="`is-${placement}`" aria-hidden="true" />
-                </button>
-                <button type="button" class="ys-sheet__close" aria-label="关闭" title="关闭" @click="emit('close')">✕</button>
-              </div>
-            </header>
-            <div class="ys-sheet__body">
-              <slot />
+        <section class="ys-sheet" :class="[`ys-sheet--${placement}`, { 'is-glass': glass }]" role="dialog" aria-modal="true">
+          <header v-if="title || $slots.title || $slots['header-tools'] || adjustable" class="ys-sheet__head">
+            <slot name="title">
+              <h2>{{ title }}</h2>
+            </slot>
+            <div class="ys-sheet__tools">
+              <slot name="header-tools" />
+              <button
+                v-if="adjustable"
+                type="button"
+                class="ys-sheet__tool"
+                :aria-label="`切换弹层位置，当前${placementLabels[placement]}`"
+                :title="`弹层位置：${placementLabels[placement]}`"
+                @click="cyclePlacement"
+              >
+                <i class="ys-sheet__placement-icon" :class="`is-${placement}`" aria-hidden="true" />
+              </button>
+              <button type="button" class="ys-sheet__close" aria-label="关闭" title="关闭" @click="emit('close')">✕</button>
             </div>
-          </section>
-        </Transition>
+          </header>
+          <div class="ys-sheet__body">
+            <slot />
+          </div>
+        </section>
       </div>
     </Transition>
   </Teleport>
@@ -251,41 +249,45 @@ function cyclePlacement() {
 .ys-sheet__placement-icon.is-center::after { inset: 3px; }
 .ys-sheet__placement-icon.is-right::after { top: 2px; right: 2px; bottom: 2px; width: 3px; }
 
-/* 进出场：全部 transform/opacity */
-.ys-sheet-fade-enter-active,
-.ys-sheet-fade-leave-active {
-  transition: opacity 300ms ease;
+/* 所有弹层共享一套节奏；遮罩与面板由同一个 Transition 驱动，避免淡出叠加。 */
+.ys-sheet-enter-active {
+  transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ys-sheet-fade-enter-from,
-.ys-sheet-fade-leave-to {
+.ys-sheet-leave-active {
+  pointer-events: none;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ys-sheet-enter-active .ys-sheet {
+  transition: opacity 260ms ease-out, transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ys-sheet-leave-active .ys-sheet {
+  transition: opacity 260ms cubic-bezier(0.4, 0, 0.2, 1), transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ys-sheet-enter-from,
+.ys-sheet-leave-to,
+.ys-sheet-enter-from .ys-sheet,
+.ys-sheet-leave-to .ys-sheet {
   opacity: 0;
 }
 
-.ys-sheet-bottom-enter-active,
-.ys-sheet-bottom-leave-active { transition: opacity 220ms ease, transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1); }
-.ys-sheet-bottom-enter-from,
-.ys-sheet-bottom-leave-to { opacity: 0; transform: translate3d(0, 32px, 0); }
+.ys-sheet-enter-from .ys-sheet--bottom { transform: translate3d(0, 24px, 0) scale(0.995); }
+.ys-sheet-leave-to .ys-sheet--bottom { transform: translate3d(0, 14px, 0) scale(0.997); }
 
-.ys-sheet-center-enter-active,
-.ys-sheet-center-leave-active { transition: opacity 200ms ease, transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1); }
-.ys-sheet-center-enter-from,
-.ys-sheet-center-leave-to { opacity: 0; transform: translate3d(0, 10px, 0); }
+.ys-sheet-enter-from .ys-sheet--center { transform: translate3d(0, 8px, 0) scale(0.985); }
+.ys-sheet-leave-to .ys-sheet--center { transform: translate3d(0, 5px, 0) scale(0.992); }
 
-.ys-sheet-right-enter-active,
-.ys-sheet-right-leave-active { transition: opacity 220ms ease, transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1); }
-.ys-sheet-right-enter-from,
-.ys-sheet-right-leave-to { opacity: 0; transform: translate3d(44px, 0, 0); }
+.ys-sheet-enter-from .ys-sheet--right { transform: translate3d(30px, 0, 0) scale(0.995); }
+.ys-sheet-leave-to .ys-sheet--right { transform: translate3d(18px, 0, 0) scale(0.997); }
 
 @media (prefers-reduced-motion: reduce) {
-  .ys-sheet-fade-enter-active,
-  .ys-sheet-fade-leave-active,
-  .ys-sheet-bottom-enter-active,
-  .ys-sheet-bottom-leave-active,
-  .ys-sheet-center-enter-active,
-  .ys-sheet-center-leave-active,
-  .ys-sheet-right-enter-active,
-  .ys-sheet-right-leave-active {
+  .ys-sheet-enter-active,
+  .ys-sheet-leave-active,
+  .ys-sheet-enter-active .ys-sheet,
+  .ys-sheet-leave-active .ys-sheet {
     transition-duration: 1ms;
   }
 }

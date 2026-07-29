@@ -5,6 +5,7 @@ import type { DetailAction, DetailField, DetailHero, DetailLayout, DisplayCourse
 import { courseCarryItems } from '@iyotsuba/schedule-core'
 import { computed, ref, watch } from 'vue'
 import YsSheet from './YsSheet.vue'
+import YsWeatherGlyph from './YsWeatherGlyph.vue'
 
 const DEFAULT_FIELDS: DetailField[] = ['time', 'weeks', 'location', 'teacher', 'weather', 'materials', 'tasks', 'note']
 
@@ -15,6 +16,8 @@ const props = defineProps<{
   editable?: boolean
   /** 该课程当日天气文案（宿主/YsSchedule 计算好传入） */
   weatherText?: string
+  /** 该课程日期的温度或温区间。 */
+  weatherTemperature?: string
   /** hero 风格：课程色 / 当日天气渐变 / 极简 */
   hero?: DetailHero
   /** 字段显隐与顺序（去重,未知项忽略） */
@@ -67,15 +70,25 @@ const course = computed(() =>
 const parityLabel = (item: DisplayCourse) =>
   item.parity === 'odd' ? '单周' : item.parity === 'even' ? '双周' : '每周'
 
+const requestedFields = computed<DetailField[]>(() => props.fields?.length ? props.fields : DEFAULT_FIELDS)
+
 const visibleFields = computed<DetailField[]>(() => {
-  const source = props.fields?.length ? props.fields : DEFAULT_FIELDS
   const allowed: DetailField[] = localLayout.value === 'compact'
     ? ['time', 'location']
     : localLayout.value === 'standard'
-      ? ['time', 'weeks', 'location', 'teacher', 'weather', 'materials', 'tasks']
+      ? ['time', 'weeks', 'location', 'teacher', 'materials', 'tasks']
       : DEFAULT_FIELDS
-  return [...new Set(source)].filter(field => DEFAULT_FIELDS.includes(field) && allowed.includes(field))
+  return [...new Set(requestedFields.value)].filter(field =>
+    field !== 'weather' && DEFAULT_FIELDS.includes(field) && allowed.includes(field),
+  )
 })
+
+const showHeroWeather = computed(() =>
+  requestedFields.value.includes('weather')
+  && props.weatherKind
+  && props.weatherKind !== 'neutral'
+  && Boolean(props.weatherTemperature?.trim() || props.weatherText?.trim()),
+)
 
 const visibleActions = computed<DetailAction[]>(() => {
   const source = props.actions ?? (props.editable ? ['edit', 'remove'] : [])
@@ -119,9 +132,6 @@ function fieldText(field: DetailField, item: DisplayCourse): string {
   if (field === 'teacher') {
     return item.teacher?.trim() || emptyFor(field)
   }
-  if (field === 'weather') {
-    return props.weatherText?.trim() || emptyFor(field)
-  }
   if (field === 'note') {
     return item.note?.trim() || emptyFor(field)
   }
@@ -130,7 +140,6 @@ function fieldText(field: DetailField, item: DisplayCourse): string {
 
 function fieldClass(field: DetailField) {
   return {
-    'ys-detail__weather-row': field === 'weather',
     'ys-detail__note-row': field === 'note',
     'ys-detail__materials-row': field === 'materials',
     'ys-detail__tasks-row': field === 'tasks',
@@ -218,16 +227,28 @@ function cycleLayout() {
         <i v-if="hero === 'plain'" class="ys-detail__plain-dot" :style="{ background: colorFor(course.name, course.color) }" />
         <div class="ys-detail__hero-copy">
           <strong>{{ course.name }}</strong>
-          <small>{{ [course.teacher, course.location].filter(Boolean).join(' · ') || (emptyText ?? '暂无信息') }}</small>
+          <div class="ys-detail__hero-meta">
+            <small>{{ [course.teacher, course.location].filter(Boolean).join(' · ') || (emptyText ?? '暂无信息') }}</small>
+            <span v-if="course.makeup" class="ys-detail__badge">补班</span>
+            <span v-else-if="!course.active" class="ys-detail__badge">非本周</span>
+          </div>
         </div>
-        <span v-if="course.makeup" class="ys-detail__badge">补班</span>
-        <span v-else-if="!course.active" class="ys-detail__badge">非本周</span>
+        <div
+          v-if="showHeroWeather"
+          class="ys-detail__hero-weather"
+          :aria-label="[weatherText, weatherTemperature].filter(Boolean).join('，')"
+        >
+          <YsWeatherGlyph :kind="weatherKind!" :size="34" :label="weatherText" />
+          <span>
+            <b>{{ weatherTemperature || weatherText }}</b>
+            <small v-if="weatherTemperature && weatherText">{{ weatherText }}</small>
+          </span>
+        </div>
       </div>
 
       <div class="ys-detail__status" :class="{ 'is-inactive': !course.active }">
         <i aria-hidden="true" />
         <span>{{ course.active ? '本周正常上课' : '本周无课' }}</span>
-        <small v-if="weatherText">{{ weatherText }}</small>
       </div>
 
       <dl class="ys-detail__grid">
@@ -385,6 +406,15 @@ function cycleLayout() {
   min-width: 0;
 }
 
+.ys-detail__hero-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ys-detail__hero-meta > small { flex: 0 1 auto; }
+
 .ys-detail__hero strong { font-size: 18px; font-weight: 780; }
 
 .ys-detail__hero small {
@@ -395,12 +425,44 @@ function cycleLayout() {
   white-space: nowrap;
 }
 
+.ys-detail__hero-weather {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-start;
+  justify-content: flex-end;
+  min-width: 78px;
+  margin-left: auto;
+  color: #fff;
+}
+
+.ys-detail__hero-weather > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.ys-detail__hero-weather b {
+  font-size: 14px;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.ys-detail__hero-weather small {
+  max-width: 60px;
+  font-size: 9px;
+  color: rgb(255 255 255 / 76%);
+}
+
 .ys-detail__badge {
   flex: 0 0 auto;
   padding: 1px 6px;
   font-size: 10px;
   background: rgb(0 0 0 / 30%);
   border-radius: 4px;
+  white-space: nowrap;
 }
 
 /* plain 极简 hero：去卡片化,课程色只留圆点 */
@@ -414,10 +476,16 @@ function cycleLayout() {
 
 .ys-detail__hero.is-plain small { color: var(--ys-text-3); }
 
-.ys-detail__hero.is-plain span {
+.ys-detail__hero.is-plain .ys-detail__badge {
   color: var(--ys-text-2);
   background: var(--ys-surface-2);
 }
+
+.ys-detail__hero.is-plain .ys-detail__hero-weather {
+  color: var(--ys-text-1);
+}
+
+.ys-detail__hero.is-plain .ys-detail__hero-weather small { color: var(--ys-text-3); }
 
 .ys-detail__plain-dot {
   align-self: center;
@@ -447,13 +515,6 @@ function cycleLayout() {
   height: 7px;
   background: currentcolor;
   border-radius: 50%;
-}
-
-.ys-detail__status > small {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--ys-text-3);
 }
 
 .ys-detail__status.is-inactive {
@@ -487,7 +548,6 @@ function cycleLayout() {
   background: color-mix(in srgb, var(--ys-surface-1) 94%, transparent);
 }
 
-.ys-detail__grid > .ys-detail__weather-row,
 .ys-detail__grid > .ys-detail__note-row,
 .ys-detail__grid > .ys-detail__materials-row,
 .ys-detail__grid > .ys-detail__tasks-row { grid-column: 1 / -1; }
@@ -550,6 +610,7 @@ function cycleLayout() {
 }
 
 .ys-detail.is-layout-compact .ys-detail__hero strong { font-size: 16px; }
+.ys-detail.is-layout-compact .ys-detail__hero-weather { min-width: 72px; }
 .ys-detail.is-layout-compact .ys-detail__status { min-height: 30px; padding-block: 5px; margin-top: 7px; }
 .ys-detail.is-layout-compact .ys-detail__grid { margin-top: 7px; }
 .ys-detail.is-layout-compact .ys-detail__grid > div { padding: 8px; }
