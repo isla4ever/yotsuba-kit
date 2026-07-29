@@ -1,11 +1,32 @@
 # Yotsuba Kit 四叶草课表组件库
 
-面向中国大学课表场景的开源组件体系。Yotsuba Kit 把单双周、起止周、调休补班、重叠课等高校学期规则，以及天气联动、教材与任务、课程详情、弹层和「今日」排版，整理成可复用、可替换、可受控的 API。
+Yotsuba Kit 是面向中国高校课表与课程日程产品的跨框架开源组件体系。它将单双周、起止周、调休补班、重叠课程等学期规则，与天气联动、课程详情、教材任务、弹层和「今日」看板整理为稳定、可组合、可受控的 API。
 
-- 文档官网：[isla4ever.github.io/yotsuba-kit](https://isla4ever.github.io/yotsuba-kit/)
-- 开源协议：MIT
-- 当前稳定版：`0.7.0`
-- Web 四包与 Flutter 包保持同一版本线，安装前可查看[版本与发布状态](https://isla4ever.github.io/yotsuba-kit/guide/release-status.html)
+组件只负责课表领域模型与界面表现，不在加载时申请定位、访问教务系统或执行系统副作用。无论是在 Vue、React、原生 H5 还是 Flutter 中，宿主都可以按自己的数据源、权限策略和产品结构完成接入。
+
+## 快速入口
+
+| 入口 | 地址 | 适合场景 |
+| --- | --- | --- |
+| **在线示例** | [iyotsuba.top](https://iyotsuba.top/) | 直接体验移动端课表、Today、天气和弹层交互 |
+| **官网文档** | [isla4ever.github.io/yotsuba-kit](https://isla4ever.github.io/yotsuba-kit/) | 查看设计说明、组件配置和完整 API |
+| **5 分钟接入** | [快速开始](https://isla4ever.github.io/yotsuba-kit/guide/getting-started.html) | 从最小课程数据运行第一个课表 |
+| **Web 示例源码** | [yotsuba-kit-playground](https://github.com/isla4ever/yotsuba-kit-playground) | 查看 Vue、React 与原生 HTML 的完整消费方式 |
+| **Flutter 示例源码** | [yotsuba-kit-flutter](https://github.com/isla4ever/yotsuba-kit-flutter/tree/main/packages/yotsuba_schedule_kit/example) | 查看 Flutter 组件公开 API 的完整用法 |
+| **版本状态** | [发布与兼容性](https://isla4ever.github.io/yotsuba-kit/guide/release-status.html) | 核对 NPM、pub.dev 和跨框架版本线 |
+
+当前稳定版为 `0.7.0`，项目采用 [MIT License](LICENSE)。
+
+## 如何选择
+
+| 需求 | 推荐入口 |
+| --- | --- |
+| Vue 3 应用 | `@iyotsuba/schedule-vue` |
+| React 应用 | `@iyotsuba/schedule-react` |
+| 原生 HTML、uni-app H5、Ionic 等 DOM 环境 | `@iyotsuba/schedule-elements` |
+| 只需要学期计算、ICS、提醒、天气 Provider 或数据交换 | `@iyotsuba/schedule-core` |
+| Flutter 应用 | [`yotsuba_schedule_kit`](https://pub.dev/packages/yotsuba_schedule_kit) |
+| 想先确认视觉与交互 | [打开在线示例](https://iyotsuba.top/) |
 
 ## Yotsuba 项目关系
 
