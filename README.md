@@ -1,4 +1,14 @@
-# Yotsuba Kit 四叶草课表组件库
+<p align="center">
+  <img src="assets/branding/yotsuba-readme-icon.png" width="112" alt="Yotsuba Schedule 产品图标">
+</p>
+
+<h1 align="center">Yotsuba Kit 四叶草课表组件库</h1>
+
+<p align="center">面向中国高校课表、Today 看板与课程日程产品的跨框架开源组件体系。</p>
+
+<p align="center">
+  <img src="assets/branding/yotsuba-readme-hero.png" width="100%" alt="Yotsuba Schedule 天气融合课表与 Today 看板产品主视觉">
+</p>
 
 Yotsuba Kit 是面向中国高校课表与课程日程产品的跨框架开源组件体系。它将单双周、起止周、调休补班、重叠课程等学期规则，与天气联动、课程详情、教材任务、弹层和「今日」看板整理为稳定、可组合、可受控的 API。
 
